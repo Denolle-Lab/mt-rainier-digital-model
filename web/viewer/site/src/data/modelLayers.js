@@ -1,4 +1,4 @@
-// rainier3d model surface layers (atlas/model/layers.json, written by mt-rainier-virtual-3d-model S11).
+// rainier3d model surface layers (atlas/model/layers.json, written by mt-rainier-digital-model S11).
 // Textures and value grids sit on the overview lon/lat box with square-degree pixels, rows north to south.
 
 export async function loadModelLayers(base) {

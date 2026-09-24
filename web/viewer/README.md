@@ -40,7 +40,7 @@ Measured on an Apple M5 Max (Chrome, ANGLE Metal): 16.7 ms mean frame time while
 ## Model surface layers (rainier3d)
 
 The **Surface model** panel drapes one 2D layer of the
-[rainier3d](https://github.com/Denolle-Lab/mt-rainier-virtual-3d-model) model on the terrain at a time:
+[rainier3d](https://github.com/Denolle-Lab/mt-rainier-digital-model) model on the terrain at a time:
 - imagery: a Sentinel-2 true-colour median composite (August to September 2025);
 - geology (model units) and the model's surface hydrothermal alteration;
 - glacier ice thickness and NDSI (snow and ice);
@@ -59,7 +59,7 @@ same texture lookup (world x/z to lon/lat) serves the overview mesh and the 1 m 
 `site/public/atlas/model/` and is written by the model repository, not by `data/`:
 
 ```sh
-cd ../mt-rainier-virtual-3d-model && pixi run s11 -- --atlas ../rainier-seismic-atlas/site/public/atlas
+cd ../mt-rainier-digital-model && pixi run s11 -- --atlas ../rainier-seismic-atlas/site/public/atlas
 ```
 
 The bundle is optional: without `model/layers.json` the site runs exactly as before. Imagery and colour-ramp
