@@ -573,3 +573,109 @@ def export_volume(tree: xr.DataTree, dom, atlas: Path, dx: float = 500.0, dz: fl
         }
     (out.parent / "volume.json").write_text(json.dumps(meta))
     return meta
+
+
+# ---- sensors: every site of the S8 inventory, for the viewer's sensor layer ----
+# Temporary networks follow the FDSN convention (codes starting with a digit or X, Y, Z are temporary);
+# TA is a permanent code for a moving deployment. Non-FDSN sources are classed by what they are.
+TEMP_CODES = {"TA"}
+TEMP_SOURCES = ("2025 Rainier node deployment",)
+
+
+def is_temporary(site_id: str, source: str) -> bool:
+    if source.startswith(TEMP_SOURCES):
+        return True
+    if source.startswith("FDSN"):
+        net = site_id.split(".")[0]
+        return net[:1].isdigit() or net[:1] in "XYZ" or net in TEMP_CODES
+    return False
+
+
+def viewer_kind(kind: str, family: str) -> str:
+    """Our instrument kind or family -> the viewer's kinds (web/viewer/site/src/data/kinds.js)."""
+    k = kind.lower()
+    for key, words in (
+        ("geophone", ("geophone", "node")),
+        ("accelerometer", ("accelerometer",)),
+        ("infrasound", ("infrasound",)),
+        ("gnss", ("gnss",)),
+        ("tiltmeter", ("tilt",)),
+        ("strainmeter", ("strainmeter",)),
+        ("seismometer", ("seismometer",)),
+    ):
+        if any(w in k for w in words):
+            return key
+    return {
+        "meteorology": "hydromet",
+        "hydrology": "hydromet",
+        "nodes": "geophone",
+        "strong": "accelerometer",
+        "seismic": "seismometer",
+        "gnss": "gnss",
+        "infrasound": "infrasound",
+    }.get(family, "other")
+
+
+def export_sensors(atlas: Path, web_data: Path) -> dict:
+    """S8's web/atlas/data/{sites,das}.geojson -> <atlas>/model/sensors.json in the viewer's scene frame.
+    Deployers' names are left out of the public file."""
+    fr = scene_frame(atlas)
+    to_x = lambda lon: (lon - fr["lon0"]) * fr["kx"]  # noqa: E731
+    to_z = lambda lat: -(lat - fr["lat0"]) * fr["kz"]  # noqa: E731
+    sites = []
+    for f in json.loads((web_data / "sites.geojson").read_text())["features"]:
+        p, (lon, lat) = f["properties"], f["geometry"]["coordinates"][:2]
+        sensors = json.loads(p.get("sensors") or "[]")
+        kinds = sorted(
+            {viewer_kind(s.get("kind", ""), s.get("family", p["family"])) for s in sensors}
+            or {viewer_kind("", p["family"])}
+        )
+        starts = [s["start"] for s in sensors if s.get("start")]
+        ends = [s["end"] for s in sensors if s.get("end")]
+        sites.append(
+            {
+                "id": p["id"],
+                "name": p["name"],
+                "lon": round(lon, 6),
+                "lat": round(lat, 6),
+                "x": round(to_x(lon), 4),
+                "z": round(to_z(lat), 4),
+                "elev": p.get("elev"),
+                "kinds": kinds,
+                "source": p["source"],
+                "temporary": is_temporary(p["id"], p["source"]),
+                "status": p["status"],
+                "start": min(starts) if starts else None,
+                "end": None if p["status"] == "operating" else (max(ends) if ends else None),
+                "instruments": sorted({s.get("kind", "") for s in sensors} - {""}),
+                "notes": p.get("notes") or "",
+                "url": p.get("url") or "",
+            }
+        )
+    das, ch = [], 0
+    for f in json.loads((web_data / "das.geojson").read_text())["features"]:
+        ch = max(ch, int(f["properties"].get("ch1", -1)) + 1)
+        g = f["geometry"]
+        lines = g["coordinates"] if g["type"] == "MultiLineString" else [g["coordinates"]]
+        for ln in lines:
+            das.append([[round(to_x(c[0]), 4), round(to_z(c[1]), 4)] for c in ln])
+    counts = {}
+    for s in sites:
+        for k in s["kinds"]:
+            key = f"{k}|{'temporary' if s['temporary'] else 'permanent'}|{s['status']}"
+            counts[key] = counts.get(key, 0) + 1
+    meta = {
+        "sites": sites,
+        "das": {
+            "name": "Paradise–Nisqually Entrance DAS fiber",
+            "segments": das,
+            "temporary": True,
+            "status": "operating",
+            "channels": ch,
+        },
+        "counts": counts,
+        "source": "rainier3d S8 sensor inventory (EarthScope FDSN, UW 2025 nodes, "
+        "EarthScope GNSS, Synoptic), exported by S11",
+    }
+    (atlas / "model" / "sensors.json").write_text(json.dumps(meta, separators=(",", ":")))
+    return meta

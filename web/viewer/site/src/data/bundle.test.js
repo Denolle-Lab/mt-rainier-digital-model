@@ -42,7 +42,8 @@ describe("loadBundle", () => {
     await expect(loadBundle("atlas/")).rejects.toBeInstanceOf(BundleMissingError);
   });
   it("kinds match the bundle's kind list, each with a glyph and no blue", () => {
-    expect(KINDS.map(k => k.key)).toEqual(["seismometer", "geophone", "infrasound", "accelerometer", "gnss", "tiltmeter", "strainmeter"]);
+    // the seven categorical kinds, then two neutral-grey kinds for the rainier3d inventory (no ninth hue)
+    expect(KINDS.map(k => k.key)).toEqual(["seismometer", "geophone", "infrasound", "accelerometer", "gnss", "tiltmeter", "strainmeter", "hydromet", "other"]);
     const hue = hex => {
       const [r, g, b] = [1, 3, 5].map(i => parseInt(hex.slice(i, i + 2), 16) / 255);
       const mx = Math.max(r, g, b), d = mx - Math.min(r, g, b);
@@ -51,6 +52,8 @@ describe("loadBundle", () => {
     };
     for (const k of KINDS) {
       expect(k.glyph).toBeTruthy();
+      const [r, g, b] = [1, 3, 5].map(i => parseInt(k.color.slice(i, i + 2), 16));
+      if (Math.max(r, g, b) - Math.min(r, g, b) < 12) continue;   // neutral grey has no hue
       const h = hue(k.color);
       expect(h > 195 && h < 235, `${k.key} ${k.color} hue ${h.toFixed(0)}° is earthquake blue`).toBe(false);
     }

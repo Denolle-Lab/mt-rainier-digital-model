@@ -137,3 +137,15 @@ test("(l) the subsurface section follows the cut and the slice follows its slide
   await page.getByLabel("Slice elevation").fill("-5");
   expect(await page.evaluate(() => window.__rainier.volume.slice.position.y)).toBe(-5);
 });
+
+test("(m) the sensor legend filters: geophones show the 2025 nodes, Past adds earlier deployments", async ({ page }) => {
+  await page.waitForFunction(() => !!window.__rainier.sensors, null, { timeout: 30_000 });
+  const on = () => page.evaluate(() => Array.from(window.__rainier.sensors.onAttr.array).filter(v => v > 0).length);
+  await page.locator(".sf-kind", { hasText: "Geophone" }).click();
+  expect(await on()).toBe(240);                                   // UW 2025 nodes, all operating
+  await page.getByRole("button", { name: "Past", exact: true }).click();
+  expect(await on()).toBeGreaterThan(900);                        // + retired nodal deployments (2N, XD, Z5, ...)
+  await page.getByRole("button", { name: "Temporary", exact: true }).click();
+  expect(await on()).toBe(0);                                     // all nodes are temporary
+  expect(await page.evaluate(() => window.__rainier.sensors.fiber.visible)).toBe(false);
+});

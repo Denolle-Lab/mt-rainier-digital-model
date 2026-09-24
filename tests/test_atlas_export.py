@@ -33,3 +33,24 @@ def test_values_roundtrip_within_quantum():
     q, scale, off = _values_u16(v, False, 0.1, 100)
     back = np.where(q == 65535, np.nan, off + q * scale)
     assert np.allclose(back, v, atol=scale, equal_nan=True)
+
+
+def test_temporary_networks_follow_fdsn_convention():
+    from rainier3d.export.atlas import is_temporary
+
+    for sid in ("XD.A1", "Z5.B2", "2N.1", "TA.K05A"):
+        assert is_temporary(sid, "FDSN (EarthScope)")
+    for sid in ("UW.RCM", "CC.OBSR", "PB.B941", "NP.1234"):
+        assert not is_temporary(sid, "FDSN (EarthScope)")
+    assert is_temporary("node-13217", "2025 Rainier node deployment (UW)")
+    assert not is_temporary("gnss-P432", "EarthScope GNSS (UNAVCO)")
+
+
+def test_viewer_kinds():
+    from rainier3d.export.atlas import viewer_kind
+
+    assert viewer_kind("geophone node (2025)", "nodes") == "geophone"
+    assert viewer_kind("tiltmeter", "strain") == "tiltmeter"
+    assert viewer_kind("borehole strainmeter", "strain") == "strainmeter"
+    assert viewer_kind("GNSS receiver", "gnss") == "gnss"
+    assert viewer_kind("", "meteorology") == "hydromet"

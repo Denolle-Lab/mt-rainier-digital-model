@@ -8,5 +8,8 @@ export const KINDS = [
   { key: "gnss", label: "GNSS", color: "#008300", glyph: "diamond" },
   { key: "tiltmeter", label: "Tiltmeter", color: "#9085e9", glyph: "bar" },
   { key: "strainmeter", label: "Borehole strainmeter", color: "#e66767", glyph: "cross" },
+  // beyond the eight categorical slots: folded kinds in neutral grey, told apart by glyph and the hover card
+  { key: "hydromet", label: "Weather, snow, streamflow", color: "#b9b7ad", glyph: "drop" },
+  { key: "other", label: "Other (magnetotelluric)", color: "#8b8980", glyph: "ring" },
 ];
 export const KIND_BY_KEY = Object.fromEntries(KINDS.map(k => [k.key, k]));
