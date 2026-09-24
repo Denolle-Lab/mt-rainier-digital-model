@@ -22,6 +22,7 @@ from rainier3d.config.domain import REPO, load_domain
 from rainier3d.io.store import read_tree
 
 OUT = REPO / "docs" / "joint_calibration"
+REPORT_FIG = REPO / "docs" / "report" / "figures"  # copies under the report's figure numbers
 # S14 run name -> (label, model snapshot or None for the 1D model)
 MODELS = {
     "pnsn1d": ("PNSN 1D", None),
@@ -97,6 +98,7 @@ def fig_factors():
     ax[1].legend(frameon=False, loc="lower right", fontsize=8)
     ax[0].invert_yaxis()
     fig.savefig(OUT / "fig1_factors_vpvs.png", dpi=160)
+    fig.savefig(REPORT_FIG / "fig10_calibration.png", dpi=160)
 
 
 def fig_geology():
@@ -138,6 +140,7 @@ def fig_geology():
     ax[1].legend(frameon=False, fontsize=7.5, loc="lower left")
     ax[0].invert_yaxis()
     fig.savefig(OUT / "fig4_geology_calibration.png", dpi=160)
+    fig.savefig(REPORT_FIG / "fig11_geology_law.png", dpi=160)
 
 
 def fig_residuals():
@@ -177,6 +180,7 @@ def fig_residuals():
         h, [s_.split(":")[0] for s_ in lab], loc="outside lower center", ncol=4, frameon=False, fontsize=9
     )
     fig.savefig(OUT / "fig2_residuals.png", dpi=160)
+    fig.savefig(REPORT_FIG / "fig12_relocation_residuals.png", dpi=160)
 
 
 def fig_hypocentres():
@@ -255,6 +259,7 @@ def relocation_qc():
 
 def main():
     OUT.mkdir(parents=True, exist_ok=True)
+    REPORT_FIG.mkdir(parents=True, exist_ok=True)
     relocation_qc()
     fig_factors()
     fig_geology()

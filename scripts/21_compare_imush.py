@@ -160,6 +160,7 @@ def main():
     tab = summarize(df)
     tab.to_csv(out / "ulberg2020_by_depth.csv", index=False)
     figure(tab, REPO / "docs" / "joint_calibration" / "fig5_imush_comparison.png")
+    figure(tab, REPO / "docs" / "report" / "figures" / "fig13_imush.png")
     cols = ["region", "depth_bg_m"] + [c for c in tab.columns if c.startswith(("ln_", "vpvs"))]
     print(f"{len(df)} Ulberg nodes below ground in the domain")
     print(tab[cols].round(3).to_string(index=False))
