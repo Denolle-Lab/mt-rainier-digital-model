@@ -413,7 +413,7 @@ def export_layers(tree: xr.DataTree, dom, manifest: dict, out: Path, flowlines=N
         "streams": streams,
         "texture_width": TEX_WIDTH,
         "grid_note": f"model surface grid, {dom.surface_res_m:.0f} m cells, {dom.crs}",
-        "model": "rainier3d M1 (Denolle-Lab/mt-rainier-virtual-3d-model)",
+        "model": "rainier3d M1 (Denolle-Lab/mt-rainier-digital-model)",
     }
     (out / "layers.json").write_text(json.dumps(meta, indent=1))
     return meta

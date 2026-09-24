@@ -1,4 +1,7 @@
-# rainier3d: a virtual 3D Earth model of Mount Rainier
+# mt-rainier-digital-model
+
+**rainier3d** is a digital model of Mount Rainier, built step by step towards a digital twin of the volcano and its
+surroundings (there is no data assimilation yet).
 
 This is an open, Python-native model of Mount Rainier National Park and the West Rainier Seismic
 Zone (WRSZ). It has two parts:

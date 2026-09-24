@@ -90,7 +90,7 @@ def uniform(
         "dx_m": dx,
         "dz_m": dz,
         "method": "linear resampling of model.zarr levels L1-L3; air filled from below",
-        "source": "https://github.com/Denolle-Lab/mt-rainier-virtual-3d-model",
+        "source": "https://github.com/Denolle-Lab/mt-rainier-digital-model",
     }
     return ds
 
@@ -174,7 +174,7 @@ def write_emc(
         "geospatial_lon_max": float(lon.max()),
         "geospatial_vertical_positive": "down",
         "geospatial_vertical_units": "km",
-        "source": "https://github.com/Denolle-Lab/mt-rainier-virtual-3d-model",
+        "source": "https://github.com/Denolle-Lab/mt-rainier-digital-model",
         "note": "above-ground cells are NaN; depth is relative to sea level (NAVD88)",
     }
     path.parent.mkdir(parents=True, exist_ok=True)
