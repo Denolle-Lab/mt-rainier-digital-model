@@ -48,6 +48,18 @@ describe("QuakeLayers", () => {
   });
 });
 
+describe("depth ruler labels", () => {
+  it("hide when terrain stands between the camera and the ruler", () => {
+    const overlay = document.createElement("div");
+    const q = new QuakeLayers(fakeScene(), quakes, overlay);
+    const project = () => [100, 100, 0.5];
+    q.update(project, [60, 1, -60], () => 1);      // the sight line runs under 1 km ground
+    expect(q.tickEls.every(el => el.style.opacity === "0")).toBe(true);
+    q.update(project, [-40, 30, 60], () => -30);   // nothing in the way
+    expect(q.tickEls.every(el => el.style.opacity === "1")).toBe(true);
+  });
+});
+
 describe("makeFrame", () => {
   it("puts the depth ruler at the south-west corner, sea level to 20 km", () => {
     const f = makeFrame({ xmin: -30, xmax: 30, zmin: -30, zmax: 30, bottom: -20 });

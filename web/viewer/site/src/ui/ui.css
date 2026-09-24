@@ -82,3 +82,8 @@ input[type=range]:disabled { opacity: 0.35; }
 .legend .kinds { display: grid; grid-template-columns: 1fr 1fr; column-gap: 8px; }
 .legend .kinds .row { line-height: 18px; }
 .legend { gap: 10px; }
+.nowebgl { padding: 32px; max-width: 900px; margin: 0 auto; height: 100%; overflow-y: auto; }
+.nowebgl p { color: var(--text-secondary); }
+.nowebgl table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+.nowebgl th, .nowebgl td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--hairline); }
+.nowebgl th { color: var(--text-muted); font-weight: 500; }

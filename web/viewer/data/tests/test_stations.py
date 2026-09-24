@@ -23,6 +23,7 @@ CHANNELS = HEAD + "".join([
     ch("UW", "RCM", "HHZ", 46.83557, -121.73317, "2024-09-09"),
     ch("UW", "OLD", "HHZ", 46.84, -121.74, "2001-01-01", end="2010-01-01T00:00:00.0000"),
     ch("UW", "FAR", "HHZ", 46.95, -122.30, "2020-01-01"),
+    ch("UW", "SOH", "VM1", 46.86, -121.76, "2020-01-01"),   # only state-of-health channels open
 ])
 STA_HEAD = "#Network | Station | Latitude | Longitude | Elevation | SiteName | StartTime | EndTime\n"
 SITES = STA_HEAD + "".join(f"{n}|{s}|0|0|0|{name}|2000-01-01T00:00:00|\n" for n, s, name in [
@@ -77,4 +78,11 @@ def test_on_map_and_counts():
     out = build()
     far = next(s for s in out["sites"] if s["id"] == "UW.FAR")
     assert far["onMap"] is False
-    assert out["counts"] == {"stations": 6, "sites": 4, "sitesOnMap": 3, "stationsOnMap": 5}
+    assert out["counts"] == {"returned": 9, "excluded": 3, "stations": 6, "sites": 4, "sitesOnMap": 3, "stationsOnMap": 5}
+
+
+def test_a_station_with_only_state_of_health_channels_is_recorded_not_lost():
+    out = build()
+    assert {"code": "UW.SOH", "reason": "only state-of-health channels are open"} in out["excluded"]
+    c = out["counts"]
+    assert c["returned"] - c["excluded"] == c["stations"]

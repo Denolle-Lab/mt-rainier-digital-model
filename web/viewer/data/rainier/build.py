@@ -27,6 +27,9 @@ def check_counts(st: dict) -> list[str]:
         errs.append(f"station count: counts say {st['counts']['stations']}, sites hold {n}")
     if len(st["sites"]) != st["counts"]["sites"]:
         errs.append(f"site count: counts say {st['counts']['sites']}, found {len(st['sites'])}")
+    c = st["counts"]
+    if "returned" in c and c["returned"] - c["excluded"] != c["stations"]:
+        errs.append(f"stations don't reconcile: {c['returned']} returned − {c['excluded']} excluded ≠ {c['stations']} kept")
     unknown = {k for s in st["sites"] for k in s["kinds"]} - set(st["kinds"])
     if unknown:
         errs.append(f"unknown instrument kinds {sorted(unknown)}")
@@ -94,7 +97,12 @@ def main(argv=None) -> int:
     if "summit" in only:
         build_summit(out, a.cache)
     if "stations" in only:
-        (out / "stations.json").write_text(json.dumps(build_stations(a.cache, as_of=a.as_of), indent=1))
+        st = build_stations(a.cache, as_of=a.as_of)
+        errs = check_counts(st)
+        if errs:   # refuse before writing, so a bad refresh can't replace the committed file
+            print("\n".join(f"error: {e}" for e in errs), file=sys.stderr)
+            return 1
+        (out / "stations.json").write_text(json.dumps(st, indent=1))
     terrain, summit, stations = _load(out, "terrain/terrain.json"), _load(out, "summit/index.json"), _load(out, "stations.json")
     if "quakes" in only:
         ov = np.fromfile(out / "terrain" / "overview.bin", "<i2").reshape(terrain["rows"], terrain["cols"]).astype(float)

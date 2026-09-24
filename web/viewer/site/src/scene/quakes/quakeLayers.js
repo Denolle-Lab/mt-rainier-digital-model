@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import { occluded } from "../occlusion.js";
 import { makeCloud } from "./cloud.js";
 import { makeDots } from "./dots.js";
 import { makeFrame } from "./frame.js";
@@ -49,12 +50,14 @@ export class QuakeLayers {
     for (const el of this.tickEls) el.style.display = v ? "" : "none";
   }
 
-  update(project) {
+  // Ruler labels are HTML, so they are hidden by hand when terrain stands between them and the camera.
+  update(project, cam = null, ground = null) {
     if (!this.visible) return;
     this.frame.ticks.forEach((tk, i) => {
       const el = this.tickEls[i]; if (!el) return;
       const [x, y, z] = project(tk.pos.x, tk.pos.y, tk.pos.z);
-      Object.assign(el.style, { left: `${x}px`, top: `${y}px`, opacity: z < 1 ? 1 : 0 });
+      const hidden = cam && ground && occluded(cam, tk.pos.toArray(), ground);
+      Object.assign(el.style, { left: `${x}px`, top: `${y}px`, opacity: z < 1 && !hidden ? "1" : "0" });
     });
   }
 

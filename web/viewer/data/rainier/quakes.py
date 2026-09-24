@@ -35,8 +35,12 @@ def check_quakes(meta: dict) -> list[str]:
     return [f"earthquakes: only {meta['count']} events (expected at least {MIN_EVENTS})"] if meta["count"] < MIN_EVENTS else []
 
 
-def build_quakes(out_dir, cache_dir, ground, get=fetch.get) -> dict:
-    rows = parse_catalog(get(catalog_url(), Path(cache_dir) / "quakes" / "comcat.csv").decode())
+def build_quakes(out_dir, cache_dir, ground, get=fetch.get, min_events: int = MIN_EVENTS) -> dict:
+    path = Path(cache_dir) / "quakes" / "comcat.csv"
+    body = get(catalog_url(), path, validate=lambda b: b.count(b"\n") > min_events) if get is fetch.get else get(catalog_url(), path)
+    rows = parse_catalog(body.decode())
+    if len(rows) < min_events:   # refuse before anything is written, so a bad refresh can't replace the bundle
+        raise ValueError(f"earthquakes: only {len(rows)} events (expected at least {min_events})")
     rec = np.array([(E.to_x(lon), -d, E.to_z(lat), m) for lon, lat, d, m, _ in rows], "<f4").reshape(-1, 4)
     out = Path(out_dir)
     out.mkdir(parents=True, exist_ok=True)

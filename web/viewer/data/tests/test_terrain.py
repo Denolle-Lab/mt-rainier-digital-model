@@ -52,3 +52,9 @@ def test_build_overview_writes_heights_image_and_meta(tmp_path):
     assert meta["z0"] == pytest.approx(E.to_z(E.OVERVIEW.north))
     assert json.loads((tmp_path / "out" / "terrain" / "terrain.json").read_text()) == meta
     assert any("size=1800,1215" in u for u in urls) and any("size=4080,2754" in u for u in urls)
+
+
+def test_get_does_not_cache_a_body_that_fails_validation(tmp_path):
+    with pytest.raises(fetch.FetchError):
+        fetch.get("http://x", tmp_path / "q.csv", opener=lambda *a, **k: _Resp(b"time,latitude\n"), validate=lambda b: b.count(b"\n") > 10)
+    assert not (tmp_path / "q.csv").exists()

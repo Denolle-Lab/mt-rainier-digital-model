@@ -26,3 +26,10 @@ def test_summit_that_disagrees_with_the_overview_is_an_error():
     xs, zs = np.meshgrid(np.arange(2, 8) + 0.5, np.arange(2, 8) + 0.5)
     assert build.check_summit_rms(np.full(xs.shape, 2010.0), xs, zs, ov, meta) == []
     assert any("summit" in e for e in build.check_summit_rms(np.full(xs.shape, 2100.0), xs, zs, ov, meta))
+
+
+def test_counts_reconcile_against_what_the_service_returned():
+    st = {"counts": {"stations": 2, "sites": 1, "returned": 5, "excluded": 2}, "sites": [{"stations": [{}, {}], "kinds": ["seismometer"]}], "kinds": ["seismometer"]}
+    assert any("reconcile" in e for e in build.check_counts(st))   # 5 returned − 2 excluded ≠ 2 kept
+    st["counts"]["excluded"] = 3
+    assert build.check_counts(st) == []

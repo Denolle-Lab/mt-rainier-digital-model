@@ -87,17 +87,18 @@ def build_stations(cache_dir, get=fetch.get, as_of: str | None = None, majors: d
         if not f[7] or f[7] > as_of:   # the open epoch wins over closed ones
             names[f"{f[0]}.{f[1]}"] = f[5]
 
-    stations, excluded = {}, {}
+    stations, excluded, returned, excluded_codes = {}, {}, set(), set()
     for f in _rows(chan_text):
         net, sta, cha = f[0], f[1], f[3]
         code = f"{net}.{sta}"
+        if f[16] and f[16][:10] <= as_of:   # channel closed before the snapshot
+            continue
+        returned.add(code)
         if net in EXCLUDED_NETWORKS:
-            excluded[f"{net}.*"] = EXCLUDED_NETWORKS[net]
+            excluded[f"{net}.*"] = EXCLUDED_NETWORKS[net]; excluded_codes.add(code)
             continue
         if code in EXCLUDED_STATIONS:
-            excluded[code] = EXCLUDED_STATIONS[code]
-            continue
-        if f[16] and f[16][:10] <= as_of:   # channel closed before the snapshot
+            excluded[code] = EXCLUDED_STATIONS[code]; excluded_codes.add(code)
             continue
         k = kind_of(cha)
         if k is None:
@@ -111,6 +112,9 @@ def build_stations(cache_dir, get=fetch.get, as_of: str | None = None, majors: d
         if cha not in inst["channels"]:
             inst["channels"].append(cha)
         inst["rate"] = max(inst["rate"], float(f[14] or 0))
+
+    for code in sorted(returned - excluded_codes - set(stations)):   # open channels, but none of them an instrument
+        excluded[code] = "only state-of-health channels are open"; excluded_codes.add(code)
 
     for s in stations.values():
         insts = sorted(s.pop("_inst").values(), key=lambda i: (KINDS.index(i["kind"]), i["band"] or ""))
@@ -142,7 +146,7 @@ def build_stations(cache_dir, get=fetch.get, as_of: str | None = None, majors: d
     return {
         "asOf": as_of, "kinds": KINDS, "sites": sites,
         "excluded": [{"code": c, "reason": r} for c, r in sorted(excluded.items())],
-        "counts": {"stations": len(stations), "sites": len(sites), "sitesOnMap": sum(s["onMap"] for s in sites),
+        "counts": {"returned": len(returned), "excluded": len(excluded_codes), "stations": len(stations), "sites": len(sites), "sitesOnMap": sum(s["onMap"] for s in sites),
                    "stationsOnMap": sum(len(s["stations"]) for s in sites if s["onMap"])},
         "source": "EarthScope FDSN station service; active channels as of " + as_of,
     }

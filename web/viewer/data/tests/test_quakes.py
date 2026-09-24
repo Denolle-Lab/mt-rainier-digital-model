@@ -23,7 +23,7 @@ def test_parse_skips_rows_without_depth_or_magnitude():
 
 def test_records_are_local_km_with_y_minus_depth_and_above_ground_is_counted(tmp_path):
     ground = lambda x, z: 1.5   # km
-    meta = quakes.build_quakes(tmp_path, tmp_path / "cache", ground, get=lambda url, path: CSV.encode())
+    meta = quakes.build_quakes(tmp_path, tmp_path / "cache", ground, get=lambda url, path: CSV.encode(), min_events=0)
     rec = np.fromfile(tmp_path / "quakes.bin", "<f4").reshape(-1, 4)
     assert rec.shape == (3, 4)
     assert rec[0].tolist() == pytest.approx([0, -2.5, 0, 1.2], abs=1e-5)
@@ -36,3 +36,9 @@ def test_records_are_local_km_with_y_minus_depth_and_above_ground_is_counted(tmp
 
 def test_too_few_events_fail_validation():
     assert quakes.check_quakes({"count": 999}) and not quakes.check_quakes({"count": 15000})
+
+
+def test_a_short_catalog_is_refused_before_anything_is_written(tmp_path):
+    with pytest.raises(ValueError, match="only 3 events"):
+        quakes.build_quakes(tmp_path, tmp_path / "cache", lambda x, z: 1.5, get=lambda url, path: CSV.encode(), min_events=1000)
+    assert not (tmp_path / "quakes.bin").exists() and not (tmp_path / "quakes.json").exists()

@@ -3,6 +3,8 @@ import { BUILD_COMMAND, BundleMissingError, loadBundle } from "./data/bundle.js"
 import { StationLayer } from "./overlay/StationLayer.js";
 import { QuakeLayers } from "./scene/quakes/quakeLayers.js";
 import { RainierScene } from "./scene/RainierScene.js";
+import { hasWebGL } from "./scene/webgl.js";
+import NoWebGL from "./ui/NoWebGL.jsx";
 import Controls from "./ui/Controls.jsx";
 import GoTo from "./ui/GoTo.jsx";
 import Header from "./ui/Header.jsx";
@@ -17,6 +19,7 @@ export default function App() {
   useEffect(() => { loadBundle().then(setBundle, setError); }, []);
   if (error) return <div className="app-message" role="alert"><div>{error.message}{error instanceof BundleMissingError && <code>{BUILD_COMMAND}</code>}</div></div>;
   if (!bundle) return <div className="app-message">Loading the atlas…</div>;
+  if (!hasWebGL()) return <NoWebGL bundle={bundle} />;
   return <Atlas bundle={bundle} onError={setError} />;
 }
 
@@ -47,7 +50,8 @@ function Atlas({ bundle, onError }) {
       });
       if (bundle.quakes) s.layers = new QuakeLayers(s, bundle.quakes, overlayRef.current);
       s.onFrame = () => {
-        layer.update(); s.layers?.update((x, y, z) => s.project(x, y, z));
+        layer.update();
+        s.layers?.update((x, y, z) => s.project(x, y, z), s.camera.position.toArray(), (x, z) => s.elevKm(x, z) ?? -1e9);
         if (n++ % 15 === 0) setDetail(detailText(s.frame, bundle.summit));
       };
       setScene(s);
@@ -71,7 +75,7 @@ function Atlas({ bundle, onError }) {
             {scene.layers && <LayerPanel layers={scene.layers} scene={scene} onStations={on => layerRef.current?.setVisible(on)} />}
           </Controls>
           <GoTo majors={bundle.majors} active={active} onPlace={k => { setActive(k); scene.flyTo(k); }} onSite={s => openSite(s, scene)} />
-          <Legend bundle={bundle}>{bundle.quakes && <QuakeLegend meta={bundle.quakes.meta} />}</Legend>
+          <Legend bundle={bundle}>{bundle.quakes && <QuakeLegend meta={bundle.quakes.meta} drawn={scene.layers?.drawn} />}</Legend>
           <Tooltip hover={hover} />
           {site && <StationPanel site={site} bundle={bundle} onFly={s => scene.flyToSite(s)}
             onClose={() => { setSiteId(null); layerRef.current?.setSelected(null); }} />}
