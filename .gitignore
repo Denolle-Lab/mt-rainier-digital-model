@@ -17,3 +17,6 @@ outputs/
 *.vtm
 # pynhd / async-retriever HTTP cache
 cache/
+
+# 3D viewer map data: built by `pixi run viewer-data` + `pixi run s11`, published as a release asset
+web/viewer/site/public/atlas/
