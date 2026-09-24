@@ -298,6 +298,21 @@ The same grids work with fteikpy (`Eikonal3D` with the velocity transposed to de
 
 For NonLinLoc, the grids go in the model directory used by Grid2Time (`GTFILES <model dir>/rainier3d <time dir>/rainier3d P`). Because the transform is `NONE`, station and search-grid coordinates must be given in the same UTM 10N kilometre frame, with depth positive down (`GTSRCE <sta> XYZ <x_km> <y_km> <z_km> 0.0`). The grids have been read back and checked, but a full NonLinLoc relocation has not yet been run with them.
 
+### 9.1 Locating earthquakes in 3D, so that none sits above the ground
+
+Of the 15,660 PNSN earthquakes since 1980 drawn in the 3D viewer, 500 have ComCat hypocentres at or above the ground surface. These are mostly shallow edifice events. They were located in one-dimensional models that know neither the topography nor the slow edifice, and whose depths are measured from a single reference elevation, with station elevations absorbed into station corrections. Locating in the three-dimensional model, with the search restricted to the rock, removes the problem at its source.
+
+NonLinLoc (Lomax et al., github.com/alomax/NonLinLoc, GPL-3) builds from source with CMake in about a minute on macOS, and it reads the S9 grids as written. For station UW/CC OBSR (OBSR is in the CC network), its Grid2Time P times agree with the pykonal times of Section 8 at the 85 events that station recorded: mean difference 12 ms, RMS 31 ms. NonLinLoc is not on conda-forge and is licensed separately, so it is used here as an external program.
+
+The recipe:
+
+- **Grid spacing.** NonLinLoc needs equal horizontal and vertical spacing. Use 250 m near the edifice (`pixi run s9 -- --dx 250 --dz 250`) or keep the 500 m default for the WRSZ.
+- **Keep hypocentres out of the air.** Use NLLoc's `LOCTOPO_SURFACE`, which masks the search volume below a topography grid, and leave the velocities as exported: air cells carry the rock velocity below them, so travel times are unbiased. The alternative, slow air above a rock skin (`--nll-air-velocity 330`), needs a skin of at least two cells. With one 500 m cell, Grid2Time's finite-difference start box reached slow air around summit stations and delayed OBSR's P times by 0.41 s on average. The topography mask has not yet been tested with the UTM (`TRANS NONE`) grids.
+- **Stations.** Give stations in the same UTM 10N kilometre frame, with depth = −elevation/1000: `GTSRCE <sta> XYZ <x_km> <y_km> <−elev_km> 0.0`. No station corrections are needed to start with.
+- **Travel times.** Run `Grid2Time` with the finite-difference solver (`GTMODE GRID3D ANGLES_NO`, `GT_PLFD 1.0e-3 0`) for each phase and station.
+- **Location.** Run `NLLoc` with the equal-differential-time likelihood (`LOCMETH EDT_OT_WT 9999.0 4 -1 -1 -1 -1 0 1`) and the oct-tree search, over a search grid from −4.5 km (above the highest station) to 20 km depth. Give model errors that grow with travel time (`LOCGAU 0.1 0.0`, `LOCGAU2 0.02 0.05 0.5`), and export picks with ObsPy (`write(format="NLLOC_OBS")`).
+- **Depths.** Report depths below sea level, as NonLinLoc does. Depth below the local ground follows from `surface_elevation` in the netCDF export.
+
 To sample the stored levels directly, open the DataTree:
 
 ```python
@@ -307,7 +322,7 @@ L2 = tree["L2"].to_dataset()          # 0 to -6 km, 500 m x 250 m cells
 vs = L2.vs.interp(x=594500, y=5189500, z=-2000)   # m/s at 2 km below sea level
 ```
 
-An interactive viewer (`pixi run atlas`) draws vertical sections and depth slices of every property along any line, with seismicity projected onto them, and a three-dimensional underground view.
+The 3D viewer (https://denolle-lab.github.io/mt-rainier-digital-model/) shows Vs, Vp, Vp/Vs, density and model units below the ground. It draws them on a vertical section along the terrain cut and on a horizontal depth slice, together with the stations and seismicity. The older map atlas (`pixi run atlas`) draws sections along any line.
 
 ## 10. Surface layers: soil, water, vegetation and imagery
 

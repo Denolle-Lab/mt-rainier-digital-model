@@ -21,7 +21,7 @@ export default function Controls({ scene, children }) {
       <Seg label="View" options={[["3d", "3D"], ["2d", "2D"]]} value={view} onChange={v => { setView(v); scene.setView(v); }} />
       <Seg label="Style" options={[["photo", "Photo"], ["mono", "Mono"], ["contours", "Contours"]]} value={style} onChange={v => { setStyle(v); scene.setStyle(v); }} />
       {children}
-      <div className="hint">Drag to move · <kbd>Ctrl</kbd>-drag to rotate · Scroll to zoom · <kbd>←</kbd><kbd>↑</kbd><kbd>↓</kbd><kbd>→</kbd> to move · Click a station for details</div>
+      <div className="hint">Drag to move · right-drag or <kbd>Ctrl</kbd>/<kbd>⌘</kbd>-drag to rotate · Scroll or pinch to zoom · <kbd>←</kbd><kbd>↑</kbd><kbd>↓</kbd><kbd>→</kbd> to glide · <b>?</b> at the bottom for help</div>
     </div>
   );
 }

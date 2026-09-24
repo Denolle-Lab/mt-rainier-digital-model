@@ -13,6 +13,10 @@ import ModelLayers from "./ui/ModelLayers.jsx";
 import ModelLegend from "./ui/ModelLegend.jsx";
 import ModelReadout from "./ui/ModelReadout.jsx";
 import MobileDock from "./ui/MobileDock.jsx";
+import NavPad from "./ui/NavPad.jsx";
+import SubsurfacePanel from "./ui/SubsurfacePanel.jsx";
+import { ModelVolume, loadVolumeMeta } from "./scene/ModelVolume.js";
+import HelpCard, { helpSeen } from "./ui/HelpCard.jsx";
 import QuakeLegend from "./ui/QuakeLegend.jsx";
 import Legend from "./ui/Legend.jsx";
 import StationPanel from "./ui/StationPanel.jsx";
@@ -35,7 +39,7 @@ export function detailText(frame, summit) {
 function Atlas({ bundle, onError }) {
   const canvasRef = useRef(null), overlayRef = useRef(null), layerRef = useRef(null);
   const [scene, setScene] = useState(null), [siteId, setSiteId] = useState(null), [hover, setHover] = useState(null);
-  const [detail, setDetail] = useState("loading…"), [active, setActive] = useState("home"), [modelKey, setModelKey] = useState(null), [sheet, setSheet] = useState(null);
+  const [detail, setDetail] = useState("loading…"), [active, setActive] = useState("home"), [modelKey, setModelKey] = useState(null), [sheet, setSheet] = useState(null), [help, setHelp] = useState(() => !helpSeen()), [volume, setVolume] = useState(null);
 
   const openSite = useCallback((site, sc) => {
     setSiteId(site.id); setActive(site.id); setHover(null); setSheet(null);
@@ -53,14 +57,18 @@ function Atlas({ bundle, onError }) {
         onClick: site => openSite(site, s),
       });
       if (bundle.quakes) s.layers = new QuakeLayers(s, bundle.quakes, overlayRef.current);
+      if (bundle.model) loadVolumeMeta(bundle.model.base).then(meta => {
+        if (meta && !cancelled) { s.volume = new ModelVolume(s, meta, bundle.model.base); setVolume(s.volume); }
+      });
       s.onFrame = () => {
         layer.update();
+        s.volume?.update();
         s.layers?.update((x, y, z) => s.project(x, y, z), s.camera.position.toArray(), (x, z) => s.elevKm(x, z) ?? -1e9);
         if (n++ % 15 === 0) setDetail(detailText(s.frame, bundle.summit));
       };
       setScene(s);
     }, onError);
-    return () => { cancelled = true; layer?.dispose(); sc?.layers?.dispose(); sc?.dispose(); };
+    return () => { cancelled = true; layer?.dispose(); sc?.layers?.dispose(); sc?.volume?.dispose(); sc?.dispose(); };
   }, [bundle, onError, openSite]);
 
   useEffect(() => {   // the panel pushes the right-hand controls inward, as in the Cascadia atlas
@@ -87,11 +95,14 @@ function Atlas({ bundle, onError }) {
             <div className="panel model-panel">
               <ModelLayers model={bundle.model} scene={scene} active={modelKey} onActive={setModelKey} />
               <ModelLegend layer={modelLayer} />
+              {volume && <SubsurfacePanel volume={volume} scene={scene} />}
             </div>
           )}
           {modelLayer?.values && <ModelReadout scene={scene} model={bundle.model} layer={modelLayer} box={bundle.overviewBox} />}
           <Tooltip hover={hover} />
           <MobileDock sheet={sheet} onSheet={setSheet} hasModel={!!bundle.model} />
+          <NavPad scene={scene} onHelp={() => setHelp(true)} />
+          {help && <HelpCard onClose={() => setHelp(false)} />}
           {site && <StationPanel site={site} bundle={bundle} onFly={s => scene.flyToSite(s)}
             onClose={() => { setSiteId(null); layerRef.current?.setSelected(null); }} />}
         </>

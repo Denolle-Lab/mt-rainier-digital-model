@@ -25,6 +25,12 @@ def main():
     ap.add_argument("--dx", type=float, default=500.0, help="horizontal spacing (m)")
     ap.add_argument("--dz", type=float, default=500.0, help="vertical spacing (m); = dx for NonLinLoc")
     ap.add_argument("--no-emc", action="store_true")
+    ap.add_argument(
+        "--nll-air-velocity",
+        type=float,
+        default=0.0,
+        help="m/s for NonLinLoc air above a 2-cell rock skin (default 0: air keeps rock velocity)",
+    )
     a = ap.parse_args()
     dom = load_domain()
     out = dom.path("outputs") / "grids"
@@ -41,7 +47,8 @@ def main():
         100 * float(g.air.mean()),
     )
     if np.isclose(a.dx, a.dz):
-        for p in grids.write_nll(g, out / "nll" / "rainier3d"):
+        av = a.nll_air_velocity or None
+        for p in grids.write_nll(g, out / "nll" / "rainier3d", air_velocity=av):
             logging.info("wrote %s", p)
     if not a.no_emc:
         logging.info("wrote %s", grids.write_emc(tree, dom, out / "rainier3d_emc.nc"))

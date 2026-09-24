@@ -130,3 +130,21 @@ input[type=range]:disabled { opacity: 0.35; }
   .mread { left: 8px !important; right: 8px; top: auto !important; bottom: calc(var(--dock-h) + 16px + env(safe-area-inset-bottom)); }
   :root { --right-inset: 8px !important; }
 }
+.navpad { left: 50%; transform: translateX(-50%); bottom: 16px; display: flex; gap: 2px; padding: 4px; }
+.navpad button { width: 34px; height: 34px; background: transparent; border: 0; border-radius: 4px; color: var(--text-secondary);
+  font-size: 16px; cursor: pointer; }
+.navpad button:hover { background: var(--surface-2); color: var(--text-primary); }
+.navpad .help { border-left: 1px solid var(--hairline); border-radius: 0 4px 4px 0; font-weight: 600; }
+.helpcard-wrap { position: fixed; inset: 0; z-index: 20; display: grid; place-items: center; background: rgba(0, 0, 0, 0.35); }
+.helpcard { position: relative; width: min(440px, calc(100vw - 32px)); padding: 16px 18px; display: flex; flex-direction: column; gap: 12px; }
+.hc-set { display: flex; flex-direction: column; gap: 4px; }
+.hc-row { display: grid; grid-template-columns: 120px 1fr; gap: 10px; font-size: 12.5px; color: var(--text-secondary); line-height: 1.45; }
+.hc-row b { color: var(--text-primary); font-weight: 500; }
+.hc-note { font-size: 12px; color: var(--text-secondary); line-height: 1.55; border-top: 1px solid var(--hairline); padding-top: 10px; }
+.helpcard .fly { align-self: flex-end; }
+@media (max-width: 700px) {
+  .navpad { bottom: calc(52px + 24px + env(safe-area-inset-bottom)); }
+  .navpad button { width: 40px; height: 40px; }
+  html[data-sheet]:not([data-sheet=""]) .navpad { display: none; }   /* an open sheet takes the space */
+}
+.subsurface { border-top: 1px solid var(--hairline); padding-top: 10px; }

@@ -18,7 +18,8 @@ function Toggle({ label, sub, k, on, onChange }) {
 
 export default function LayerPanel({ layers, scene, onStations }) {
   const [st, setSt] = useState(layers.state), [see, setSee] = useState(0);
-  const [cut, setCut] = useState({ on: false, angle: 90, offset: 0 }), [stations, setStations] = useState(true);
+  const [cut, setCut] = useState(scene.cut ?? { on: false, angle: 90, offset: 0 }), [stations, setStations] = useState(true);
+  useEffect(() => scene.onCut?.(setCut), [scene]);   // the subsurface section can switch the cut on too
   const toggle = (k, v) => { layers.set(k, v); setSt(layers.state); };
   const applyCut = c => { setCut(c); scene.setCut(c); };
   const showStations = v => { setStations(v); onStations(v); };

@@ -59,6 +59,16 @@ The **Surface model** panel drapes one 2D layer of the
 
 `W` toggles the NHDPlus HR stream network. Hovering the ground (or tapping it on a phone) reads the layer's value at that point.
 
+**Below ground.** The same panel shows the fused velocity model (Vs, Vp, Vp/Vs, density, model units):
+- on a vertical **section along the terrain cut**, which switches the cut on and has its own direction and position sliders;
+- on a horizontal **depth slice** at a chosen elevation.
+
+Both sample one 3D texture per property (`model/volume/*.u8`, 500 m × 250 m cells). A quadratic fit maps scene
+coordinates to the UTM grid to within 0.001 cells, and anything above the ground is hidden.
+
+**Navigation help.** A "How to move" card opens on the first visit, and again from **?**. It gives mouse, trackpad
+and touch gestures. The pad at the bottom rotates, tilts, zooms and turns north up without any gesture.
+
 **Phones.** Below 700 px wide the panels become bottom sheets, opened one at a time from a tab dock (Layers, Model, Legend,
 Go to). Station details open as a sheet from the bottom.
 

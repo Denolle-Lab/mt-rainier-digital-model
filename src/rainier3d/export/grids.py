@@ -102,11 +102,27 @@ def write_netcdf(ds: xr.Dataset, path: Path) -> Path:
     return path
 
 
-def write_nll(ds: xr.Dataset, stem: Path, phases=("P", "S")) -> list[Path]:
+def slow_air(air: np.ndarray, skin_cells: int = 1) -> np.ndarray:
+    """Air cells (z top-down) more than ``skin_cells`` above the ground. The lowest ``skin_cells`` air cells
+    of each column are the skin, which keeps rock velocity so stations at the surface sit in rock."""
+    k = np.arange(air.shape[0])[:, None, None]
+    return air & (k < air.sum(axis=0)[None] - skin_cells)
+
+
+def write_nll(
+    ds: xr.Dataset, stem: Path, phases=("P", "S"), air_velocity: float | None = None, skin_cells: int = 2
+) -> list[Path]:
     """NonLinLoc model grids: stem.P.mod.hdr/.buf etc. SLOW_LEN = slowness (s/km) x cell size (km).
 
     Grid axes are x (east), y (north), z (depth, km, positive down, below sea level) in UTM 10N km;
     the .buf is float32 with z varying fastest, then y, then x (NonLinLoc order).
+
+    Air cells keep the rock velocity below them by default (unbiased travel times). Optionally, air above a
+    ``skin_cells`` skin gets ``air_velocity`` (m/s, e.g. 330) to penalise hypocentres above the ground. The
+    skin must be at least 2 cells: with 1 cell at 500 m spacing, Grid2Time's finite-difference start box
+    reached slow air around summit stations and delayed P times from UW/CC station OBSR by 0.41 s on
+    average (checked 2026-09-24). NLLoc's LOCTOPO_SURFACE masks the search instead, without touching the
+    velocities, and is the better choice.
     """
     stem.parent.mkdir(parents=True, exist_ok=True)
     dxk = float(ds.attrs["dx_m"]) / 1000.0
@@ -116,6 +132,8 @@ def write_nll(ds: xr.Dataset, stem: Path, phases=("P", "S")) -> list[Path]:
     written = []
     for ph in phases:
         v = ds["vp" if ph == "P" else "vs"].values / 1000.0  # km/s, (z, y, x) with z top-down
+        if air_velocity is not None:
+            v = np.where(slow_air(ds["air"].values.astype(bool), skin_cells), air_velocity / 1000.0, v)
         slow_len = (dxk / v).astype(np.float32)
         arr = np.transpose(slow_len, (2, 1, 0))  # (x, y, z): z fastest in C order
         buf = stem.with_name(f"{stem.name}.{ph}.mod.buf")

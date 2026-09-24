@@ -14,7 +14,7 @@ import logging
 from pathlib import Path
 
 from rainier3d.config.domain import REPO, load_domain
-from rainier3d.export.atlas import export_layers
+from rainier3d.export.atlas import export_layers, export_volume
 from rainier3d.io.store import read_tree
 from rainier3d.surface import layers as L
 
@@ -33,7 +33,17 @@ def main():
     from rainier3d.surface.imagery import fetch_s2_composite
 
     meta = export_layers(tree, dom, manifest, atlas / "model", fl, imagery=fetch_s2_composite(dom))
-    size = sum(p.stat().st_size for p in (atlas / "model").iterdir())
+    vol = export_volume(tree, dom, atlas)
+    g = vol["grid"]
+    logging.info(
+        "volume %d x %d x %d cells (%s), scene->grid fit error %.3f cells",
+        g["nx"],
+        g["ny"],
+        g["nz"],
+        ", ".join(vol["vars"]),
+        vol["uv_poly"]["max_error_cells"],
+    )
+    size = sum(p.stat().st_size for p in (atlas / "model").rglob("*") if p.is_file())
     logging.info(
         "wrote %d layers + streams to %s (%.1f MB)", len(meta["layers"]), atlas / "model", size / 1e6
     )

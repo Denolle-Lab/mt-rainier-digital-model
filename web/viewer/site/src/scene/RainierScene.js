@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
-import { approach, ease, isMoveKey, motionDuration, moveStep } from "./cameraMath.js";
+import { approach, ease, isMoveKey, motionDuration, moveStep, orbitPose } from "./cameraMath.js";
 import { gridGeometry } from "./gridGeometry.js";
 import { cutUniform, isUnder, terrainOrder } from "./groundControls.js";
 import { makeGround } from "./ground.js";
@@ -31,7 +31,7 @@ export class RainierScene {
       style: { value: 0 }, flat: { value: 0 }, hole: { value: new THREE.Vector4(1, -1, 1, -1) }, holeOn: { value: 0 },
       over: { value: BLANK }, overA: { value: 0 }, lines: { value: BLANK }, linesOn: { value: 0 }, oRect: { value: new THREE.Vector4(0, 0, 1, 1) },
     };
-    this.targets = { style: 0, flat: 0 };
+    this.targets = { style: 0, flat: 0 }; this.cut = { on: false, angle: 90, offset: 0 };
     const { meta, heights } = bundle.terrain;
     this.terrainMeta = meta;
     this.ground = makeGround(meta, heights);
@@ -94,6 +94,12 @@ export class RainierScene {
     const p = stationPose({ x: site.x, z: site.z, y: (this.elevKm(site.x, site.z) ?? site.elev / 1000) * (1 - this.U.flat.value) }, this.camera.position.toArray());
     this._fly(new THREE.Vector3(...p.pos), new THREE.Vector3(...p.target), 1800);
   }
+  // Navigation pad: rotate / tilt / zoom about the current target, or turn north up.
+  orbit(opts) {
+    const t = this.controls.target, maxPol = this.controls.maxPolarAngle;
+    const p = orbitPose(this.camera.position.toArray(), t.toArray(), opts, 0.02, Math.min(maxPol, Math.PI - 0.02));
+    this._fly(new THREE.Vector3(...p), t.clone(), 350);
+  }
   _fly(pos, target, dur) {
     this.flight = { t0: performance.now(), dur: motionDuration(dur, this.reducedMotion), fromPos: this.camera.position.clone(), fromTarget: this.controls.target.clone(), pos, target };
   }
@@ -144,7 +150,13 @@ export class RainierScene {
     }
     return null;
   }
-  setCut({ on, angle, offset }) { this.U.clip.value.set(...cutUniform(angle, offset)); this.U.clipOn.value = on ? 1 : 0; }
+  // The terrain cut is shared state: the ground panel and the subsurface section both set it and follow it.
+  setCut({ on, angle, offset }) {
+    this.cut = { on, angle, offset };
+    this.U.clip.value.set(...cutUniform(angle, offset)); this.U.clipOn.value = on ? 1 : 0;
+    for (const f of this._cutListeners ?? []) f(this.cut);
+  }
+  onCut(f) { (this._cutListeners ??= new Set()).add(f); return () => this._cutListeners.delete(f); }
   setView(v) {
     if (v === this._view) return;   // re-clicking the active view must not overwrite the saved tilt
     this._view = v;

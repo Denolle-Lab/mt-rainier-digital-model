@@ -67,3 +67,18 @@ def test_top_rock_cell_matches_mapped_bedrock(tree):
     rock = np.isin(su, [k for k, v in kind.items() if v in ("pluton", "supracrustal", "cap")])
     frac = float((top_unit[rock] == su[rock]).mean())
     assert frac >= 0.95, f"only {frac:.1%} of bedrock columns match"
+
+
+def test_nll_air_skin():
+    """NonLinLoc grids: air above a one-cell skin is slow; the skin and rock keep their velocity."""
+    import numpy as np
+
+    from rainier3d.export.grids import slow_air
+
+    air = np.zeros((6, 1, 2), bool)
+    air[:3, 0, 0] = True  # column 0: 3 air cells above the ground
+    air[:1, 0, 1] = True  # column 1: 1 air cell (all skin)
+    s = slow_air(air, skin_cells=1)
+    assert s[:, 0, 0].tolist() == [True, True, False, False, False, False]
+    assert not s[:, 0, 1].any()
+    assert slow_air(air, skin_cells=2)[:, 0, 0].tolist() == [True, False, False, False, False, False]
