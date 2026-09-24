@@ -67,8 +67,8 @@ export class SensorPoints {
     rs.scene.add(this.points);
 
     this.fiber = new THREE.Group();
-    const lm = new THREE.ShaderMaterial({ uniforms: { uFlat: rs.U.flat, uClipOn: rs.U.clipOn, uClip: rs.U.clip },
-      vertexShader: LINE_VERT, fragmentShader: LINE_FRAG });
+    const lm = (this.fiberMaterial = new THREE.ShaderMaterial({ uniforms: { uFlat: rs.U.flat, uClipOn: rs.U.clipOn, uClip: rs.U.clip },
+      vertexShader: LINE_VERT, fragmentShader: LINE_FRAG }));
     for (const seg of das?.segments ?? []) {
       if (seg.length < 2) continue;
       const pts = seg.map(([x, z]) => new THREE.Vector3(x, (rs.elevKm(x, z) ?? 0) + 0.008, z));
@@ -111,5 +111,6 @@ export class SensorPoints {
     this.rs.scene.remove(this.points, this.fiber);
     this.points.geometry.dispose(); this.points.material.dispose();
     for (const m of this.fiber.children) m.geometry.dispose();
+    this.fiberMaterial.dispose();
   }
 }

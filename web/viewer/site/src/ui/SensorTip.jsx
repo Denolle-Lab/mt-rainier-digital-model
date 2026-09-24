@@ -28,6 +28,7 @@ export default function SensorTip({ scene, points }) {
       if (!scene.camera.position.equals(last)) { last = scene.camera.position.clone(); scene.sensorHover = false; setHit(null); }
     }, 200);
     return () => {
+      scene.sensorHover = false;   // an unmounted card must not keep the model readout disabled
       clearInterval(watch);
       cancelAnimationFrame(raf.current); clearTimeout(timer);
       canvas.removeEventListener("pointermove", move); canvas.removeEventListener("pointerdown", pd); canvas.removeEventListener("pointerup", pu);
