@@ -39,7 +39,7 @@ def square_size(box: Box, width: int) -> tuple[int, int]:
 # 60 × 60 km around the summit, 1800 × 1215 elevation samples (≈35 m east-west, ≈49 m north-south)
 OVERVIEW_SIZE = (1800, 1215)
 OVERVIEW = Box(-122.16, 46.58, -121.36, 46.58 + 1215 * 0.8 / 1800)
-OVERVIEW_IMAGE_WIDTH = 4096
+OVERVIEW_IMAGE_WIDTH = 4080   # 4080 × 2754 is exactly square in degrees; 4096 would give 2764.8 rows
 
 # Summit patch: 9e-6° pixels (≈0.69 m east-west, 1.0 m north-south), 12288 × 8192 cells
 SUMMIT_PIXEL = 9e-6
