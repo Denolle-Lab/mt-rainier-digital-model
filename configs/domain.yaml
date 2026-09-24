@@ -1,0 +1,50 @@
+# The model domain: ONE definition, read by every stage (rainier3d.config.domain).
+# Authoritative in projected coordinates. The lon/lat box it derives from is
+# (-122.30, 46.50, -121.40, 47.15), the mt-rainier-smart-sensing BBOX, projected to
+# EPSG:32610 and snapped OUTWARD to whole kilometres. It covers the park and the WRSZ.
+
+name: rainier-v0
+crs: EPSG:32610          # UTM 10N, WGS84
+vertical_datum: EPSG:5703  # NAVD88 height; elevation positive up, metres
+bounds_utm: [553000, 5149000, 623000, 5224000]   # x0, y0, x1, y1 (70 x 75 km)
+summit_lonlat: [-121.7603, 46.8523]               # Columbia Crest, 4392 m
+
+# Resolution profiles. "m1" is the coarse skeleton; "full" is the plan target.
+profile: m1
+profiles:
+  m1:
+    surface_res_m: 100
+    levels:
+      L1: {dx: 250, dz: 50,  z_top: 4400,   z_bot: 0}
+      L2: {dx: 500, dz: 250, z_top: 0,      z_bot: -6000}
+      L3: {dx: 1000, dz: 1000, z_top: -6000, z_bot: -20000}
+  full:
+    surface_res_m: 10
+    levels:
+      L1: {dx: 50,  dz: 20,  z_top: 4400,   z_bot: 0}
+      L2: {dx: 200, dz: 100, z_top: 0,      z_bot: -6000}
+      L3: {dx: 500, dz: 500, z_top: -6000,  z_bot: -20000}
+
+paths:
+  data: data                 # gitignored local cache
+  raw: data/raw
+  processed: data/processed
+  outputs: outputs
+
+# Fusion with the regional model (S5).
+fusion:
+  # Cutoff wavelength (m) of the low-pass applied to the regional model, by depth below the
+  # local surface (m). Placeholder values: set to the regional model's resolution length.
+  lambda_c_by_depth: [[0, 6000], [2000, 10000], [10000, 20000]]
+  geology_only_depth_m: 300   # above this depth the geology model is used as is
+  taper_depth_m: 1000         # linear taper to the blended model between the two depths
+  lowpass_rms_tol: 0.03       # RMS of ln V between LP(fused) and LP(regional); invariant test
+
+# Eikonal grid for the PNSN check (S6).
+validation:
+  dx: 500
+  z_top: 4500
+  z_bot: -30000
+  min_magnitude: 2.0
+  start: "2015-01-01"
+  end: "2026-09-01"

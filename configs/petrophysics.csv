@@ -1,0 +1,17 @@
+unit,vp0_kms,vpinf_kms,pstar_mpa,vpvs,rho_gcc,basis,source_key
+ice,3.80,3.80,1,1.98,0.917,textbook glacier-ice values (Vp 3.8 km/s; Vs ~1.9 km/s; 917 kg/m3),m1_placeholder
+water,1.50,2.20,5,2.80,1.90,treated as saturated alluvium below the free surface,m1_placeholder
+glacial_drift,1.60,2.40,5,2.50,1.95,till and outwash; Vp/Vs set because Brocher 2005 is invalid below Vp 1.5 km/s,m1_placeholder
+alluvium_colluvium,1.50,2.20,5,2.80,1.90,saturated alluvium and mass-wasting deposits,m1_placeholder
+lahar_deposits,1.80,2.80,8,2.30,2.00,clay-rich debris-flow deposits (Osceola; Electron),m1_placeholder
+rainier_andesite,2.80,5.60,30,,,fractured lava flows and breccia; Vs and rho from Brocher 2005,m1_placeholder
+young_volcanics,3.00,5.60,30,,,Quaternary-Pliocene lava flows,m1_placeholder
+miocene_intrusive,4.50,6.20,40,,,granodiorite and quartz diorite plutons,m1_placeholder
+miocene_volcanics,3.20,5.80,40,,,Fifes Peak and Stevens Ridge andesite flows and tuffs,m1_placeholder
+ohanapecosh,3.40,5.90,40,,,zeolite-facies volcaniclastic rocks,m1_placeholder
+eocene_volcanics,3.50,6.00,40,,,basalt and andesite flows,m1_placeholder
+eocene_sedimentary,2.60,5.20,40,,,Puget Group arkosic sandstone and coal,m1_placeholder
+miocene_sedimentary,2.20,4.50,30,,,Mashel Formation,m1_placeholder
+pre_tertiary,4.00,6.00,40,,,Russell Ranch Formation,m1_placeholder
+middle_crust,6.00,6.50,50,,,generic arc middle crust,m1_placeholder
+magma_mush,6.00,6.50,50,,,middle_crust then perturbed by the magma_body factors below,m1_placeholder

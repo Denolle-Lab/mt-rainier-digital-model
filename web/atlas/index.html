@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Rainier Sensor Atlas</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 16 16%22%3E%3Cpath d=%22M1 14 8 3l7 11z%22 fill=%22%23e8ecf1%22/%3E%3C/svg%3E" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/maplibre-gl@5.24.0/dist/maplibre-gl.css" />
+  <link rel="stylesheet" href="atlas.css" />
+</head>
+<body>
+  <div id="map"></div>
+
+  <section class="card" id="title-card">
+    <h1 id="title">Mount Rainier Sensor Atlas</h1>
+    <p class="sub">Seismic, geodetic, fiber, node, hydro-met sensors and PNSN seismicity over the
+      rainier3d model domain. Terrain prototype.</p>
+    <div class="stats" id="stats"></div>
+  </section>
+
+  <section class="card" id="regions">
+    <div class="kicker">Regions</div>
+    <ul id="region-list"></ul>
+  </section>
+
+  <aside class="card" id="controls">
+    <div class="row"><span>View</span><div class="seg" data-ctl="view"><button data-v="3d" class="on">3D</button><button data-v="2d">2D</button></div></div>
+    <div class="row"><span>Style</span><div class="seg" data-ctl="style"><button data-v="relief" class="on">Relief</button><button data-v="contours">Contours</button></div></div>
+    <div class="row"><span>Color</span><div class="seg" data-ctl="color"><button data-v="elev" class="on">Elevation</button><button data-v="mono">Mono</button></div></div>
+    <div class="row"><span id="vex-label">Vertical ×1.5</span><input id="vex" type="range" min="1" max="4" step="0.25" value="1.5" /></div>
+    <p class="hint">Drag to move · Ctrl-drag to rotate · Scroll to zoom · Hover a site, the fiber or an event for details</p>
+
+    <div class="kicker">Subsurface model</div>
+    <div class="row"><span>Property</span>
+      <select id="sub-var">
+        <option value="vs">Vs</option><option value="vp">Vp</option><option value="rho">Density</option>
+        <option value="vpvs">Vp/Vs</option><option value="qs">Qs</option><option value="unit">Units</option>
+        <option value="alteration">Alteration</option></select></div>
+    <div class="row"><span>Model</span>
+      <select id="sub-model"><option value="">Fused</option><option value="_geology">Geology only</option>
+        <option value="_regional">Regional (CVM/CRESCENT)</option></select></div>
+    <div class="row"><span>Section depth</span>
+      <select id="sub-zmin"><option value="-3000">to 3 km bsl</option><option value="-6000" selected>to 6 km bsl</option>
+        <option value="-12000">to 12 km bsl</option><option value="-20000">to 20 km bsl</option></select></div>
+    <div id="presets"></div>
+    <button class="btn" id="draw-section">✎ Draw a section (click A, then B)</button>
+    <label class="chk"><input type="checkbox" id="lyr-slice" /> depth slice on map at <b id="slice-lbl">−2.0 km</b></label>
+    <input id="slice-z" type="range" min="-20000" max="3000" step="250" value="-2000" style="width:100%" />
+    <button class="btn primary" id="open-ug">⛰ Underground 3D view</button>
+
+    <div class="kicker">Overlays</div>
+    <div id="overlay-list"></div>
+
+    <div class="kicker">Layers</div>
+    <label class="chk"><input type="checkbox" id="lyr-das" checked /> Fiber (DAS) · Paradise–Nisqually</label>
+    <label class="chk"><input type="checkbox" id="lyr-das-lith" /> color fiber by lithology</label>
+    <label class="chk"><input type="checkbox" id="lyr-events" checked /> PNSN seismicity (M ≥ 0.5, 2015–)</label>
+    <label class="chk"><input type="checkbox" id="lyr-retired" checked /> show retired / temporary sites</label>
+    <label class="chk"><input type="checkbox" id="lyr-domain" checked /> model domain outline</label>
+
+    <div class="kicker">Site marker</div>
+    <div class="legend-item"><canvas id="lg-donut" width="36" height="36"></canvas> one segment per sensor, colored by family</div>
+    <div class="legend-item"><span class="sw solid"></span> operating</div>
+    <div class="legend-item"><span class="sw dim"></span> retired / temporary</div>
+    <div class="legend-item"><span class="dot"></span> geophone node</div>
+    <div class="kicker">Seismicity depth (km)</div>
+    <div class="ramp" id="depth-ramp"></div><div class="ramp-lbl"><span>0</span><span>10</span><span>20</span><span>30+</span></div>
+    <p class="src" id="sources"></p>
+  </aside>
+
+  <nav class="card" id="family-bar"></nav>
+
+  <section class="card hidden" id="section-panel">
+    <div class="sec-head"><b id="sec-title">Section</b><span id="sec-meta"></span>
+      <button class="x" id="sec-close" title="close">×</button></div>
+    <div class="sec-body"><div class="sec-axis" id="sec-yaxis"></div>
+      <div class="sec-wrap"><canvas id="sec-canvas"></canvas><canvas id="sec-over"></canvas></div></div>
+    <div class="sec-foot"><div id="sec-cbar"></div><div id="sec-read" class="read"></div>
+      <label class="chk"><input type="checkbox" id="sec-events" checked /> seismicity within <input id="sec-w" type="number" value="2" min="0.5" max="10" step="0.5" /> km</label></div>
+  </section>
+
+  <div id="ug" class="hidden">
+    <div id="ug-canvas"></div>
+    <aside class="card" id="ug-controls">
+      <div class="row"><b>Underground 3D</b><button class="x" id="ug-close">×</button></div>
+      <div class="row"><span>Terrain</span><select id="ug-tex"><option value="units">model units</option>
+        <option value="i432">I-432 geology</option><option value="ice">ice thickness</option></select></div>
+      <div class="row"><span>Opacity</span><input id="ug-op" type="range" min="0" max="1" step="0.05" value="0.55" /></div>
+      <label class="chk"><input type="checkbox" id="ug-cut" checked /> cut terrain along the first section</label>
+      <label class="chk"><input type="checkbox" id="ug-sections" checked /> sections</label>
+      <label class="chk"><input type="checkbox" id="ug-slice" checked /> depth slice</label>
+      <label class="chk"><input type="checkbox" id="ug-events" checked /> seismicity at depth</label>
+      <label class="chk"><input type="checkbox" id="ug-sensors" checked /> operating sensors & fiber</label>
+      <div class="row"><span id="ug-vex-lbl">Vertical ×1.5</span><input id="ug-vex" type="range" min="1" max="4" step="0.25" value="1.5" /></div>
+      <p class="hint">Drag to orbit · right-drag to pan · scroll to zoom. Property, sections and depth slice follow the main panel.</p>
+      <div id="ug-cbar"></div>
+    </aside>
+  </div>
+  <div id="hover" class="hover hidden"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/maplibre-gl@5.24.0/dist/maplibre-gl.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/maplibre-contour@0.1.1/dist/index.min.js"></script>
+  <script src="subsurface.js"></script>
+  <script src="atlas.js"></script>
+  <script type="importmap">{"imports": {"three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"}}</script>
+  <script type="module" src="underground.js"></script>
+</body>
+</html>

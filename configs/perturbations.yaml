@@ -1,0 +1,23 @@
+# Fractional property changes applied on top of the unit values (S4).
+# All M1 numbers are placeholders (source key m1_placeholder) pending the literature table in M3.
+
+alteration:            # multiplied by the 0-1 alteration field: V <- V * (1 - a * dV)
+  dvp: 0.30            # argillic alteration: higher porosity, clay (Heap & Violay 2021 range; to source)
+  dvs: 0.35
+  drho: 0.12
+  source_key: m1_placeholder
+
+magma_mush:            # applied inside the magma_body ellipsoid
+  dvp: 0.10
+  dvs: 0.15
+  drho: 0.03
+  source_key: m1_placeholder
+
+q:                     # Qs = qs_per_vs * Vs[m/s]; Qp = qp_over_qs * Qs (Olsen-style rule)
+  qs_per_vs: 0.05
+  qp_over_qs: 2.0
+  source_key: m1_placeholder
+
+pressure:              # effective pressure P = (rho_bulk - rho_water) g depth, rho_bulk fixed in M1
+  rho_bulk_kgm3: 2500
+  rho_water_kgm3: 1000

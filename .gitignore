@@ -1,0 +1,19 @@
+.pixi/
+__pycache__/
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.DS_Store
+# data never goes in git; code and small config tables do
+data/
+outputs/
+*.zarr/
+*.nc
+*.tif
+*.vtk
+*.vti
+*.vtr
+*.vtu
+*.vtm
+# pynhd / async-retriever HTTP cache
+cache/

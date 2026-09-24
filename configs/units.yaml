@@ -1,0 +1,66 @@
+# Model units, the crosswalk from DNR GeMS 1:100k map symbols, and the M1 geometry rules.
+# Crosswalk rules are regular expressions on MAP_UNIT_100K, applied in order, first match wins.
+# scripts/01_surface.py writes the resulting per-symbol table to configs/crosswalk_geology.json
+# (with each unit's DMU full name) for review; tests fail if any mapped symbol is unassigned.
+
+units:
+  0:  {name: air}
+  1:  {name: ice,                 kind: ice}
+  2:  {name: water,               kind: unconsolidated}
+  3:  {name: glacial_drift,       kind: unconsolidated}
+  4:  {name: alluvium_colluvium,  kind: unconsolidated}
+  5:  {name: lahar_deposits,      kind: unconsolidated}
+  6:  {name: rainier_andesite,    kind: edifice}
+  7:  {name: young_volcanics,     kind: cap}          # other Quaternary-Pliocene volcanics
+  8:  {name: miocene_intrusive,   kind: pluton}       # Tatoosh, White River, Carbon River, Nisqually
+  9:  {name: miocene_volcanics,   kind: supracrustal} # Fifes Peak, Stevens Ridge
+  10: {name: ohanapecosh,         kind: supracrustal} # Oligocene(-Eocene) volcanics/volcaniclastics
+  11: {name: eocene_volcanics,    kind: supracrustal} # Northcraft, Summit Creek basalt
+  12: {name: eocene_sedimentary,  kind: supracrustal} # Puget Group, Chambers Creek, Summit Creek ss
+  13: {name: miocene_sedimentary, kind: supracrustal, max_thickness_m: 300} # Mashel Formation; thickness placeholder
+  14: {name: pre_tertiary,        kind: supracrustal} # Russell Ranch Formation
+  20: {name: middle_crust,        kind: deep}
+  21: {name: magma_mush,          kind: deep}
+
+crosswalk_rules:        # [regex, unit id]
+  - ['^ice$', 1]
+  - ['^wtr$', 2]
+  - ['^Q(ad|ao|ap|at|g)', 3]
+  - ['^Q(a|f|ls|p|s|ta|t)(\(|$)', 4]   # Qt: terrace deposits (no DMU name; DNR convention)
+  - ['^Qvl', 5]
+  - ['^Q(va|ian)\(m[ro]\)$', 6]
+  - ['^(QPL|Q|PL)(v|ian)', 7]
+  - ['^(Mv|MOv|Miv)', 9]
+  - ['^(Mi|MOi|PLOi|PLMi)', 8]
+  - ['^(Ov|OEv)', 10]
+  - ['^Ev', 11]
+  - ['^Ec', 12]
+  - ['^Mc', 13]
+  - ['^(KJ|K|J)', 14]
+
+# Units with max_thickness_m sit on the nearest mapped unit without one.
+# M1 geometry rules. Every number here is an m1_placeholder unless a source key is given.
+geometry:
+  unconsolidated_thickness_m: {2: 5, 3: 15, 4: 10, 5: 15}   # per surface unit id
+  cap_thickness_m: 300            # young_volcanics, and rainier_andesite outside the edifice footprint
+  supracrustal_base_z: -4000      # m NAVD88; base of mapped basement units
+  pluton_base_z: -10000           # m NAVD88; base of the Miocene plutons
+  edifice:
+    radius_m: 12000               # search radius around the summit for the edifice footprint
+    closing_m: 500                # morphological closing of the footprint
+  ice:
+    source: iceboost_v2           # or perfect-plasticity (H = tau / (rho_i g sin(alpha)), parameters below)
+    tau_pa: 100000
+    rho_kgm3: 917
+    slope_smoothing_m: 1000
+    min_slope_deg: 3
+    max_thickness_m: 200          # order of the largest radar thicknesses in Driedger & Kennard 1986 (to verify)
+  magma_body:                     # geometry after Moran et al. 1999 (5-18 km beneath the summit);
+    center_z: -11500              # depth reference (below sea level or below summit) to verify
+    semi_axis_h_m: 5000
+    semi_axis_v_m: 6500
+    source_key: moran_1999
+  alteration:                     # conduit-centred Gaussian; M2 replaces with Finn et al. 2001 HEM/magnetics
+    r0_m: 1500
+    z_bottom: 1000                # m NAVD88; alteration fades to zero at this elevation
+    source_key: john_2008

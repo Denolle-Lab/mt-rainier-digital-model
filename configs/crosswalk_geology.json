@@ -1,0 +1,747 @@
+{
+ "Ec(2cc)": {
+  "unit_id": 12,
+  "unit": "eocene_sedimentary",
+  "dmu": "Eocene | Chambers Creek, beds of"
+ },
+ "Ec(2pg)": {
+  "unit_id": 12,
+  "unit": "eocene_sedimentary",
+  "dmu": "Eocene | Puget Group"
+ },
+ "Ec(2ss)": {
+  "unit_id": 12,
+  "unit": "eocene_sedimentary",
+  "dmu": "Eocene, middle to upper | Summit Creek, sandstone of"
+ },
+ "Eva": {
+  "unit_id": 11,
+  "unit": "eocene_volcanics",
+  "dmu": "Eocene"
+ },
+ "Eva(n)": {
+  "unit_id": 11,
+  "unit": "eocene_volcanics",
+  "dmu": "Eocene | Northcraft Formation"
+ },
+ "Evb(s)": {
+  "unit_id": 11,
+  "unit": "eocene_volcanics",
+  "dmu": "Eocene, lower to middle | Summit Creek basalt"
+ },
+ "Evb(tp)": {
+  "unit_id": 11,
+  "unit": "eocene_volcanics",
+  "dmu": "Eocene, middle | Tieton Pass, basalt of"
+ },
+ "Evc": {
+  "unit_id": 11,
+  "unit": "eocene_volcanics",
+  "dmu": "Eocene"
+ },
+ "Evc(n)": {
+  "unit_id": 11,
+  "unit": "eocene_volcanics",
+  "dmu": "Eocene | Northcraft Formation, Puget Group"
+ },
+ "Evd": {
+  "unit_id": 11,
+  "unit": "eocene_volcanics",
+  "dmu": "Eocene"
+ },
+ "KJm(r)": {
+  "unit_id": 14,
+  "unit": "pre_tertiary",
+  "dmu": "Cretaceous-Jurassic | Russell Ranch Formation, clastic subunit"
+ },
+ "MOi": {
+  "unit_id": 8,
+  "unit": "miocene_intrusive",
+  "dmu": "Miocene-Oligocene"
+ },
+ "MOiad": {
+  "unit_id": 8,
+  "unit": "miocene_intrusive",
+  "dmu": "Miocene-Oligocene"
+ },
+ "MOian": {
+  "unit_id": 8,
+  "unit": "miocene_intrusive",
+  "dmu": "Miocene-Oligocene"
+ },
+ "MOib": {
+  "unit_id": 8,
+  "unit": "miocene_intrusive",
+  "dmu": "Miocene-Oligocene"
+ },
+ "MOid": {
+  "unit_id": 8,
+  "unit": "miocene_intrusive",
+  "dmu": "Miocene-Oligocene"
+ },
+ "MOv": {
+  "unit_id": 9,
+  "unit": "miocene_volcanics",
+  "dmu": "Miocene-Oligocene"
+ },
+ "MOva": {
+  "unit_id": 9,
+  "unit": "miocene_volcanics",
+  "dmu": "Miocene-Oligocene"
+ },
+ "MOvb(3)": {
+  "unit_id": 9,
+  "unit": "miocene_volcanics",
+  "dmu": "Miocene-Oligocene"
+ },
+ "MOvc(3)": {
+  "unit_id": 9,
+  "unit": "miocene_volcanics",
+  "dmu": "Miocene-Oligocene"
+ },
+ "MOvd(3)": {
+  "unit_id": 9,
+  "unit": "miocene_volcanics",
+  "dmu": "Miocene-Oligocene"
+ },
+ "MOvt(sr)": {
+  "unit_id": 9,
+  "unit": "miocene_volcanics",
+  "dmu": "Miocene-Oligocene | Stevens Ridge Formation south of Mount Rainier"
+ },
+ "Mc": {
+  "unit_id": 13,
+  "unit": "miocene_sedimentary",
+  "dmu": "Miocene"
+ },
+ "Mc(m)": {
+  "unit_id": 13,
+  "unit": "miocene_sedimentary",
+  "dmu": "Miocene, middle to upper | Mashel Formation"
+ },
+ "Mia(bl)": {
+  "unit_id": 8,
+  "unit": "miocene_intrusive",
+  "dmu": "Miocene | Bumping Lake pluton"
+ },
+ "Mia(t)": {
+  "unit_id": 8,
+  "unit": "miocene_intrusive",
+  "dmu": "Miocene, lower to middle | Tatoosh pluton"
+ },
+ "Mia(tr)": {
+  "unit_id": 8,
+  "unit": "miocene_intrusive",
+  "dmu": "Miocene, lower | Tatoosh pluton, rocks related to the"
+ },
+ "Mian": {
+  "unit_id": 8,
+  "unit": "miocene_intrusive",
+  "dmu": "Miocene"
+ },
+ "Mid": {
+  "unit_id": 8,
+  "unit": "miocene_intrusive",
+  "dmu": "Miocene"
+ },
+ "Mida": {
+  "unit_id": 8,
+  "unit": "miocene_intrusive",
+  "dmu": "Miocene"
+ },
+ "Mig(wr)": {
+  "unit_id": 8,
+  "unit": "miocene_intrusive",
+  "dmu": "Miocene, middle | White River pluton"
+ },
+ "Migb(bx)": {
+  "unit_id": 8,
+  "unit": "miocene_intrusive",
+  "dmu": "Miocene, lower | Box Canyon, intrusive diabase and basalt of"
+ },
+ "Migd": {
+  "unit_id": 8,
+  "unit": "miocene_intrusive",
+  "dmu": "Miocene"
+ },
+ "Migd(bl)": {
+  "unit_id": 8,
+  "unit": "miocene_intrusive",
+  "dmu": "Miocene | Bumping Lake pluton, associated stocks of"
+ },
+ "Migd(cr)": {
+  "unit_id": 8,
+  "unit": "miocene_intrusive",
+  "dmu": "Miocene | Carbon River stock"
+ },
+ "Migd(n)": {
+  "unit_id": 8,
+  "unit": "miocene_intrusive",
+  "dmu": "Miocene, lower to middle | Nisqually, granodiorite of"
+ },
+ "Migd(t)": {
+  "unit_id": 8,
+  "unit": "miocene_intrusive",
+  "dmu": "Miocene, lower to middle | Tatoosh pluton"
+ },
+ "Migd(wr)": {
+  "unit_id": 8,
+  "unit": "miocene_intrusive",
+  "dmu": "Miocene, middle | White River pluton"
+ },
+ "Miq(jl)": {
+  "unit_id": 8,
+  "unit": "miocene_intrusive",
+  "dmu": "Miocene, middle to upper | Jug Lake, sills of"
+ },
+ "Miq(n)": {
+  "unit_id": 8,
+  "unit": "miocene_intrusive",
+  "dmu": "Miocene, lower to middle | Nisqually, quartz diorite of"
+ },
+ "Miq(t)": {
+  "unit_id": 8,
+  "unit": "miocene_intrusive",
+  "dmu": "Miocene, lower to middle | Tatoosh pluton"
+ },
+ "Miqm(t)": {
+  "unit_id": 8,
+  "unit": "miocene_intrusive",
+  "dmu": "Miocene, lower to middle | Tatoosh pluton"
+ },
+ "Mir": {
+  "unit_id": 8,
+  "unit": "miocene_intrusive",
+  "dmu": "Miocene"
+ },
+ "Mir(cw)": {
+  "unit_id": 8,
+  "unit": "miocene_intrusive",
+  "dmu": "Miocene, lower | Clear West, soda rhyolite of"
+ },
+ "Mir(fp)": {
+  "unit_id": 8,
+  "unit": "miocene_intrusive",
+  "dmu": "Miocene | Fifes Peak Formation, rhyolite of Clear West Peak"
+ },
+ "Mit": {
+  "unit_id": 8,
+  "unit": "miocene_intrusive",
+  "dmu": "Miocene"
+ },
+ "Miv(sx)": {
+  "unit_id": 9,
+  "unit": "miocene_volcanics",
+  "dmu": "Miocene, lower | Skyscraper Mountain complex"
+ },
+ "Mva(1)": {
+  "unit_id": 9,
+  "unit": "miocene_volcanics",
+  "dmu": "Miocene, lower"
+ },
+ "Mva(fp)": {
+  "unit_id": 9,
+  "unit": "miocene_volcanics",
+  "dmu": "Miocene | Fifes Peak Formation"
+ },
+ "Mvb(1)": {
+  "unit_id": 9,
+  "unit": "miocene_volcanics",
+  "dmu": "Miocene, lower"
+ },
+ "Mvb(3)": {
+  "unit_id": 9,
+  "unit": "miocene_volcanics",
+  "dmu": "Miocene, lower"
+ },
+ "Mvba(1)": {
+  "unit_id": 9,
+  "unit": "miocene_volcanics",
+  "dmu": "Miocene, lower"
+ },
+ "Mvba(3)": {
+  "unit_id": 9,
+  "unit": "miocene_volcanics",
+  "dmu": "Miocene, lower"
+ },
+ "Mvc": {
+  "unit_id": 9,
+  "unit": "miocene_volcanics",
+  "dmu": "Miocene"
+ },
+ "Mvc(1)": {
+  "unit_id": 9,
+  "unit": "miocene_volcanics",
+  "dmu": "Miocene, lower"
+ },
+ "Mvc(3)": {
+  "unit_id": 9,
+  "unit": "miocene_volcanics",
+  "dmu": "Miocene, lower"
+ },
+ "Mvc(fp)": {
+  "unit_id": 9,
+  "unit": "miocene_volcanics",
+  "dmu": "Miocene | Fifes Peak Formation"
+ },
+ "Mvr(fp)": {
+  "unit_id": 9,
+  "unit": "miocene_volcanics",
+  "dmu": "Miocene | Fifes Peak Formation, tuff of Clear West Peak"
+ },
+ "Mvt": {
+  "unit_id": 9,
+  "unit": "miocene_volcanics",
+  "dmu": "Miocene, lower"
+ },
+ "Mvt(3)": {
+  "unit_id": 9,
+  "unit": "miocene_volcanics",
+  "dmu": "Miocene, upper"
+ },
+ "Mvt(fpc)": {
+  "unit_id": 9,
+  "unit": "miocene_volcanics",
+  "dmu": "Miocene | Fifes Peak Formation, Chenuis Ridge unit, Clear West Peak"
+ },
+ "Mvt(fps)": {
+  "unit_id": 9,
+  "unit": "miocene_volcanics",
+  "dmu": "Miocene | Fifes Peak Formation, Sun Top unit, Clear West Peak"
+ },
+ "Mvt(p)": {
+  "unit_id": 9,
+  "unit": "miocene_volcanics",
+  "dmu": "Miocene, lower | Palisades, welded tuff of the"
+ },
+ "Mvt(sr)": {
+  "unit_id": 9,
+  "unit": "miocene_volcanics",
+  "dmu": "Miocene | Stevens Ridge Formation north of Mount Rainier"
+ },
+ "OEva": {
+  "unit_id": 10,
+  "unit": "ohanapecosh",
+  "dmu": "Oligocene-Eocene"
+ },
+ "OEvba": {
+  "unit_id": 10,
+  "unit": "ohanapecosh",
+  "dmu": "Oligocene-Eocene"
+ },
+ "OEvc": {
+  "unit_id": 10,
+  "unit": "ohanapecosh",
+  "dmu": "Oligocene-Eocene"
+ },
+ "OEvt": {
+  "unit_id": 10,
+  "unit": "ohanapecosh",
+  "dmu": "Oligocene-Eocene"
+ },
+ "Ova": {
+  "unit_id": 10,
+  "unit": "ohanapecosh",
+  "dmu": "Oligocene"
+ },
+ "Ova(oh)": {
+  "unit_id": 10,
+  "unit": "ohanapecosh",
+  "dmu": "Oligocene | Ohanapecosh Formation"
+ },
+ "Ovba(2)": {
+  "unit_id": 10,
+  "unit": "ohanapecosh",
+  "dmu": "Oligocene, upper"
+ },
+ "Ovc": {
+  "unit_id": 10,
+  "unit": "ohanapecosh",
+  "dmu": "Oligocene"
+ },
+ "Ovc(1)": {
+  "unit_id": 10,
+  "unit": "ohanapecosh",
+  "dmu": "Oligocene, lower"
+ },
+ "Ovc(oh)": {
+  "unit_id": 10,
+  "unit": "ohanapecosh",
+  "dmu": "Oligocene | Ohanapecosh Formation"
+ },
+ "Ovr(oh)": {
+  "unit_id": 10,
+  "unit": "ohanapecosh",
+  "dmu": "Oligocene, upper | Ohanapecosh Formation"
+ },
+ "PLMiad": {
+  "unit_id": 8,
+  "unit": "miocene_intrusive",
+  "dmu": "Pliocene-Miocene"
+ },
+ "PLOian": {
+  "unit_id": 8,
+  "unit": "miocene_intrusive",
+  "dmu": "Pliocene-Oligocene"
+ },
+ "PLOib": {
+  "unit_id": 8,
+  "unit": "miocene_intrusive",
+  "dmu": "Pliocene-Oligocene"
+ },
+ "PLv(d)": {
+  "unit_id": 7,
+  "unit": "young_volcanics",
+  "dmu": "Pliocene | Devils Horns, rhyolite tuffs and flows of"
+ },
+ "PLvb(dr)": {
+  "unit_id": 7,
+  "unit": "young_volcanics",
+  "dmu": "Pliocene | Dalles Ridge, basalt of"
+ },
+ "PLvb(dw)": {
+  "unit_id": 7,
+  "unit": "young_volcanics",
+  "dmu": "Pliocene | Devils Washbasin, basalt of"
+ },
+ "PLvd": {
+  "unit_id": 7,
+  "unit": "young_volcanics",
+  "dmu": "Pliocene"
+ },
+ "PLvr(d)": {
+  "unit_id": 7,
+  "unit": "young_volcanics",
+  "dmu": "Pliocene | Devils Horns, rhyolite of"
+ },
+ "QPLian": {
+  "unit_id": 7,
+  "unit": "young_volcanics",
+  "dmu": "Pleistocene-Pliocene | Intursive andesite"
+ },
+ "QPLva": {
+  "unit_id": 7,
+  "unit": "young_volcanics",
+  "dmu": "Pleistocene-Pliocene"
+ },
+ "QPLva(bf)": {
+  "unit_id": 7,
+  "unit": "young_volcanics",
+  "dmu": "Pleistocene-Pliocene | Bee Flat, andesite of"
+ },
+ "QPLva(g)": {
+  "unit_id": 7,
+  "unit": "young_volcanics",
+  "dmu": "Pleistocene-Pliocene | Goat Rocks, andesite of"
+ },
+ "QPLvb(hm)": {
+  "unit_id": 7,
+  "unit": "young_volcanics",
+  "dmu": "Pleistocene-Pliocene | Hogback Mountain, mafic rocks of"
+ },
+ "QPLvd": {
+  "unit_id": 7,
+  "unit": "young_volcanics",
+  "dmu": "Pleistocene-Pliocene"
+ },
+ "QPLvd(sy)": {
+  "unit_id": 7,
+  "unit": "young_volcanics",
+  "dmu": "Pleistocene-Pliocene | Snyder Mountain, dacite of"
+ },
+ "Qa": {
+  "unit_id": 4,
+  "unit": "alluvium_colluvium",
+  "dmu": "Quaternary"
+ },
+ "Qad(b)": {
+  "unit_id": 3,
+  "unit": "glacial_drift",
+  "dmu": "Holocene | Burroughs Mountain Drift"
+ },
+ "Qad(e)": {
+  "unit_id": 3,
+  "unit": "glacial_drift",
+  "dmu": "Pleistocene | Evans Creek Drift"
+ },
+ "Qad(g)": {
+  "unit_id": 3,
+  "unit": "glacial_drift",
+  "dmu": "Holocene | Garda Drift"
+ },
+ "Qad(mn)": {
+  "unit_id": 3,
+  "unit": "glacial_drift",
+  "dmu": "Pleistocene | McNeely Drift"
+ },
+ "Qao(e)": {
+  "unit_id": 3,
+  "unit": "glacial_drift",
+  "dmu": "Pleistocene | Evans Creek Drift, outwash deposits of"
+ },
+ "Qap": {
+  "unit_id": 3,
+  "unit": "glacial_drift",
+  "dmu": "Pleistocene"
+ },
+ "Qap(h)": {
+  "unit_id": 3,
+  "unit": "glacial_drift",
+  "dmu": "Pleistocene | Hayden Creek Drift"
+ },
+ "Qap(w)": {
+  "unit_id": 3,
+  "unit": "glacial_drift",
+  "dmu": "Pleistocene | Wingate Hill Drift"
+ },
+ "Qap(wh)": {
+  "unit_id": 3,
+  "unit": "glacial_drift",
+  "dmu": "Pleistocene | Wingate Hill Drift"
+ },
+ "Qapo(h)": {
+  "unit_id": 3,
+  "unit": "glacial_drift",
+  "dmu": "Pleistocene | Hayden Creek Drift, outwash deposits of"
+ },
+ "Qapt(h)": {
+  "unit_id": 3,
+  "unit": "glacial_drift",
+  "dmu": "Pleistocene | Hayden Creek Drift, till deposits of"
+ },
+ "Qapt(wh)": {
+  "unit_id": 3,
+  "unit": "glacial_drift",
+  "dmu": "Pleistocene | Wingate Hill Drift, till deposits of"
+ },
+ "Qat(e)": {
+  "unit_id": 3,
+  "unit": "glacial_drift",
+  "dmu": "Pleistocene | Evans Creek Drift, till deposits"
+ },
+ "Qf": {
+  "unit_id": 4,
+  "unit": "alluvium_colluvium",
+  "dmu": "Holocene"
+ },
+ "Qgd": {
+  "unit_id": 3,
+  "unit": "glacial_drift",
+  "dmu": "Pleistocene | mostly Vashon Stade in western WA; unnamed in eastern WA"
+ },
+ "Qgl": {
+  "unit_id": 3,
+  "unit": "glacial_drift",
+  "dmu": "Pleistocene | mostly Vashon Stade in western WA; unnamed in eastern WA"
+ },
+ "Qgo": {
+  "unit_id": 3,
+  "unit": "glacial_drift",
+  "dmu": "Pleistocene | mostly Vashon Stade in western WA; unnamed in eastern WA"
+ },
+ "Qgo(i)": {
+  "unit_id": 3,
+  "unit": "glacial_drift",
+  "dmu": "Pleistocene | ice-contact recessional outwash"
+ },
+ "Qgo(sg)": {
+  "unit_id": 3,
+  "unit": "glacial_drift",
+  "dmu": "Pleistocene | Steilacoom Gravel, Vashon Drift, Fraser age"
+ },
+ "Qgod": {
+  "unit_id": 3,
+  "unit": "glacial_drift",
+  "dmu": "Pleistocene | delta deposits, Vashon Drift, Fraser age"
+ },
+ "Qgos": {
+  "unit_id": 3,
+  "unit": "glacial_drift",
+  "dmu": "Pleistocene | mostly Vashon Stade in western WA; unnamed in eastern WA"
+ },
+ "Qgp": {
+  "unit_id": 3,
+  "unit": "glacial_drift",
+  "dmu": "Pleistocene"
+ },
+ "Qgpc(pd)": {
+  "unit_id": 3,
+  "unit": "glacial_drift",
+  "dmu": "Pleistocene"
+ },
+ "Qgpc(ps)": {
+  "unit_id": 3,
+  "unit": "glacial_drift",
+  "dmu": "Pleistocene"
+ },
+ "Qgt": {
+  "unit_id": 3,
+  "unit": "glacial_drift",
+  "dmu": "Pleistocene | mostly Vashon Stade in western WA; unnamed in eastern WA"
+ },
+ "Qian(mr)": {
+  "unit_id": 6,
+  "unit": "rainier_andesite",
+  "dmu": "Pleistocene | Mount Rainier, plugs and dikes of"
+ },
+ "Qian(os)": {
+  "unit_id": 7,
+  "unit": "young_volcanics",
+  "dmu": "Pleistocene | Old Snowy Mountain, feeders for flows of"
+ },
+ "Qls": {
+  "unit_id": 4,
+  "unit": "alluvium_colluvium",
+  "dmu": "Quaternary"
+ },
+ "Qls(m)": {
+  "unit_id": 4,
+  "unit": "alluvium_colluvium",
+  "dmu": "Holocene-Pleistocene | mass-wasting deposits, other than landslides"
+ },
+ "Qp": {
+  "unit_id": 4,
+  "unit": "alluvium_colluvium",
+  "dmu": "Quaternary"
+ },
+ "Qs": {
+  "unit_id": 4,
+  "unit": "alluvium_colluvium",
+  "dmu": "Pleistocene | Unconsolidated materials"
+ },
+ "Qt": {
+  "unit_id": 4,
+  "unit": "alluvium_colluvium",
+  "dmu": "Quaternary"
+ },
+ "Qta": {
+  "unit_id": 4,
+  "unit": "alluvium_colluvium",
+  "dmu": "Quaternary"
+ },
+ "Qva": {
+  "unit_id": 7,
+  "unit": "young_volcanics",
+  "dmu": "Pleistocene"
+ },
+ "Qva(dl)": {
+  "unit_id": 7,
+  "unit": "young_volcanics",
+  "dmu": "Pleistocene | Deer Lake Mountain, andesite of"
+ },
+ "Qva(dp)": {
+  "unit_id": 7,
+  "unit": "young_volcanics",
+  "dmu": "Pleistocene | Deep Creek, andesite of"
+ },
+ "Qva(jl)": {
+  "unit_id": 7,
+  "unit": "young_volcanics",
+  "dmu": "Pleistocene | Jess Lake complex, andesite of the"
+ },
+ "Qva(mo)": {
+  "unit_id": 6,
+  "unit": "rainier_andesite",
+  "dmu": "Pleistocene | Mt Rainier, andesite of, Observation and Echo Rocks andesites"
+ },
+ "Qva(mr)": {
+  "unit_id": 6,
+  "unit": "rainier_andesite",
+  "dmu": "Pleistocene | Mount Rainier, andesite of"
+ },
+ "Qva(os)": {
+  "unit_id": 7,
+  "unit": "young_volcanics",
+  "dmu": "Quaternary | Old Snowy Mountain, andesite of"
+ },
+ "Qvb": {
+  "unit_id": 7,
+  "unit": "young_volcanics",
+  "dmu": "Quaternary"
+ },
+ "Qvb(c)": {
+  "unit_id": 7,
+  "unit": "young_volcanics",
+  "dmu": "Pleistocene | Canyon Creek, basalt of"
+ },
+ "Qvb(hm)": {
+  "unit_id": 7,
+  "unit": "young_volcanics",
+  "dmu": "Pleistocene | Hogback Mountain, mafic rocks of"
+ },
+ "Qvb(kl)": {
+  "unit_id": 7,
+  "unit": "young_volcanics",
+  "dmu": "Pleistocene | Kincaid Lake, basalt of"
+ },
+ "Qvb(lv)": {
+  "unit_id": 7,
+  "unit": "young_volcanics",
+  "dmu": "Pleistocene | Lava Creek, basalt of"
+ },
+ "Qvb(tm)": {
+  "unit_id": 7,
+  "unit": "young_volcanics",
+  "dmu": "Pleistocene | Tumac Mountain, basalt of"
+ },
+ "Qvba": {
+  "unit_id": 7,
+  "unit": "young_volcanics",
+  "dmu": "Quaternary"
+ },
+ "Qvd(cf)": {
+  "unit_id": 7,
+  "unit": "young_volcanics",
+  "dmu": "Pleistocene | Clear Fork, dacite of"
+ },
+ "Qvl": {
+  "unit_id": 5,
+  "unit": "lahar_deposits",
+  "dmu": "Holocene"
+ },
+ "Qvl(e)": {
+  "unit_id": 5,
+  "unit": "lahar_deposits",
+  "dmu": "Holocene | Electron Mudflow"
+ },
+ "Qvl(g)": {
+  "unit_id": 5,
+  "unit": "lahar_deposits",
+  "dmu": "Holocene | Greenwater, lahar of"
+ },
+ "Qvl(lc)": {
+  "unit_id": 5,
+  "unit": "lahar_deposits",
+  "dmu": "Pleistocene | Lily Creek Formation, mudflows of"
+ },
+ "Qvl(o)": {
+  "unit_id": 5,
+  "unit": "lahar_deposits",
+  "dmu": "Holocene | Osceola Mudflow"
+ },
+ "Qvl(p)": {
+  "unit_id": 5,
+  "unit": "lahar_deposits",
+  "dmu": "Holocene | Paradise, debris flow of"
+ },
+ "Qvl(r)": {
+  "unit_id": 5,
+  "unit": "lahar_deposits",
+  "dmu": "Holocene | Round Pass mudflow"
+ },
+ "Qvt": {
+  "unit_id": 7,
+  "unit": "young_volcanics",
+  "dmu": "Quaternary"
+ },
+ "ice": {
+  "unit_id": 1,
+  "unit": "ice",
+  "dmu": "ice"
+ },
+ "wtr": {
+  "unit_id": 2,
+  "unit": "water",
+  "dmu": "water"
+ }
+}

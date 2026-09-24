@@ -1,0 +1,26 @@
+# Raster overlays for the atlas and the 3D scene. KMZ ground overlays are converted by
+# rainier3d.io.kmz; crop is [left, top, right, bottom] as fractions of the mosaic, applied before
+# georeferencing is recomputed (the crop keeps the original lon/lat scale).
+
+i432:
+  label: Geology, USGS I-432 (Fiske et al. 1963)
+  kmz: ~/Downloads/USGS_I-432_1.kmz
+  source_key: fiske_1963
+  registration: KMZ LatLonBox from the USGS NGMDB product (quadrangle corners)
+  opacity: 0.75
+  jpeg: true
+
+soil:
+  label: General soil map, MORA (NRCS/NPS poster)
+  kmz: ~/Downloads/soilmap_mtrainier_modified_super_overlay.kmz
+  # The KMZ is the whole poster (title, legend, insets) placed over a lon/lat box by hand in
+  # Google Earth. The crop keeps the map panel only; registration is approximate (order 100s of m).
+  crop: [0.085, 0.045, 0.925, 0.595]
+  registration: approximate, hand-placed poster (see note)
+  opacity: 0.7
+  white_transparent: true   # poster background outside the park boundary
+
+model_geology:
+  label: Model surface units (DNR GeMS 1:100k crosswalk)
+  from: surface.zarr/surface_unit
+  opacity: 0.6

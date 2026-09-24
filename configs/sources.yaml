@@ -1,0 +1,250 @@
+# Source registry. Every layer's gaia:source resolves through a key here.
+# verified: "web-2026-09-23" = the citation/URL was confirmed during the 2026-09-23 literature
+# survey; "no" = from memory or partial evidence, check before citing in a paper.
+# role: what the source constrains in this model.
+
+dnr_gems_100k:
+  title: Washington Geological Survey 1:100,000 surface geology (GeMS), map units, orientations, faults
+  url: https://gis.dnr.wa.gov/site1/rest/services/Public_Geology/100K_Surface_Geology_WA_GeMS/FeatureServer
+  license: public (WA DNR)
+  verified: web-2026-09-23
+  role: surface lithology (layer 11), description of map units (layer 13); orientations (layer 1) for M3
+
+nps_gri_mora:
+  title: NPS GRI Digital Geologic-GIS Map of Mount Rainier National Park (after Fiske et al. 1963)
+  url: https://data.doi.gov/dataset/digital-geologic-gis-map-of-mount-rainier-national-park-washington-nps-grd-gri-mora-mora-g
+  license: public domain
+  verified: web-2026-09-23
+  role: park bedrock units at 1:62,500; not ingested in M1 (download link not scripted yet)
+
+fiske_1963:
+  title: Fiske, Hopson & Waters 1963, Geology of Mount Rainier National Park, USGS PP 444
+  url: https://pubs.usgs.gov/pp/0444/report.pdf
+  verified: web-2026-09-23
+  role: stratigraphy and unit thicknesses of the pre-volcanic basement
+
+rainier_dem_smart_sensing:
+  title: 3DEP DEM mosaic cached by mt-rainier-smart-sensing (py3dep), EPSG:5070, ~8.3 m
+  url: file://~/GitHub/mt-rainier-smart-sensing/data/dem/rainier_dem.tif
+  license: public domain (USGS 3DEP)
+  verified: local file read 2026-09-23 (max 4392.4 m)
+  role: M1 DEM; replaced by 3DEP 1 m / MORA 2021 SfM in M2
+
+usgs_3dep:
+  title: USGS 3D Elevation Program
+  url: https://www.usgs.gov/3d-elevation-program
+  license: public domain
+  verified: web-2026-09-23
+  role: DEM
+
+cvm17:
+  title: Wirth, Grant, Stone, Stephenson & Frankel 2025, Cascadia velocity model v1.7 with shallow soils and topography, USGS OFR 2025-1045
+  doi: 10.5066/P14HJ3IC
+  article_doi: 10.3133/ofr20251045
+  license: public domain
+  verified: web-2026-09-23
+  local: ~/GitHub/gwl-space-time-smooth/data/raw/CVM17_L01.nc, CVM17_L2.nc (L3 not downloaded)
+  note: >-
+    z is depth below the ground surface in L01 (verified in gwl-space-time-smooth from the median
+    top-sample Vs of ~206 m/s). L2 is taken as the same convention: at the summit Vs runs
+    2841 m/s at z=1200 (L01) and 2870 m/s at z=1500 (L2), which is continuous; checked 2026-09-23.
+  role: regional Vp, Vs to 9.9 km depth; long wavelengths in S5
+
+crescent_gen0:
+  title: He et al. 2026, The CRESCENT Generation 0 Cascadia Community Velocity Model, JGR Solid Earth
+  doi: 10.1029/2025JB033216
+  data_doi: 10.6084/m9.figshare.31902061
+  verified: web-2026-09-23 (citation); local file ~/GitHub/cascadia_obs_ensemble/data/tomography/CRESCENT_Gen0.nc
+  note: depth coordinate -4 to 100 km, negative above sea level (taken as km below sea level)
+  role: regional Vs and Vs uncertainty below the CVM L2 base (9.9 km)
+
+pnsn_1d_wa:
+  title: PNSN 1D velocity model, western Washington, as tabulated in cascadia_obs_ensemble/data/vel_pnsn_wa.csv
+  url: file://~/GitHub/cascadia_obs_ensemble/data/vel_pnsn_wa.csv
+  verified: "no: which PNSN model this is (P3 Puget Sound or C3 Cascades) is not documented in the file; ask PNSN"
+  role: 1D reference for S6
+
+pnsn_quarterly_2003a:
+  title: PNSN Quarterly Report 2003-A (lists regional 1D model codes P3, C3, S3, ...)
+  url: https://assets.pnsn.org/legacy_reports/Sum03/Quarterly2003A.pdf
+  verified: web-2026-09-23
+  role: model naming
+
+comcat_uw:
+  title: USGS ComCat, PNSN (uw) origins and phase-data QuakeML
+  url: https://earthquake.usgs.gov/fdsnws/event/1/
+  verified: web-2026-09-23 (89 M>=2 events in domain 2015-2026 with phase-data)
+  role: analyst picks and PNSN hypocentres for S6
+
+fdsn_iris_stations:
+  title: EarthScope (IRIS) FDSN station service
+  url: https://service.iris.edu/fdsnws/station/1/
+  verified: web-2026-09-23
+  role: station coordinates for S6
+
+brocher_2005:
+  title: Brocher 2005, Empirical relations between elastic wavespeeds and density in the Earth's crust, BSSA 95(6)
+  doi: 10.1785/0120050077
+  verified: "no: DOI from survey memory; relations coded from the paper's Eqs. 1, 6 and 9"
+  role: Vp->Vs, Vp->density (Nafe-Drake) fill-in relations
+
+moran_1999:
+  title: Moran, Lees & Malone 1999, P wave crustal velocity structure in the greater Mount Rainier area from local earthquake tomography, JGR 104
+  doi: 10.1029/1999JB900036
+  verified: web-2026-09-23
+  role: low-Vp body 5-18 km beneath the summit; geometry of the M1 magma-body ellipsoid
+
+pang_2025:
+  title: Pang, Abers, Moran & Thelen 2025, Nature Geoscience 18
+  doi: 10.1038/s41561-024-01630-y
+  verified: web-2026-09-23
+  role: upper-crustal low-velocity bodies beneath Cascade volcanoes
+
+finn_2001:
+  title: Finn, Sisson & Deszcz-Pan 2001, Aerogeophysical measurements of collapse-prone hydrothermally altered zones at Mount Rainier volcano, Nature 409
+  doi: 10.1038/35054533
+  verified: web-2026-09-23
+  role: extent of altered rock; M1 alteration field is a placeholder to be replaced by these grids
+
+john_2008:
+  title: John, Sisson, Breit, Rye & Vallance 2008, JVGR, hydrothermal alteration at Mount Rainier
+  doi: 10.1016/j.jvolgeores.2008.04.004
+  verified: web-2026-09-23
+  role: conduit-centred alteration geometry
+
+m1_placeholder:
+  title: M1 placeholder parameter (author judgement), to be replaced from the literature in M3
+  verified: "n/a"
+  role: marks every number that is not yet sourced
+
+# ---- sensor atlas (S8) and overlays
+earthscope_fdsn:
+  title: EarthScope FDSN station web service (channel level, all networks in the domain box)
+  url: https://service.earthscope.org/fdsnws/station/1/
+  verified: web-2026-09-23 (864 stations, 3969 channel epochs)
+  role: seismic, strong motion, nodes, infrasound, strain/tilt, MT sensors
+
+earthscope_gnss:
+  title: EarthScope/UNAVCO GNSS site metadata web service
+  url: https://web-services.unavco.org/gps/metadata/sites/v1
+  verified: web-2026-09-23 (14 sites); ellipsoidal heights from the service not used (values implausible)
+  role: GNSS sites
+
+synoptic_catalog:
+  title: Synoptic weather, SNOTEL and streamflow stations via gaia-hazlab/catalog GeoJSON
+  url: https://github.com/gaia-hazlab/catalog
+  local: ~/GitHub/mt-rainier-smart-sensing/data/stations/
+  note: elevations are in feet; converted to m
+  role: meteorology and hydrology sites
+
+nodes_2025:
+  title: 2025 Rainier node deployment sheet (UW; serial, lat/lon, deployers, date, notes)
+  url: file://~/Downloads/Rainier Deployment Final.xlsx
+  verified: local file read 2026-09-23 (240 nodes; 191 inside the model domain)
+  role: geophone node sites
+
+das_paradise_nisqually:
+  title: Paradise-Nisqually Entrance DAS channel table (per-channel lat/lon/elevation, lithology, notices)
+  url: file://~/Downloads/Paradise2NisquallyEntrace_Channels.csv
+  local_copy: ~/GitHub/mt-rainier-smart-sensing/data/das/Paradise2NisquallyEntrace_Channels.csv
+  verified: local file read 2026-09-23 (4494 channels; 3191 with coordinates, 30.5 km optical)
+  role: fiber route and channel metadata
+
+usgs_i432_kmz:
+  title: USGS I-432 KMZ, Geologic map and section of Mount Rainier National Park, sheet 1 (Fiske et al. 1963), NGMDB product 1268
+  url: file://~/Downloads/USGS_I-432_1.kmz
+  verified: local file read 2026-09-23 (single GroundOverlay, 10000 x 10000 px)
+  role: geology overlay (atlas, 3D drape); M2 candidate for digitizing units
+
+nrcs_soil_poster_kmz:
+  title: NRCS/NPS General Soil Map, Mount Rainier National Park (poster) as a Google Earth super-overlay, "modified"
+  url: file://~/Downloads/soilmap_mtrainier_modified_super_overlay.kmz
+  verified: "local file read 2026-09-23; the whole poster is placed over a lon/lat box (hand georeferencing), cropped to the map panel"
+  role: soil overlay (approximate registration); SSURGO/NPS digital soils remain the M2 source
+
+aws_terrain_tiles:
+  title: AWS Terrain Tiles (terrarium encoding; Mapzen, sources include USGS 3DEP)
+  url: https://registry.opendata.aws/terrain-tiles/
+  verified: web-2026-09-23
+  role: atlas terrain, hillshade, contours
+
+# ---- glaciers
+iceboost_v2:
+  title: IceBoost v2.0 per-glacier ice thickness and error (N. Maffezzoli, UC Irvine), RGI 6.0 region 02 GeoTIFFs, produced 2025-11-05
+  url: https://cluster.klima.uni-bremen.de/~oggm/ice_thickness/iceboost_v2/RGI62/rgi2/
+  paper: "Maffezzoli et al., IceBoost (Geosci. Model Dev., 2025) -- citation and DOI not verified"
+  verified: web-2026-09-23 (files downloaded; metadata read from GeoTIFF tags)
+  role: ice thickness (S1), ice-free bed
+
+rgi60:
+  title: RGI Consortium 2017, Randolph Glacier Inventory 6.0 (via OGGM rgi62_stats.csv)
+  doi: 10.7265/N5-RGI-60
+  url: https://cluster.klima.uni-bremen.de/~oggm/rgi/rgi62_stats.csv
+  verified: "web-2026-09-23 (file); DOI from memory"
+  role: glacier IDs and outlines in the domain (219 glaciers, 97.3 km2)
+
+glathida:
+  title: GlaThiDa v3.1.0 (Glacier Thickness Database), survey table T.csv; Rainier entries from Driedger & Kennard 1986 (1981 GPR)
+  doi: 10.5904/wgms-glathida-2020-10
+  url: https://cluster.klima.uni-bremen.de/~oggm/glathida/glathida-v3.1.0/data/T.csv
+  verified: "web-2026-09-23 (file); DOI from memory"
+  role: check of modeled thickness (7 Rainier glaciers, mean and max)
+
+solus100:
+  title: Nauman et al. 2024, SOLUS100 soil landscapes of the United States at 100 m, depth to any lithic contact (anylithicdpt_cm_p)
+  doi: 10.15482/USDA.ADC/25033856
+  article_doi: 10.1002/saj2.20769
+  url: https://storage.googleapis.com/solus100pub/anylithicdpt_cm_p.tif
+  license: CC-BY-4.0
+  verified: web-2026-09-24 (COG read, DataCite and Crossref)
+  note: uint8 cm, nodata 255; WKT named "unknown" with EPSG:5070 parameters; max over the domain is exactly 201 cm, read as ">= 2 m" (cap not documented)
+  role: soil thickness (surface layer soil_thickness)
+
+ma2026_wtd:
+  title: Ma, Condon, Koch, Bennett, Defnet, Tijerina-Kreuzer, Melchior & Maxwell 2026, High resolution US water table depth estimates reveal quantity of accessible groundwater, Commun. Earth Environ. 7, 45
+  doi: 10.5281/zenodo.18504963
+  article_doi: 10.1038/s43247-025-03094-3
+  url: https://zenodo.org/records/18504963
+  license: CC-BY-NC-ND-4.0; used for non-commercial open research, raw data not redistributed (decision M. Denolle 2026-09-24)
+  verified: web-2026-09-24 (Zenodo record, windowed read)
+  note: mean only on Zenodo; the ensemble IQR (wtd_uncertainty) needs a HydroGEN PIN through hf_hydrodata (dataset ma_2025, grid conus2_wtd.30)
+  role: water-table depth (surface layer water_table_depth; atlas layer, cited)
+
+fan2017_wtd:
+  title: Fan, Miguez-Macho, Jobbagy, Jackson & Otero-Casal 2017, Hydrologic regulation of plant rooting depth, PNAS; global water-table depth annual mean (after Fan et al. 2013, Science)
+  doi: 10.1073/pnas.1712381114
+  url: http://thredds-gfnl.usc.es/thredds/catalog/GLOBALWTDFTP/annualmeans/catalog.html
+  license: free for research purposes (file attributes)
+  verified: web-2026-09-24 (OPeNDAP clip)
+  note: file stores WTD negative downward; S2 stores it positive down
+  role: water-table depth at 1 km for comparison (water_table_depth_fan)
+
+nhdplus_v21:
+  title: USGS/EPA NHDPlus Version 2.1 network flowlines (1:100k), via USGS WaterData GeoServer (pynhd)
+  url: https://api.water.usgs.gov/geoserver/wmadata/ows
+  license: public domain
+  verified: web-2026-09-24 (query)
+  role: stream network and Strahler order (fallback when NHDPlus HR is not cached)
+
+eth_canopy_2020:
+  title: Lang, Jetz, Schindler & Wegner 2023, A high-resolution canopy height model of the Earth, Nat. Ecol. Evol.; ETH global canopy height 2020, 10 m
+  doi: 10.3929/ethz-b-000609802
+  article_doi: 10.1038/s41559-023-02206-6
+  url: https://libdrive.ethz.ch/index.php/s/cO8or7iOe5dT2Rt
+  license: CC-BY-4.0
+  verified: web-2026-09-24 (COG range reads)
+  role: canopy height (surface layer canopy_height); per-pixel SD tile available (_Map_SD.tif)
+
+nlcd_2021:
+  title: U.S. Geological Survey / MRLC, National Land Cover Database 2021, land cover (CONUS)
+  url: https://www.mrlc.gov/data
+  license: public domain
+  verified: web-2026-09-24 (WCS GetCoverage)
+  role: land cover (surface layer land_cover)
+
+nhdplus_hr:
+  title: U.S. Geological Survey NHDPlus High Resolution (1:24k) network flowlines, VAA and EROM mean annual flow (QAMA), HU4 1711, 1708, 1703
+  url: https://prd-tnm.s3.amazonaws.com/StagedProducts/Hydrography/NHDPlusHR/Beta/GDB/
+  license: public domain
+  verified: web-2026-09-24 (staged GDB download; 60,174 flowlines in the domain)
+  role: stream network, Strahler order and mean annual flow (surface layer stream_order; atlas stream lines)

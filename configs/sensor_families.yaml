@@ -1,0 +1,32 @@
+# Sensor families for the atlas and the 3D scene. Colors are for a dark background.
+# FDSN channels are classified by SEED band+instrument codes (rules applied in order, first match
+# wins); channels matching nothing (state of health, synthetics) are dropped.
+
+families:
+  seismic:     {label: Seismometers,        color: "#ff5a5f"}
+  strong:      {label: Strong motion,       color: "#ff9f1c"}
+  nodes:       {label: Nodes (geophones),   color: "#ffd166"}
+  infrasound:  {label: Infrasound,          color: "#06d6a0"}
+  strain:      {label: Strain & tilt,       color: "#c77dff"}
+  mt:          {label: MT / EM,             color: "#f15bb5"}
+  gnss:        {label: GNSS,                color: "#4cc9f0"}
+  das:         {label: Fiber-optic DAS,     color: "#f8f9fa"}
+  meteorology: {label: Meteorology & snow,  color: "#8ecae6"}
+  hydrology:   {label: Streamflow,          color: "#4895ef"}
+
+exclude_networks: [SY]          # SY = synthetic seismograms
+
+fdsn_rules:                     # [regex on channel code, family, label]
+  - ['^[BHCDE]DF$',   infrasound, infrasound microphone]
+  - ['^[CDEGHS]P[ZNE123]$', nodes, geophone node]
+  - ['^[HBSEC]N[ZNE123]$', strong, accelerometer]
+  - ['^[HBML]H[ZNE123]$', seismic, broadband seismometer]
+  - ['^[ES]H[ZNE123]$',  seismic, short-period seismometer]
+  - ['^[BLR]S[0-9A-Z]$', strain,  borehole strainmeter]
+  - ['^[BLR]A[0-9A-Z]$', strain,  tiltmeter]
+  - ['^[LRVBU]F[ZNE123XYZ]$', mt, magnetometer]
+  - ['^[LRVBU]Q[ZNE123XYZ]$', mt, electric-field dipole]
+
+nodes_2025:
+  source: ~/Downloads/Rainier Deployment Final.xlsx
+  label: 2025 Rainier node deployment (UW)
