@@ -10,13 +10,14 @@ from pathlib import Path
 import numpy as np
 
 from . import extent as E
+from .quakes import build_quakes, check_quakes
 from .stations import build_stations
 from .summit import build_summit
 from .terrain import build_overview
 
 SIZE_LIMIT = 600_000_000
 SUMMIT_RMS_LIMIT_M = 30.0
-STEPS = ("terrain", "summit", "stations")
+STEPS = ("terrain", "summit", "stations", "quakes")
 
 
 def check_counts(st: dict) -> list[str]:
@@ -95,7 +96,11 @@ def main(argv=None) -> int:
     if "stations" in only:
         (out / "stations.json").write_text(json.dumps(build_stations(a.cache, as_of=a.as_of), indent=1))
     terrain, summit, stations = _load(out, "terrain/terrain.json"), _load(out, "summit/index.json"), _load(out, "stations.json")
-    errs = validate(out, terrain, summit, stations)
+    if "quakes" in only:
+        ov = np.fromfile(out / "terrain" / "overview.bin", "<i2").reshape(terrain["rows"], terrain["cols"]).astype(float)
+        ground = lambda x, z: float(sample(ov, terrain, np.array(x), np.array(z))) / 1000
+        build_quakes(out, a.cache, ground)
+    errs = validate(out, terrain, summit, stations) + check_quakes(_load(out, "quakes.json"))
     if errs:
         print("\n".join(f"error: {e}" for e in errs), file=sys.stderr)
         return 1
@@ -107,6 +112,7 @@ def main(argv=None) -> int:
             {"name": "USGS 3DEP elevation (overview and 1 m summit lidar)", "url": "https://elevation.nationalmap.gov/arcgis/rest/services/3DEPElevation/ImageServer", "license": "public domain"},
             {"name": "USGS The National Map imagery (USGSImageryOnly)", "url": "https://basemap.nationalmap.gov/arcgis/rest/services/USGSImageryOnly/MapServer", "license": "public domain"},
             {"name": "EarthScope FDSN station service", "url": "https://service.earthscope.org/fdsnws/station/1/", "license": "open", "asOf": stations["asOf"]},
+            {"name": "USGS ComCat earthquake catalog (PNSN)", "url": "https://earthquake.usgs.gov/fdsnws/event/1/", "license": "public domain"},
         ],
         "extent": {"overview": E.OVERVIEW._asdict(), "summit": E.SUMMIT._asdict()},
     }
