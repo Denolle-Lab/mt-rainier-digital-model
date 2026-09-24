@@ -16,8 +16,10 @@ export class QuakeLayers {
     const all = quakes.records.length / 4, pos = [], mag = [], grd = [];
     for (let i = 0; i < all; i++) {
       const [x, y, z, m] = quakes.records.subarray(i * 4, i * 4 + 4);
-      const g = (rs.ground.minKm?.(x, z) ?? rs.ground.elevKm(x, z) ?? 0) - 0.03;   // the same test as the shaders
-      if (y > g - 0.01) continue;
+      // the same test as the shaders: groundKm (ground.js) is the lowest nearby ground minus 30 m, and the cloud,
+      // shells and dots all drop anything within a further 20 m of it
+      const g = (rs.ground.minKm?.(x, z) ?? rs.ground.elevKm(x, z) ?? 0) - 0.03;
+      if (y > g - 0.02) continue;
       pos.push(x, y, z); mag.push(m); grd.push(g);
     }
     this.drawn = mag.length;

@@ -14,8 +14,8 @@ export class StationLayer {
       d.innerHTML = ringSvg(site.kinds, size) + `<div class="name">${site.id.split(".")[1]}</div>`;
       d.setAttribute("role", "button"); d.tabIndex = 0; d.dataset.id = site.id;
       d.setAttribute("aria-label", `${site.name}, ${site.codes.join(", ")}`);
-      d.onmouseenter = ev => handlers.onHover?.(site, ev); d.onmousemove = ev => handlers.onHover?.(site, ev);
-      d.onmouseleave = () => handlers.onHover?.(site, null);
+      d.onmouseenter = d.onmousemove = ev => { this._hovered = site.id; handlers.onHover?.(site, ev); };
+      d.onmouseleave = () => { this._hovered = null; handlers.onHover?.(site, null); };
       d.onclick = () => handlers.onClick?.(site);
       d.onkeydown = ev => { if (ev.key === "Enter") handlers.onClick?.(site); };
       container.appendChild(d);
@@ -38,7 +38,7 @@ export class StationLayer {
       const onScreen = !this.hiddenAll && !under && !cutAway && z < 1 && x > -40 && x < innerWidth + 40 && y > -40 && y < innerHeight + 40;
       const hidden = onScreen && occluded(cam, [px, py, pz], ground);
       const vis = onScreen && !hidden;
-      if (!vis && this._hovered === it.site.id) this.h.onHover?.(it.site, null);
+      if (!vis && this._hovered === it.site.id) { this._hovered = null; this.h.onHover?.(it.site, null); }
       Object.assign(it.d.style, { left: `${x}px`, top: `${y}px`, opacity: onScreen ? (hidden ? 0.12 : 1) : 0, pointerEvents: vis ? "auto" : "none" });
       if (vis) labels.push({ id: it.site.id, x: x - it.size / 2, y, w: it.size + 12 + it.name.textContent.length * 7.2, h: 18, priority: it.site.major ? 2 : 1 });
     }

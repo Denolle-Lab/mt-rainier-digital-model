@@ -33,3 +33,15 @@ def test_counts_reconcile_against_what_the_service_returned():
     assert any("reconcile" in e for e in build.check_counts(st))   # 5 returned − 2 excluded ≠ 2 kept
     st["counts"]["excluded"] = 3
     assert build.check_counts(st) == []
+
+
+def test_partial_build_without_quakes_does_not_need_quakes_json(tmp_path, monkeypatch):
+    # --only with no quakes step on an output that has no quakes.json yet: quakes are optional in the bundle
+    (tmp_path / "terrain").mkdir()
+    (tmp_path / "summit").mkdir()
+    (tmp_path / "terrain" / "terrain.json").write_text("{}")
+    (tmp_path / "summit" / "index.json").write_text("{}")
+    (tmp_path / "stations.json").write_text('{"asOf": "2026-09-24", "counts": {"stations": 0, "sites": 0, "sitesOnMap": 0}}')
+    monkeypatch.setattr(build, "validate", lambda *a: [])
+    assert build.main(["--out", str(tmp_path), "--cache", str(tmp_path / "cache"), "--only", "none"]) == 0
+    assert (tmp_path / "manifest.json").exists()

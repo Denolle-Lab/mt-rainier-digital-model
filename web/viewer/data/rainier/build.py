@@ -108,7 +108,10 @@ def main(argv=None) -> int:
         ov = np.fromfile(out / "terrain" / "overview.bin", "<i2").reshape(terrain["rows"], terrain["cols"]).astype(float)
         ground = lambda x, z: float(sample(ov, terrain, np.array(x), np.array(z))) / 1000
         build_quakes(out, a.cache, ground)
-    errs = validate(out, terrain, summit, stations) + check_quakes(_load(out, "quakes.json"))
+    # quakes are optional in the bundle: check them when built now or already present, so --only without
+    # quakes works on a fresh output directory
+    have_quakes = "quakes" in only or (out / "quakes.json").exists()
+    errs = validate(out, terrain, summit, stations) + (check_quakes(_load(out, "quakes.json")) if have_quakes else [])
     if errs:
         print("\n".join(f"error: {e}" for e in errs), file=sys.stderr)
         return 1

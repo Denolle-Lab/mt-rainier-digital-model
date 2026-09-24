@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { formatValue, groups, rampTicks, sampleValue } from "./modelLayers.js";
 
 const box = { west: -122, east: -121, south: 46, north: 47 };
@@ -27,5 +27,18 @@ describe("model layers", () => {
   });
   it("groups layers in first-seen order", () => {
     expect(groups([{ key: "a", group: "G" }, { key: "b", group: "H" }, { key: "c", group: "G" }]).map(g => g.layers.length)).toEqual([2, 1]);
+  });
+});
+
+describe("loadValues", () => {
+  it("resolves to null on a failed fetch and does not cache the failure", async () => {
+    const { loadValues } = await import("./modelLayers.js");
+    const model = { base: "/m/" }, layer = { values: { file: "x.u16.bin" } };
+    const f = vi.fn(async () => ({ ok: false, status: 404 }));
+    vi.stubGlobal("fetch", f);
+    expect(await loadValues(model, layer)).toBeNull();
+    vi.stubGlobal("fetch", vi.fn(async () => ({ ok: true, arrayBuffer: async () => new Uint16Array([7, 8]).buffer })));
+    expect(Array.from(await loadValues(model, layer))).toEqual([7, 8]);   // retried, not served from cache
+    vi.unstubAllGlobals();
   });
 });

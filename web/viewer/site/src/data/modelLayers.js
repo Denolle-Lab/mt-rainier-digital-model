@@ -9,9 +9,17 @@ export async function loadModelLayers(base) {
 }
 
 const cache = new Map();
+// Value grid of a layer, or null when it cannot be fetched (the readout then stays off); failures are not cached.
 export function loadValues(model, layer) {
   const url = model.base + layer.values.file;
-  if (!cache.has(url)) cache.set(url, fetch(url).then(r => r.arrayBuffer()).then(b => new Uint16Array(b)));
+  if (!cache.has(url)) {
+    const p = fetch(url)
+      .then(r => (r.ok ? r.arrayBuffer() : null))
+      .then(b => (b ? new Uint16Array(b) : null))
+      .catch(() => null)
+      .then(v => { if (!v) cache.delete(url); return v; });
+    cache.set(url, p);
+  }
   return cache.get(url);
 }
 
