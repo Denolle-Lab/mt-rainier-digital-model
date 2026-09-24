@@ -24,6 +24,7 @@ export class StationLayer {
   }
 
   setVisible(on) { this.hiddenAll = !on; }
+  setFilter(pred) { this.pred = pred; }   // (site) => boolean, from the sensor legend
 
   setSelected(id) { for (const it of this.items) it.d.classList.toggle("selected", it.site.id === id); }
 
@@ -35,7 +36,7 @@ export class StationLayer {
       const { x: px, z: pz } = it.site, py = ground(px, pz) + 0.01;
       const [x, y, z] = sc.project(px, py, pz);
       const cutAway = U.clipOn.value > 0.5 && px * U.clip.value.x + pz * U.clip.value.z > U.clip.value.w;
-      const onScreen = !this.hiddenAll && !under && !cutAway && z < 1 && x > -40 && x < innerWidth + 40 && y > -40 && y < innerHeight + 40;
+      const onScreen = !this.hiddenAll && (!this.pred || this.pred(it.site)) && !under && !cutAway && z < 1 && x > -40 && x < innerWidth + 40 && y > -40 && y < innerHeight + 40;
       const hidden = onScreen && occluded(cam, [px, py, pz], ground);
       const vis = onScreen && !hidden;
       if (!vis && this._hovered === it.site.id) { this._hovered = null; this.h.onHover?.(it.site, null); }

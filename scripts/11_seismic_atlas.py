@@ -14,7 +14,7 @@ import logging
 from pathlib import Path
 
 from rainier3d.config.domain import REPO, load_domain
-from rainier3d.export.atlas import export_layers, export_volume
+from rainier3d.export.atlas import export_layers, export_sensors, export_volume
 from rainier3d.io.store import read_tree
 from rainier3d.surface import layers as L
 
@@ -33,6 +33,13 @@ def main():
     from rainier3d.surface.imagery import fetch_s2_composite
 
     meta = export_layers(tree, dom, manifest, atlas / "model", fl, imagery=fetch_s2_composite(dom))
+    sen = export_sensors(atlas, REPO / "web" / "atlas" / "data")  # S8 inventory
+    logging.info(
+        "sensors: %d sites, DAS %d segments (%d channels)",
+        len(sen["sites"]),
+        len(sen["das"]["segments"]),
+        sen["das"]["channels"],
+    )
     vol = export_volume(tree, dom, atlas)
     g = vol["grid"]
     logging.info(

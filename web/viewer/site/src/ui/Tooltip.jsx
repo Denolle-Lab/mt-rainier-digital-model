@@ -5,7 +5,7 @@ import Glyph from "./Glyph.jsx";
 import { operators } from "./instruments.js";
 import "./ui.css";
 
-export default function Tooltip({ hover }) {
+export default function Tooltip({ hover, notes = {} }) {
   const ref = useRef(null);
   useLayoutEffect(() => {
     const el = ref.current;
@@ -21,6 +21,7 @@ export default function Tooltip({ hover }) {
       <div className="t-sub">{operators(site).join(" · ")} · {fmtElev(site.elev)} · {fmtSince(site.since)}</div>
       <div className="t-list">{site.kinds.map(k => <div key={k} className="t-item"><Glyph glyph={KIND_BY_KEY[k].glyph} color={KIND_BY_KEY[k].color} /><span>{KIND_BY_KEY[k].label}</span></div>)}</div>
       {site.major && <div className="t-more">{site.major}</div>}
+      {site.codes.filter(c => notes[c]).map(c => <div key={c} className="t-more">{c}: {notes[c].split(":")[0]}</div>)}
     </div>
   );
 }
