@@ -76,3 +76,9 @@ input[type=range]:disabled { opacity: 0.35; }
 .slider input[type=range] { width: 100%; }
 .layers .sub { padding-left: 36px; }
 .tick { position: absolute; color: var(--text-secondary); font: 10.5px var(--font-mono); transform: translate(-100%, -50%); padding-right: 6px; white-space: nowrap; text-shadow: 0 0 3px #121211; }
+.qramp { height: 8px; border-radius: 2px; margin: 6px 0 0; background: linear-gradient(90deg, #121e2e, #173a66, #2d6fc0, #6fa6ec, #dcebff); }
+.ramp-labels { display: flex; justify-content: space-between; color: var(--text-muted); font-size: 11px; margin-top: 4px; }
+.legend .qsrc { color: var(--text-muted); font-size: 11px; line-height: 1.45; }
+.legend .kinds { display: grid; grid-template-columns: 1fr 1fr; column-gap: 8px; }
+.legend .kinds .row { line-height: 18px; }
+.legend { gap: 10px; }

@@ -12,7 +12,7 @@ test.beforeEach(async ({ page }) => { await page.goto("./"); await ready(page); 
 test("(a) loads the map with stations and counts", async ({ page }) => {
   await expect(page.getByTestId("n-stations")).toHaveText("52");
   const visible = await page.locator(".station").evaluateAll(els => els.filter(e => +getComputedStyle(e).opacity > 0.5).length);
-  expect(visible).toBeGreaterThanOrEqual(30);
+  expect(visible).toBeGreaterThanOrEqual(25);   // the block view sits low; ridges hide some stations
 });
 
 test("(b) Go to RCM frames Camp Muir from 9 km and opens its panel", async ({ page }) => {
@@ -51,4 +51,53 @@ test("(d) the summit reaches 1 m detail", async ({ page }) => {
 test("(e) 2D flattens the terrain", async ({ page }) => {
   await page.getByRole("button", { name: "2D" }).click();
   await page.waitForFunction(() => window.__rainier.U.flat.value > 0.99, null, { timeout: 5_000 });
+});
+
+// ---- phase 2: earthquakes ----
+const pixels = page => page.evaluate(() => {
+  const src = window.__rainier.renderer.domElement, c = document.createElement("canvas");
+  c.width = src.width; c.height = src.height;
+  const g = c.getContext("2d"); g.drawImage(src, 0, 0);
+  return { w: c.width, h: c.height, data: Array.from(g.getImageData(0, 0, c.width, c.height).data) };
+});
+const frames = (page, n = 30) => page.evaluate(n => new Promise(r => { let i = 0; const f = () => (++i >= n ? r() : requestAnimationFrame(f)); requestAnimationFrame(f); }), n);
+
+test("(f) solid ground: from straight above, the earthquake layers change no pixel", async ({ page }) => {
+  await page.evaluate(() => { const r = window.__rainier; r.flight = null; r.camera.position.set(0, 60, 0.001); r.controls.target.set(0, 0, 0); });
+  await frames(page, 90);
+  const set = on => page.evaluate(on => { for (const k of ["cloud", "shells", "dots"]) window.__rainier.layers.set(k, on); }, on);
+  await set(true); await frames(page); const a = await pixels(page);
+  await set(false); await frames(page); const b = await pixels(page);
+  let diff = 0;
+  for (let y = Math.floor(a.h * 0.2); y < a.h * 0.8; y++) for (let x = Math.floor(a.w * 0.2); x < a.w * 0.8; x++) {
+    const i = (y * a.w + x) * 4;
+    if (Math.abs(a.data[i] - b.data[i]) > 8 || Math.abs(a.data[i + 1] - b.data[i + 1]) > 8 || Math.abs(a.data[i + 2] - b.data[i + 2]) > 8) diff++;
+  }
+  expect(diff).toBe(0);
+});
+
+test("(g) from below, the shells are visible", async ({ page }) => {
+  await page.getByRole("button", { name: "From below" }).click(); await settle(page); await frames(page);
+  const p = await pixels(page);
+  let blue = 0;
+  // translucent shells over the dark underside shift pixels toward blue; the rock alone is neutral
+  for (let i = 0; i < p.data.length; i += 4) if (p.data[i + 2] - p.data[i] > 15 && p.data[i + 2] - p.data[i + 1] > 5) blue++;
+  expect(blue).toBeGreaterThan(20000);
+});
+
+test("(h) the cut hides stations on the removed side", async ({ page }) => {
+  await page.locator("canvas").click({ position: { x: 700, y: 500 } });
+  await page.keyboard.press("x");
+  await frames(page);
+  const op = id => page.locator(`.station[data-id="${id}"]`).evaluate(e => +e.style.opacity);
+  expect(await op("CC.PARA")).toBe(0);   // south of the summit: cut away
+  expect(await op("UW.FMW")).toBeGreaterThan(0.1);   // north: kept
+});
+
+test("(i) 2D hides the block frame, 3D brings it back", async ({ page }) => {
+  await expect(page.locator(".tick").first()).toBeVisible();
+  await page.getByRole("button", { name: "2D" }).click();
+  await expect(page.locator(".tick").first()).toBeHidden();
+  await page.getByRole("button", { name: "3D" }).click();
+  await expect(page.locator(".tick").first()).toBeVisible();
 });

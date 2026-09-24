@@ -13,8 +13,8 @@ export function makeCloud(geometry, { pxScale, ground, camera }) {
         vec4 mv = modelViewMatrix * vec4(position, 1.0);
         vSize = 0.16 + 0.052 * clamp(mag, 0.0, 4.5);             // sprite diameter, km
         vCv = mv.xyz;
-        gl_PointSize = position.y > ground ? 0.0 : vSize * uScale / -mv.z;
-        gl_Position = projectionMatrix * mv;
+        gl_PointSize = vSize * uScale / -mv.z;
+        gl_Position = position.y > ground ? vec4(2.0, 2.0, 2.0, 1.0) : projectionMatrix * mv;   // above ground: clipped away
       }`,
     fragmentShader: ground.glsl + `
       uniform float uGain; uniform mat4 uViewInv;

@@ -1,10 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { BUILD_COMMAND, BundleMissingError, loadBundle } from "./data/bundle.js";
 import { StationLayer } from "./overlay/StationLayer.js";
+import { QuakeLayers } from "./scene/quakes/quakeLayers.js";
 import { RainierScene } from "./scene/RainierScene.js";
 import Controls from "./ui/Controls.jsx";
 import GoTo from "./ui/GoTo.jsx";
 import Header from "./ui/Header.jsx";
+import LayerPanel from "./ui/LayerPanel.jsx";
+import QuakeLegend from "./ui/QuakeLegend.jsx";
 import Legend from "./ui/Legend.jsx";
 import StationPanel from "./ui/StationPanel.jsx";
 import Tooltip from "./ui/Tooltip.jsx";
@@ -42,10 +45,14 @@ function Atlas({ bundle, onError }) {
         onHover: (site, ev) => setHover(ev ? { site, x: ev.clientX, y: ev.clientY } : null),
         onClick: site => openSite(site, s),
       });
-      s.onFrame = () => { layer.update(); if (n++ % 15 === 0) setDetail(detailText(s.frame, bundle.summit)); };
+      if (bundle.quakes) s.layers = new QuakeLayers(s, bundle.quakes, overlayRef.current);
+      s.onFrame = () => {
+        layer.update(); s.layers?.update((x, y, z) => s.project(x, y, z));
+        if (n++ % 15 === 0) setDetail(detailText(s.frame, bundle.summit));
+      };
       setScene(s);
     }, onError);
-    return () => { cancelled = true; layer?.dispose(); sc?.dispose(); };
+    return () => { cancelled = true; layer?.dispose(); sc?.layers?.dispose(); sc?.dispose(); };
   }, [bundle, onError, openSite]);
 
   useEffect(() => {   // the panel pushes the right-hand controls inward, as in the Cascadia atlas
@@ -60,9 +67,11 @@ function Atlas({ bundle, onError }) {
       {scene && (
         <>
           <Header bundle={bundle} detail={detail} onPick={s => openSite(s, scene)} />
-          <Controls scene={scene} />
+          <Controls scene={scene}>
+            {scene.layers && <LayerPanel layers={scene.layers} scene={scene} onStations={on => layerRef.current?.setVisible(on)} />}
+          </Controls>
           <GoTo majors={bundle.majors} active={active} onPlace={k => { setActive(k); scene.flyTo(k); }} onSite={s => openSite(s, scene)} />
-          <Legend bundle={bundle} />
+          <Legend bundle={bundle}>{bundle.quakes && <QuakeLegend meta={bundle.quakes.meta} />}</Legend>
           <Tooltip hover={hover} />
           {site && <StationPanel site={site} bundle={bundle} onFly={s => scene.flyToSite(s)}
             onClose={() => { setSiteId(null); layerRef.current?.setSelected(null); }} />}

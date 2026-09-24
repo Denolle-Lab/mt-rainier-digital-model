@@ -43,7 +43,8 @@ export class RainierScene {
     this.scene.add(this.baseTerrain);
 
     const p = bundle.summit.patch;
-    this.U.hole.value.set(p.west_km + 0.004, p.west_km + p.width_km - 0.004, p.north_km + 0.004, p.north_km + p.height_km - 0.004);
+    // the overview keeps 20 m under the summit tiles' edges, so no raster crack opens between the two meshes
+    this.U.hole.value.set(p.west_km + 0.02, p.west_km + p.width_km - 0.02, p.north_km + 0.02, p.north_km + p.height_km - 0.02);
     this.summitGroup = new THREE.Group(); this.scene.add(this.summitGroup);
     this.lod = new SummitLod(bundle.summit, bundle.base, tex => this._material(tex, false), this.summitGroup);
 

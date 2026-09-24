@@ -38,6 +38,10 @@ describe("QuakeLayers", () => {
     expect(q.state).toEqual({ cloud: true, shells: false, dots: true });
     expect([q.cloud.visible, q.dots.visible, q.shells.visible, q.frame.group.visible]).toEqual([true, true, false, true]);
   });
+  it("events above the ground are left out of the geometry (a zero point size still draws a pixel on some GPUs)", () => {
+    const q = new QuakeLayers(fakeScene(), { records: new Float32Array([0, -5, 0, 1, 0, 2.5, 0, 1, 3, 0.965, 3, 1]), meta: { count: 3 } });
+    expect(q.dots.geometry.attributes.position.count).toBe(1);   // ground is 1 km; y = 2.5 and 0.965 (35 m under, inside the 40 m margin) are out
+  });
   it("an empty catalog builds without throwing", () => {
     const q = new QuakeLayers(fakeScene(), { records: new Float32Array(0), meta: { count: 0 } });
     expect(q.shells.children).toHaveLength(0);

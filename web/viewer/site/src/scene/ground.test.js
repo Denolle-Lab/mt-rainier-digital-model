@@ -12,12 +12,13 @@ describe("makeGround", () => {
     expect(g.elevKm(2.0, 1.5)).toBeCloseTo(1.5);
     expect(g.elevKm(-3, 1)).toBeNull();
   });
-  it("max-pools 2 × 2 blocks so a one-sample peak survives in the texture", () => {
+  it("the clip texture holds the lowest ground nearby, so nothing passes above a dip in the surface", () => {
     const h = new Int16Array(16).fill(1000);
-    h[5] = 3000;
+    h[5] = 200;   // one low sample in block (0, 0)
     const g = makeGround(meta, h);
     expect(g.texture.image.width).toBe(2);
-    expect(g.texture.image.data[0]).toBeCloseTo(3);
+    for (const v of g.texture.image.data) expect(v).toBeCloseTo(0.2);   // block min, then spread to neighbors
+    expect(g.minKm(3.5, 3.5)).toBeCloseTo(0.2);
     expect(g.glsl).toContain("float groundKm(vec2 xz)");
     expect(g.rect.toArray()).toEqual([0, 0, 4, 4]);
   });

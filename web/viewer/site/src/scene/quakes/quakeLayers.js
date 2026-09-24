@@ -11,15 +11,19 @@ export const DEFAULT_LAYERS = { cloud: true, shells: true, dots: false };
 export class QuakeLayers {
   constructor(rs, quakes, overlay = null) {
     this.rs = rs; this.visible = true; this.layerState = { ...DEFAULT_LAYERS };
-    const n = quakes.records.length / 4, pos = new Float32Array(n * 3), mag = new Float32Array(n), grd = new Float32Array(n);
-    for (let i = 0; i < n; i++) {
+    // Events above the ground are left out entirely: a zero point size still draws one pixel on some GPUs.
+    const all = quakes.records.length / 4, pos = [], mag = [], grd = [];
+    for (let i = 0; i < all; i++) {
       const [x, y, z, m] = quakes.records.subarray(i * 4, i * 4 + 4);
-      pos.set([x, y, z], i * 3); mag[i] = m; grd[i] = rs.ground.elevKm(x, z) ?? 0;
+      const g = (rs.ground.minKm?.(x, z) ?? rs.ground.elevKm(x, z) ?? 0) - 0.03;   // the same test as the shaders
+      if (y > g - 0.01) continue;
+      pos.push(x, y, z); mag.push(m); grd.push(g);
     }
+    this.drawn = mag.length;
     const geo = new THREE.BufferGeometry();
-    geo.setAttribute("position", new THREE.BufferAttribute(pos, 3));
-    geo.setAttribute("mag", new THREE.BufferAttribute(mag, 1));
-    geo.setAttribute("ground", new THREE.BufferAttribute(grd, 1));
+    geo.setAttribute("position", new THREE.BufferAttribute(new Float32Array(pos), 3));
+    geo.setAttribute("mag", new THREE.BufferAttribute(new Float32Array(mag), 1));
+    geo.setAttribute("ground", new THREE.BufferAttribute(new Float32Array(grd), 1));
     this.pxScale = { value: 0 }; this.resize();
     this.cloud = makeCloud(geo, { pxScale: this.pxScale, ground: rs.ground, camera: rs.camera });
     this.dots = makeDots(geo, { dpr: rs.renderer.getPixelRatio() });

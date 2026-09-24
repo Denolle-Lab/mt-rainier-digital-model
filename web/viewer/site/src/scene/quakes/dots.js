@@ -7,8 +7,9 @@ export function makeDots(geometry, { dpr }) {
     vertexShader: `
       attribute float mag; attribute float ground; uniform float uDpr;
       void main() {
-        gl_PointSize = position.y > ground - 0.01 ? 0.0 : (1.6 + 1.1 * clamp(mag + 0.5, 0.0, 5.0)) * uDpr;
-        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        gl_PointSize = (1.6 + 1.1 * clamp(mag + 0.5, 0.0, 5.0)) * uDpr;
+        gl_Position = position.y > ground - 0.01 ? vec4(2.0, 2.0, 2.0, 1.0)   // above ground: clipped away
+                                                  : projectionMatrix * modelViewMatrix * vec4(position, 1.0);
       }`,
     fragmentShader: `
       void main() {
