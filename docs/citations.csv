@@ -1,7 +1,6 @@
 key,doi,kind,verified,fetched,cited_in
 obrebski2015,10.1002/2014gc005581,doi,,cached,docs/data_inventory.md; docs/report/references_resolved.json
 desiena2014,10.1002/2014jb011372,doi,,cached,docs/data_inventory.md; scripts/15_bibliography.py
-blewitt2016,10.1002/2015jb012552,doi,,ok,src/rainier3d/geodesy/velocity.py
 shangguan2017,10.1002/2016ms000686,doi,,cached,docs/data_inventory.md
 shelly2013,10.1002/grl.50354,doi,,cached,docs/data_inventory.md
 solus100_article,10.1002/saj2.20769,doi,"web-2026-09-24 (COG read, DataCite and Crossref)",cached,configs/sources.yaml; docs/report/references_resolved.json
@@ -15,7 +14,7 @@ dubayah2020,10.1016/j.srs.2020.100002,doi,,cached,docs/data_inventory.md
 moran_1999,10.1029/1999jb900036,doi,web-2026-09-23,cached,configs/sources.yaml; configs/units.yaml; docs/data_inventory.md; docs/report/references_resolved.json
 calkins2011,10.1029/2010jb007657,doi,,cached,docs/data_inventory.md
 delph2018,10.1029/2018gl079518,doi,,cached,docs/data_inventory.md
-ulberg2020,10.1029/2019gc008888,doi,,cached,docs/data_inventory.md
+ulberg_2020_article,10.1029/2019gc008888,doi,web-2026-09-24 (EMC file and metadata read; authors from Crossref),cached,configs/sources.yaml; docs/data_inventory.md; docs/joint_calibration.md
 florea2021,10.1029/2020jd033565,doi,,cached,docs/data_inventory.md
 heap2021a,10.1029/2021jb022514,doi,,cached,docs/data_inventory.md
 jiang2023,10.1029/2022gc010738,doi,,cached,docs/data_inventory.md; docs/report/references_resolved.json
@@ -39,8 +38,8 @@ fan2017_wtd,10.1073/pnas.1712381114,doi,web-2026-09-24 (OPeNDAP clip),cached,con
 sisson2011,10.1130/g31902.1,doi,,cached,docs/data_inventory.md; docs/report/references_resolved.json
 huber_1964,10.1214/aoms/1177703732,doi,web-2026-09-24 (Crossref),cached,configs/sources.yaml; configs/velocity_calibration.yaml; docs/joint_calibration.md; scripts/13_joint_calibration.py
 solus100,10.15482/usda.adc/25033856,doi,"web-2026-09-24 (COG read, DataCite and Crossref)",cached,configs/sources.yaml; docs/report/subsurface_model.md; src/rainier3d/surface/layers.py
+ulberg_2020,10.17611/dp/emc.2020.imushloceq.1,doi,web-2026-09-24 (EMC file and metadata read; authors from Crossref),ok,configs/sources.yaml; docs/joint_calibration.md
 brocher_2005,10.1785/0120050077,doi,"no: DOI from survey memory; relations coded from the paper's Eqs. 1, 6 and 9",cached,configs/sources.yaml; docs/data_inventory.md; docs/joint_calibration.md; docs/report/references_resolved.json; src/rainier3d/petro/relations.py
-shen2015,10.1785/0120140247,doi,,ok,src/rainier3d/geodesy/strain.py
 white_2020,10.1785/0220190318,doi,web-2026-09-24 (Crossref),cached,configs/sources.yaml; configs/velocity_calibration.yaml; docs/joint_calibration.md; docs/report/references_resolved.json; scripts/13_joint_calibration.py
 kopfli2024,10.1785/0220240079,doi,,cached,docs/data_inventory.md
 stanley1996,10.1785/bssa08601a0001,doi,,cached,docs/data_inventory.md; docs/report/references_resolved.json
@@ -52,14 +51,11 @@ driedger1986,10.3133/pp1365,doi,,cached,docs/report/references_resolved.json; do
 fiske_1963,10.3133/pp444,doi,web-2026-09-23,cached,configs/overlays.yaml; configs/sources.yaml; docs/report/references_resolved.json; docs/report/subsurface_model.md
 fuhrig2024,10.3133/sir20245015,doi,,cached,docs/report/references_resolved.json
 pelletier2016,10.3334/ornldaac/1304,doi,,cached,docs/data_inventory.md
-gedi_l3,10.3334/ornldaac/1952,doi,web-2026-09-24 (DOI resolved),ok,configs/canopy_products.yaml; configs/sources.yaml
-gedi_l4b,10.3334/ornldaac/2299,doi,web-2026-09-24 (DOI resolved),ok,configs/canopy_products.yaml; configs/sources.yaml
 eth_canopy_2020,10.3929/ethz-b-000609802,doi,web-2026-09-24 (COG range reads),cached,configs/sources.yaml; docs/report/subsurface_model.md; src/rainier3d/surface/layers.py
 cvm17,10.5066/p14hj3ic,doi,web-2026-09-23,cached,configs/sources.yaml; docs/data_inventory.md; docs/report/references_resolved.json; docs/report/subsurface_model.md; scripts/15_bibliography.py; src/rainier3d/export/atlas.py; src/rainier3d/fusion/regional.py; src/rainier3d/report/render.py
 aagaard2021,10.5066/p98ca3d5,doi,,cached,docs/report/references_resolved.json
 jondewitz2023,10.5066/p9jz7ao3,doi,,cached,docs/data_inventory.md
 rgiconsortium2023,10.5067/f6jmovy5navz,doi,,cached,docs/data_inventory.md
-gedi_l2b,10.5067/gedi/gedi02_b.002,doi,web-2026-09-24 (DOI resolved),ok,configs/canopy_products.yaml; configs/sources.yaml
 opentopography2005,10.5069/g9cc0xmc,doi,,cached,docs/data_inventory.md
 ma2026_wtd,10.5281/zenodo.18504963,doi,"web-2026-09-24 (Zenodo record, windowed read)",cached,configs/sources.yaml; docs/report/subsurface_model.md; scripts/02_surface_layers.py; src/rainier3d/surface/layers.py
 glathida,10.5904/wgms-glathida-2020-10,doi,web-2026-09-23 (file); DOI from memory,cached,configs/sources.yaml; docs/report/references_resolved.json; docs/report/subsurface_model.md
@@ -89,6 +85,3 @@ nhdplus_v21,,url,web-2026-09-24 (query),,configs/sources.yaml; scripts/02_surfac
 nlcd_2021,,url,web-2026-09-24 (WCS GetCoverage),,configs/sources.yaml; src/rainier3d/surface/layers.py
 nhdplus_hr,,url,"web-2026-09-24 (staged GDB download; 60,174 flowlines in the domain)",,configs/sources.yaml; scripts/02_surface_layers.py
 sentinel2_l2a,,url,web-2026-09-24 (8 acquisition days in the composite),,configs/sources.yaml; scripts/02_surface_layers.py; src/rainier3d/export/atlas.py
-canopy_lidar_chm,,url,no,,configs/canopy_products.yaml; configs/sources.yaml
-sentinel2_lai_2023,,url,no,,configs/canopy_products.yaml; configs/sources.yaml
-soil_map_image,,internal,no,,configs/canopy_products.yaml; configs/sources.yaml

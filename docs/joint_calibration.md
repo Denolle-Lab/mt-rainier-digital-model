@@ -22,6 +22,8 @@ Here we fit the geology model itself to 1823 P and 1280 S analyst picks from 88 
 
 On held-out events, the RMS after relocation falls from 0.121 to 0.093 s for P and from 0.317 to 0.188 s for S. The data resolve V0 at ×1.31 ± 0.02. P* stays close to its placeholder, and rock Vs falls by 2.4 ± 1.2%. After calibration, the geology model and the bias-corrected regional model agree within 3.5% between 0.3 and 4 km depth. As a result, the fusion invariant that failed before calibration (0.032) and after the first calibration (0.050) now passes at 0.012. Median Vp/Vs at 2–4 km is 1.74. The calibration takes 26 minutes on a laptop.
 
+We check the result against the iMUSH local-earthquake tomography [@ulberg_2020_article]. Near Rainier, that model independently finds CVM v1.7 Vs 5–8% too slow at 1–8 km depth, matching the shape of our correction. South of 46.65°N, however, our correction makes Vs 5–7% too fast. It is therefore local to Rainier, not a regional correction. Our Vp/Vs at 4–8 km is about 0.05 below the iMUSH value.
+
 ## 1. Motivation
 
 The rainier3d model is meant as a best-guess starting model: data gathered and made consistent now, to be refined later with more earthquakes and sensors. Any calibration of it should therefore act on physical parameters that later work can inherit and test, not on factors that only make the numbers fit. Three problems motivated this run.
@@ -227,6 +229,42 @@ Sources: `outputs/relocation/s5_nocal.log`, `outputs/vs_calibration/s5_cal.log`,
 
 The Qp = 2 Qs rule of the model implies a negative bulk quality factor below Vp/Vs = √(8/3). The cells affected fall to 11,738, from 30,086 with S12.
 
+### 4.7 Comparison with the iMUSH tomography
+
+Ulberg et al. [-@ulberg_2020_article] inverted local-earthquake and active-source arrivals recorded by the 70-station iMUSH array and PNSN for Vp and Vs on 1.2 km nodes. We use the EMC file (`iMUSH-localEQ-Ulberg-2020.r0.0-n4c.nc`, [@ulberg_2020]). Its depth axis is km below sea level: the EMC page and figure captions say so, although the netCDF `long_name` says "below earth surface". Only nodes with checkerboard recovery of 20 km features are unmasked.
+
+Coverage of our domain differs by phase:
+
+| Model | Area resolved, 0–14 km below sea level |
+|---|---|
+| Vp | 82–90% of the domain |
+| Vs, south (< 46.65°N, inside the array) | 83–93% |
+| Vs, north (≥ 46.75°N, Rainier) | 11–19% |
+
+S21 (`scripts/21_compare_imush.py`) samples our models at the 51,300 unmasked nodes below ground inside the domain.
+
+**Table 9.** Mean ln(V_Ulberg / V_model) by depth below ground, north of 46.75°N. "Regional" is CVM v1.7 / CRESCENT as distributed; "+ bias" includes the S13 static bias. Source: `outputs/model_comparison/ulberg2020_by_depth.csv`.
+
+| Depth (km) | 1–2 | 2–3 | 3–4 | 4–6 | 6–8 | 8–11 | 11–15 | 15–20 |
+|---|---|---|---|---|---|---|---|---|
+| Vs, regional | 0.084 | 0.073 | 0.064 | 0.055 | 0.046 | 0.022 | −0.030 | −0.035 |
+| Vs, regional + bias | 0.061 | 0.016 | −0.010 | −0.019 | −0.009 | 0.007 | −0.005 | 0.017 |
+| Vp, regional | 0.068 | 0.038 | 0.014 | −0.010 | −0.025 | −0.021 | −0.012 | −0.013 |
+| Vp, regional + bias | 0.058 | 0.021 | 0.005 | −0.002 | 0.003 | 0.007 | 0.013 | 0.009 |
+| Vp/Vs, Ulberg (matched) | 1.770 | 1.759 | 1.754 | 1.757 | 1.755 | 1.722 | 1.744 | 1.765 |
+| Vp/Vs, regional | 1.810 | 1.828 | 1.850 | 1.851 | 1.851 | 1.829 | 1.720 | 1.723 |
+| Vp/Vs, rainier3d S13 v2 | 1.794 | 1.767 | 1.736 | 1.705 | 1.705 | 1.721 | 1.720 | 1.772 |
+
+**Near Rainier, the iMUSH model supports the correction.** Relative to CVM v1.7, Ulberg's Vs is 5–8% faster at 1–8 km and 3–4% slower at 11–20 km, the same shape as our bias (Table 3). With the bias applied, the Vs difference below 2 km falls to 2% or less, and Vp/Vs moves from CVM's 1.83–1.85 towards Ulberg's 1.75–1.77.
+
+**Our Vp/Vs goes too low at 4–8 km.** There it is 1.705, about 0.05 below Ulberg's.
+
+**In the south the bias overshoots.** Inside the iMUSH array, Ulberg's Vs is within 1–2% of CVM v1.7 at 1–6 km, and the bias makes our Vs 5–7% too fast there (2–6 km). The correction is therefore local to Rainier. A depth-only profile fitted to Rainier-area arrivals cannot be applied across the domain.
+
+**The two data sets are not fully independent.** Both use PNSN arrivals from the 2015–2016 period, where our event set overlaps the iMUSH deployment. The iMUSH-only stations and the active-source shots make Ulberg's model largely independent south of Rainier, but less so to the north.
+
+![Figure 5. rainier3d and its baseline against the iMUSH tomography (Ulberg et al. 2020). (a, b) Mean ln(V_Ulberg / V_model) by depth below ground over the domain (solid) and north of 46.75°N (dotted). (c) Median Vp/Vs at nodes where Ulberg's matched P and S models are both resolved.](joint_calibration/fig5_imush_comparison.png)
+
 ## 5. Discussion
 
 ### 5.1 What the first calibration taught
@@ -243,7 +281,7 @@ The first S13 run (`configs/velocity_calibration_v1.yaml`) put depth factors on 
 
 ### 5.3 Proposal: static bias of the baseline models
 
-For users of CVM v1.7 and CRESCENT at Mount Rainier, and for the model's authors, we propose Table 3 as a static correction of the baseline. It is a single depth profile per phase, fitted jointly with our geology to the PNSN arrivals.
+For users of CVM v1.7 and CRESCENT at Mount Rainier, and for the model's authors, we propose Table 3 as a static correction of the baseline. It is a single depth profile per phase, fitted jointly with our geology to the PNSN arrivals. The iMUSH tomography confirms its shape near Rainier but not inside the iMUSH array (Section 4.7). The correction should therefore be read as varying laterally. The next version should let it vary between the Rainier area and the south of the domain rather than keeping one profile for the whole domain.
 
 The top 300 m is left open (Table 4). There, CVM v1.7's near-surface layer is 20–30% slower than our rock model. The arrivals constrain it only directly beneath the 50 stations. Two independent data sets can settle it:
 - **Vs30 and near-surface Vs:** the node and fiber arrays and site measurements. If they side with CVM, the unconsolidated and weathered layers of the geology model need thickening, not the rock V0 lowering.
@@ -253,6 +291,7 @@ The top 300 m is left open (Table 4). There, CVM v1.7's near-surface layer is 20
 
 - **Station terms were not estimated.** Site effects beneath stations may partly project onto V0.
 - **The geology multipliers are global.** Per-lithology multipliers need more stations on plutonic and sedimentary units (Section 4.2).
+- **The static bias is one profile for the whole domain.** The iMUSH comparison shows it overcorrects Vs by 5–7% at 2–6 km south of 46.65°N.
 - **Resolution below 11 km is limited.** Only 30 events are deeper than 11 km and 8 deeper than 16 km (`outputs/relocation/fused_joint/catalog.csv`).
 - **Environment hazard.** Every `pixi run` in this checkout reinstalls pykonal, which is built from its source distribution on this platform, and this crashed two runs. S13 was run with `.pixi/envs/default/bin/python` directly. A prebuilt wheel or a conda-forge package would remove the problem.
 
@@ -266,6 +305,7 @@ $PY scripts/06_validate_pnsn.py && $PY -m pytest -q tests
 $PY scripts/14_relocate.py --model data/processed/model.zarr --name fused_joint --skin 1   # 1.5 min per model
 $PY scripts/14_relocate.py --model 1d --name pnsn1d --skin 1
 $PY scripts/16_relocation_figures.py
+$PY scripts/21_compare_imush.py                     # needs data/raw/emc/iMUSH-localEQ-Ulberg-2020.r0.0-n4c.nc (URL in the script)
 pixi run bib
 ```
 
@@ -273,4 +313,4 @@ S13 needs no base model; it builds the uncalibrated model in memory. The S14 com
 
 ## References
 
-The full list is in `docs/references.bib`. The keys cited here are: brocher_2005, crescent_gen0, cvm17_article, heap2021, huber_1964, kissling_1994, lomax_2000, pavlis_booker_1980, thurber_1983, watters2000, white_2020.
+The full list is in `docs/references.bib`. The keys cited here are: brocher_2005, crescent_gen0, cvm17_article, heap2021, huber_1964, kissling_1994, lomax_2000, pavlis_booker_1980, thurber_1983, ulberg_2020, ulberg_2020_article, watters2000, white_2020.

@@ -125,12 +125,17 @@ def figure(tab: pd.DataFrame, path):
         ax[j].set(
             xlabel=f"ln({v.upper()[0]}{v[1]} Ulberg / model)", title=f"({'ab'[j]}) {v[0].upper()}{v[1:]}"
         )
-    t = tab[tab.region == "all"]
-    z = t.depth_bg_m.map(mid)
-    ax[2].plot(t.vpvs_ulberg_matched, z, "k-o", ms=3, label="Ulberg 2020, matched P and S")
-    ax[2].plot(t.vpvs_regional, z, "-", color="#d98c2b", label="CVM v1.7 / CRESCENT")
-    ax[2].plot(t.vpvs_fused_uncal, z, "--", color="#d98c2b", label="rainier3d uncalibrated")
-    ax[2].plot(t.vpvs_fused_v2, z, "-o", ms=3, color="#2a78d6", label="rainier3d (S13 v2)")
+    for reg, ls in (("all", "-"), ("north", ":")):
+        t = tab[tab.region == reg]
+        z = t.depth_bg_m.map(mid)
+        sfx = "" if reg == "all" else ", north"
+        ax[2].plot(
+            t.vpvs_ulberg_matched, z, ls, color="k", marker="o", ms=3, label=f"Ulberg 2020, matched{sfx}"
+        )
+        ax[2].plot(t.vpvs_regional, z, ls, color="#d98c2b", label=f"CVM v1.7 / CRESCENT{sfx}")
+        ax[2].plot(
+            t.vpvs_fused_v2, z, ls, color="#2a78d6", marker="o", ms=3, label=f"rainier3d (S13 v2){sfx}"
+        )
     ax[2].set(xlabel="Vp/Vs (median, matched nodes)", title="(c) Vp/Vs")
     ax[0].set_ylabel("depth below ground (km)")
     ax[0].invert_yaxis()
