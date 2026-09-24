@@ -40,10 +40,19 @@ Measured on an Apple M5 Max (Chrome, ANGLE Metal): 16.7 ms mean frame time while
 ## Model surface layers (rainier3d)
 
 The **Surface model** panel drapes one 2D layer of the
-[rainier3d](https://github.com/Denolle-Lab/mt-rainier-virtual-3d-model) model on the terrain at a time: geology
-(model units), glacier ice thickness, soil thickness, water-table depth (Ma et al. 2026 and Fan et al. 2017),
-canopy height, land cover, the model's surface hydrothermal alteration and Vs in the top 100 m of rock. `W`
-toggles the NHDPlus stream network. Hovering the ground reads the layer's value at that point.
+[rainier3d](https://github.com/Denolle-Lab/mt-rainier-virtual-3d-model) model on the terrain at a time:
+- imagery: a Sentinel-2 true-colour median composite (August to September 2025);
+- geology (model units) and the model's surface hydrothermal alteration;
+- glacier ice thickness and NDSI (snow and ice);
+- soil thickness;
+- water-table depth, from Ma et al. 2026 and from Fan et al. 2017;
+- canopy height, NDVI and land cover;
+- Vs in the top 100 m of rock, from the S-calibrated model.
+
+`W` toggles the NHDPlus HR stream network. Hovering the ground (or tapping it on a phone) reads the layer's value at that point.
+
+**Phones.** Below 700 px wide the panels become bottom sheets, opened one at a time from a tab dock (Layers, Model, Legend,
+Go to). Station details open as a sheet from the bottom.
 
 The layers are the model's 100 m surface grid, reprojected onto the overview box in square-degree pixels, so the
 same texture lookup (world x/z to lon/lat) serves the overview mesh and the 1 m summit tiles. The bundle lives in
@@ -53,7 +62,9 @@ same texture lookup (world x/z to lon/lat) serves the overview mesh and the 1 m 
 cd ../mt-rainier-virtual-3d-model && pixi run s11 -- --atlas ../rainier-seismic-atlas/site/public/atlas
 ```
 
-The bundle is optional: without `model/layers.json` the site runs exactly as before.
+The bundle is optional: without `model/layers.json` the site runs exactly as before. Imagery and colour-ramp
+layers are WebP (lossy, with alpha) and categorical layers are PNG. The bundle is about 22 MB, and each layer
+loads only when it is picked.
 
 ## Data
 
