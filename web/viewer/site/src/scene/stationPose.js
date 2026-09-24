@@ -16,12 +16,14 @@ export function stationPose(site, cam) {
 // Places in Go to. Fixed poses for the overview and the summit crater; the valleys are framed 12 km out at 35° from
 // the south-west, targeting the ground at the place.
 export const PLACES = [
-  { key: "home", label: "Whole area", pos: [-34, 30, 58], target: [0, 0.5, 2] },
+  { key: "home", label: "Whole area", pos: [-40, 9, 74], target: [0, -5, 0] },   // the block: mountain on top, earthquakes through the open front
   { key: "summit", label: "Summit crater", pos: [-0.55, 4.72, 0.95], target: [0.05, 4.33, 0] },
   { key: "paradise", label: "Paradise", lat: 46.786, lon: -121.735 },
   { key: "carbon", label: "Carbon River", lat: 46.99, lon: -121.92 },
   { key: "white", label: "White River", lat: 46.9, lon: -121.64 },
   { key: "nisqually", label: "Nisqually", lat: 46.74, lon: -121.8 },
+  { key: "under", label: "From below", pos: [-22, -48, 40], target: [0, -6, 0] },
+  { key: "side", label: "Side on", pos: [0, -2, 78], target: [0, -6, 0] },
 ];
 
 export function placePose(place, elevKm) {

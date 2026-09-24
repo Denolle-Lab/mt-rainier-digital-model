@@ -2,6 +2,7 @@ import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { approach, ease, isMoveKey, motionDuration, moveStep } from "./cameraMath.js";
 import { gridGeometry } from "./gridGeometry.js";
+import { cutUniform, isUnder, terrainOrder } from "./groundControls.js";
 import { makeGround } from "./ground.js";
 import { PLACES, placePose, stationPose } from "./stationPose.js";
 import { SummitLod } from "./summitLod.js";
@@ -30,6 +31,7 @@ export class RainierScene {
     };
     this.targets = { style: 0, flat: 0 };
     const { meta, heights } = bundle.terrain;
+    this.terrainMeta = meta;
     this.ground = makeGround(meta, heights);
 
     photo.flipY = false; photo.colorSpace = THREE.NoColorSpace; photo.anisotropy = r.capabilities.getMaxAnisotropy(); photo.needsUpdate = true;
@@ -58,7 +60,7 @@ export class RainierScene {
     this._onKeyDown = e => { if (!isMoveKey(e)) return; e.preventDefault(); this.held.add(e.key); this.flight = null; };
     this._onKeyUp = e => (e.key === "Meta" ? this.held.clear() : this.held.delete(e.key));
     this._onBlur = () => this.held.clear();
-    this._onResize = () => { r.setSize(innerWidth, innerHeight); this.camera.aspect = innerWidth / innerHeight; this.camera.updateProjectionMatrix(); this.onResize?.(); };
+    this._onResize = () => { r.setSize(innerWidth, innerHeight); this.camera.aspect = innerWidth / innerHeight; this.camera.updateProjectionMatrix(); this.layers?.resize(); this.onResize?.(); };
     addEventListener("keydown", this._onKeyDown); addEventListener("keyup", this._onKeyUp);
     addEventListener("blur", this._onBlur); addEventListener("resize", this._onResize);
     this._motion = matchMedia?.("(prefers-reduced-motion: reduce)");
@@ -70,7 +72,11 @@ export class RainierScene {
     this._raf = requestAnimationFrame(this._tick);
   }
 
-  _material(map, hole) { const m = terrainMaterial(this.U, map, { hole }); this.materials.push(m); return m; }
+  _material(map, hole) {
+    const m = terrainMaterial(this.U, map, { hole });
+    m.transparent = this.see > 0; m.depthWrite = !(this.see > 0);   // tiles that load later match the see-through setting
+    this.materials.push(m); return m;
+  }
 
   get reducedMotion() { return !!this._motion?.matches; }
   elevKm(x, z) { return this.ground.elevKm(x, z); }
@@ -88,10 +94,16 @@ export class RainierScene {
   }
 
   setStyle(s) { this.targets.style = STYLE[s]; }
+  setSeeThrough(pct) {
+    this.see = pct; this.U.alpha.value = 1 - pct / 100;
+    for (const m of this.materials) { m.transparent = pct > 0; m.depthWrite = pct === 0; }
+  }
+  setCut({ on, angle, offset }) { this.U.clip.value.set(...cutUniform(angle, offset)); this.U.clipOn.value = on ? 1 : 0; }
   setView(v) {
     if (v === this._view) return;   // re-clicking the active view must not overwrite the saved tilt
     this._view = v;
     const to2d = v === "2d"; this.targets.flat = to2d ? 1 : 0;
+    this.layers?.setVisibleAll(!to2d);   // earthquake layers and the block frame have no place on a flat map
     const sph = new THREE.Spherical().setFromVector3(this.camera.position.clone().sub(this.controls.target));
     if (to2d) this._savedPolar = sph.phi;
     sph.phi = to2d ? 0.001 : (this._savedPolar ?? 0.9);
@@ -123,9 +135,11 @@ export class RainierScene {
     const dist = this.camera.position.distanceTo(this.controls.target);
     this.camera.near = THREE.MathUtils.clamp(dist * 0.004, 0.0004, 0.1); this.camera.updateProjectionMatrix();
     this.camera.updateMatrixWorld();   // overlays project with exactly this frame's camera
-    const cp = this.camera.position, flat = this.U.flat.value;
-    const under = cp.y < (this.elevKm(cp.x, cp.z) ?? 0) * (1 - flat);
+    const flat = this.U.flat.value, under = isUnder(this.camera.position.toArray(), (x, z) => this.elevKm(x, z), flat);
     this.U.under.value = under ? 1 : 0;
+    const order = terrainOrder(under);
+    this.baseTerrain.renderOrder = order;
+    for (const m of this.summitGroup.children) m.renderOrder = order;
     const finest = this.lod.update(this.camera, flat);
     this.U.holeOn.value = this.lod.allRootsReady ? 1 : 0;
     this.frame = { dist, under, finest, flat, summitFailures: this.lod.failures };

@@ -28,8 +28,8 @@ describe("stationPose", () => {
 });
 
 describe("places", () => {
-  it("lists the six places", () => {
-    expect(PLACES.map(p => p.key)).toEqual(["home", "summit", "paradise", "carbon", "white", "nisqually"]);
+  it("lists the eight places", () => {
+    expect(PLACES.map(p => p.key)).toEqual(["home", "summit", "paradise", "carbon", "white", "nisqually", "under", "side"]);
   });
   it("puts a river place's target on the ground, 12 km out at 35° from the south-west", () => {
     const p = placePose(PLACES.find(p => p.key === "paradise"), () => 1.6);

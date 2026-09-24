@@ -29,10 +29,10 @@ describe("Header", () => {
 });
 
 describe("GoTo", () => {
-  it("lists six places and the major stations", () => {
+  it("lists eight places and the major stations", () => {
     const b = bundleFixture(), onPlace = vi.fn(), onSite = vi.fn();
     render(<GoTo majors={b.majors} onPlace={onPlace} onSite={onSite} active={null} />);
-    expect(screen.getAllByRole("button", { name: /Whole area|Summit crater|Paradise|Carbon River|White River|Nisqually/ })).toHaveLength(6);
+    expect(screen.getAllByRole("button", { name: /Whole area|Summit crater|Paradise|Carbon River|White River|Nisqually|From below|Side on/ })).toHaveLength(8);
     fireEvent.click(screen.getByRole("button", { name: "RCM" }));
     expect(onSite).toHaveBeenCalledWith(b.siteById["UW.RCM"]);
     fireEvent.click(screen.getByRole("button", { name: "Paradise" }));
