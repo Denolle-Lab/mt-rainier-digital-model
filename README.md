@@ -41,6 +41,25 @@ pixi run test
 pixi run viz      # interactive PyVista window
 ```
 
+## Download and format the products (CLI and Python)
+
+The derived products (the fused model, GNSS velocities and strain, the edifice-load stress) are published as
+release assets and listed in `src/rainier3d/products.json` with SHA-256 checksums. Inputs whose licence forbids
+redistributing derivatives are left out and rebuilt locally with your own access (`docs/data_policy.md`).
+
+```
+pixi run python -m rainier3d list
+pixi run python -m rainier3d export model --format specfem --bbox -122.0 46.7 -121.6 47.0 --dx 250 --dz 250 \
+    --zmin -10000 --out out/tomography_model.xyz       # also netcdf, nll, emc, csv
+pixi run python -m rainier3d export surface --layers elevation soil_thickness --out out/surface/   # GeoTIFFs
+pixi run python -m rainier3d sample --lon -121.76 --lat 46.85 --depth 5000
+```
+
+`--model data/processed/model.zarr` uses a local pipeline build instead of the download. The same calls are in
+`rainier3d.api` (`open_model`, `grid`, `export`, `export_surface`, `sample`). Downloads are cached in
+`$RAINIER3D_DATA` (default `~/.cache/rainier3d`). `scripts/20_publish_products.py --tag <tag> --upload` builds
+and uploads a release.
+
 ## 3D viewer (web/viewer)
 
 The main front end is the Mount Rainier Seismic Atlas by Derek Yao: a React + three.js scene with USGS terrain,

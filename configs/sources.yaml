@@ -209,6 +209,7 @@ ma2026_wtd:
   verified: web-2026-09-24 (Zenodo record, windowed read)
   note: mean only on Zenodo; the ensemble IQR (wtd_uncertainty) needs a HydroGEN PIN through hf_hydrodata (dataset ma_2025, grid conus2_wtd.30)
   role: water-table depth (surface layer water_table_depth; atlas layer, cited)
+  redistribute_derived: false   # CC-BY-NC-ND: no derivatives; users rebuild with S2 --ma
 
 fan2017_wtd:
   title: Fan, Miguez-Macho, Jobbagy, Jackson & Otero-Casal 2017, Hydrologic regulation of plant rooting depth, PNAS; global water-table depth annual mean (after Fan et al. 2013, Science)
