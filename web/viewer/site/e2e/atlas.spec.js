@@ -141,10 +141,14 @@ test("(l) the subsurface section follows the cut and the slice follows its slide
 test("(m) the sensor legend filters: geophones show the 2025 nodes, Past adds earlier deployments", async ({ page }) => {
   await page.waitForFunction(() => !!window.__rainier.sensors, null, { timeout: 30_000 });
   const on = () => page.evaluate(() => Array.from(window.__rainier.sensors.onAttr.array).filter(v => v > 0).length);
+  // the 2025 UW nodes that sit on the terrain box (the rest lie west of it and are not drawn)
+  const nodes2025 = await page.evaluate(() => window.__rainier.sensors.sites.filter(s =>
+    s.kinds.includes("geophone") && s.status === "operating" && s.source.startsWith("2025")).length);
+  expect(nodes2025).toBeGreaterThan(150);
   await page.locator(".sf-kind", { hasText: "Geophone" }).click();
-  expect(await on()).toBe(240);                                   // UW 2025 nodes, all operating
+  expect(await on()).toBe(nodes2025);                             // operating geophones = the 2025 nodes
   await page.getByRole("button", { name: "Past", exact: true }).click();
-  expect(await on()).toBeGreaterThan(900);                        // + retired nodal deployments (2N, XD, Z5, ...)
+  expect(await on()).toBeGreaterThan(nodes2025 + 300);            // + retired nodal deployments (2N, XD, Z5, ...)
   await page.getByRole("button", { name: "Temporary", exact: true }).click();
   expect(await on()).toBe(0);                                     // all nodes are temporary
   expect(await page.evaluate(() => window.__rainier.sensors.fiber.visible)).toBe(false);

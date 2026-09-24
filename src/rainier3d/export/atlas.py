@@ -691,3 +691,102 @@ def export_sensors(atlas: Path, web_data: Path) -> dict:
     }
     (atlas / "model" / "sensors.json").write_text(json.dumps(meta, separators=(",", ":")))
     return meta
+
+
+# ---- canopy-storage layers (S19) appended to the viewer bundle without re-exporting the model layers ----
+CANOPY_STYLE = {
+    "canopy_height_lidar": ("Canopy height, lidar 10 m", 0, 60, "cmc.bamako_r"),
+    "vegetation_cover_lidar": ("Vegetation cover, lidar 10 m", 0, 1, "cmc.bamako_r"),
+    "lai_sentinel2": ("Leaf area index, Sentinel-2 2023", 0, 6, "cmc.bamako_r"),
+    "gedi_pai": ("Plant area index, GEDI L2B", 0, 6, "cmc.bamako_r"),
+    "gedi_canopy_height": ("Canopy height, GEDI L3", 0, 60, "cmc.bamako_r"),
+    "gedi_biomass": ("Aboveground biomass, GEDI L4B", 0, 600, "cmc.lajolla"),
+}
+
+
+def rgb_texture(src: str, manifest: dict, width: int = 4080) -> np.ndarray:
+    """A 3-band image (any CRS) warped to the overview box; alpha 0 where all bands are 0 or 255 (masked)."""
+    import rasterio
+
+    t, w, h = overview_grid(manifest, width)
+    out = np.zeros((h, w, 4), "uint8")
+    with rasterio.open(src) as ds:
+        for k in range(3):
+            dst = np.zeros((h, w), "uint8")
+            reproject(
+                rasterio.band(ds, k + 1),
+                dst,
+                dst_transform=t,
+                dst_crs="EPSG:4326",
+                resampling=Resampling.bilinear,
+            )
+            out[..., k] = dst
+    rgb = out[..., :3].astype(int)
+    out[..., 3] = np.where((rgb.sum(-1) == 0) | (rgb.min(-1) == 255), 0, 255)
+    return out
+
+
+def append_canopy_layers(atlas: Path, dom, ds: xr.Dataset, cfg: dict) -> list[str]:
+    """Add S19 layers and the soil image to <atlas>/model/layers.json, replacing same-key entries."""
+    out = atlas / "model"
+    manifest = json.loads((atlas / "manifest.json").read_text())
+    meta = json.loads((out / "layers.json").read_text())
+    reg, specs = _sources(), {s["name"]: s for s in cfg["layers"]}
+    new = []
+    for key, (label, vmin, vmax, cmap) in CANOPY_STYLE.items():
+        if key not in ds:
+            continue
+        a = ds[key].values.astype("float32")
+        tex, val = (
+            to_lonlat(a, dom, manifest, TEX_WIDTH, False),
+            to_lonlat(a, dom, manifest, VAL_WIDTH, False),
+        )
+        cm = _cmap(cmap)
+        rgba = (cm(np.nan_to_num(_norm(tex, vmin, vmax, False))) * 255).astype("uint8")
+        rgba[..., 3] = np.where(np.isfinite(tex), 255, 0)
+        tname = _save_texture(rgba, out / key, False)
+        q, scale, offset = _values_u16(val, False, vmin, vmax)
+        q.tofile(out / f"{key}.u16.bin")
+        sk = specs[key]["source"]
+        new.append(
+            {
+                "key": key,
+                "label": label,
+                "group": "Canopy (canopy-storage project)",
+                "kind": "continuous",
+                "units": ds[key].attrs.get("units", ""),
+                "note": specs[key]["long_name"],
+                "texture": tname,
+                "values": {
+                    "file": f"{key}.u16.bin",
+                    "width": q.shape[1],
+                    "height": q.shape[0],
+                    "scale": scale,
+                    "offset": offset,
+                    "nodata": 65535,
+                },
+                "legend": {"min": vmin, "max": vmax, "log": False, "ramp": _ramp(cm)},
+                "sources": [{"key": sk, "title": reg[sk]["title"], "link": _link(reg[sk])}],
+            }
+        )
+    for im in cfg.get("images", []):
+        src = str(Path(im["file"].replace("~/Downloads", str(Path(cfg["root"]).expanduser()))).expanduser())
+        tname = _save_texture(rgb_texture(src, manifest), out / im["name"], False)
+        new.append(
+            {
+                "key": im["name"],
+                "label": im["label"],
+                "group": "Soil",
+                "kind": "image",
+                "units": "",
+                "note": im["note"],
+                "texture": tname,
+                "values": None,
+                "legend": {},
+                "sources": [{"key": im["source"], "title": reg[im["source"]]["title"], "link": ""}],
+            }
+        )
+    keys = {n["key"] for n in new}
+    meta["layers"] = [x for x in meta["layers"] if x["key"] not in keys] + new
+    (out / "layers.json").write_text(json.dumps(meta, indent=1))
+    return sorted(keys)
