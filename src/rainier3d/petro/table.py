@@ -16,6 +16,14 @@ def units_config() -> dict:
     return yaml.safe_load(UNITS.read_text())
 
 
+ROCK_KINDS = ("edifice", "cap", "pluton", "supracrustal", "deep")
+
+
+def rock_unit_ids() -> list[int]:
+    """Units the S13 geology calibration acts on: all rock (not air, ice or unconsolidated deposits)."""
+    return [int(k) for k, v in units_config()["units"].items() if v.get("kind") in ROCK_KINDS]
+
+
 def unit_names() -> dict[int, str]:
     return {int(k): v["name"] for k, v in units_config()["units"].items()}
 
