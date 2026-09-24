@@ -664,8 +664,20 @@ def export_sensors(atlas: Path, web_data: Path) -> dict:
         for k in s["kinds"]:
             key = f"{k}|{'temporary' if s['temporary'] else 'permanent'}|{s['status']}"
             counts[key] = counts.get(key, 0) + 1
+    # reviewed notes per station code (configs/sensor_notes.yaml), attached to the site that holds the station
+    import yaml
+
+    from rainier3d.config.domain import REPO
+
+    notes_cfg = yaml.safe_load((REPO / "configs" / "sensor_notes.yaml").read_text()) or {}
+    for s in sites:
+        codes = [c.strip() for c in s["name"].split("+")] + [s["id"]]
+        extra = [notes_cfg[c]["note"] for c in dict.fromkeys(codes) if c in notes_cfg]
+        if extra:
+            s["notes"] = " ".join([*extra, s["notes"]]).strip()
     meta = {
         "sites": sites,
+        "notes": {k: v["note"] for k, v in notes_cfg.items()},
         "das": {
             "name": "Paradise–Nisqually Entrance DAS fiber",
             "segments": das,

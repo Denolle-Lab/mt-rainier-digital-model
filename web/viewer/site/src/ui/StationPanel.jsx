@@ -21,7 +21,7 @@ export function links(st, now = new Date()) {
   return out;
 }
 
-export default function StationPanel({ site, bundle, onClose, onFly }) {
+export default function StationPanel({ site, bundle, onClose, onFly, notes = {} }) {
   return (
     <aside className="panel station-panel" id="panel" aria-label={`${site.name} station details`}>
       <div className="sp-head">
@@ -39,6 +39,7 @@ export default function StationPanel({ site, bundle, onClose, onFly }) {
           <div className="sp-code"><b className="mono">{st.code}</b><span>{st.siteName}</span></div>
           <div className="sp-meta">Running since {st.since.slice(0, 4)} · {fmtElev(st.elev)}{st.depth > 1 ? ` · sensor ${Math.round(st.depth)} m below the surface` : ""}</div>
           <ul className="sp-inst">{st.instruments.map(i => <li key={i.channels.join()}>{instrumentLine(i)}</li>)}</ul>
+          {notes[st.code] && <p className="sp-note sp-stnote">{notes[st.code]}</p>}
           <ul className="sp-links">{links(st).map(l => <li key={l.label}><a href={l.url} target="_blank" rel="noreferrer">{l.label}</a></li>)}</ul>
         </section>
       ))}

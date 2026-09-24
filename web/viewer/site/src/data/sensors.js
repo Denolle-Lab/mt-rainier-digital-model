@@ -19,10 +19,21 @@ export function passes(site, f) {
   return !f.kinds || site.kinds.some(k => f.kinds.has(k));
 }
 
-// Points to draw: inventory sites that are not station markers already (matched by NET.STA code).
+// Points to draw: inventory sites that are not station markers already (matched by NET.STA code), and, for sites
+// that are, a point with only the instrument kinds the marker does not show (e.g. a tiltmeter missing from the
+// EarthScope "active" list), so no instrument is hidden.
 export function extraSites(sensors, stations) {
-  const shown = new Set(stations.sites.flatMap(s => s.codes));
-  return sensors.sites.filter(s => !shown.has(s.id));
+  const markerKinds = new Map();
+  for (const s of stations.sites) for (const c of s.codes) markerKinds.set(c, new Set(s.kinds));
+  const out = [];
+  for (const s of sensors.sites) {
+    const codes = [s.id, ...s.name.split("+").map(c => c.trim())];
+    const hit = codes.find(c => markerKinds.has(c));
+    if (!hit) { out.push(s); continue; }
+    const missing = s.kinds.filter(k => !markerKinds.get(hit).has(k));
+    if (missing.length) out.push({ ...s, id: `${s.id}+extra`, kinds: missing });
+  }
+  return out;
 }
 
 // Station markers get the same classification (all EarthScope stations here are operating).

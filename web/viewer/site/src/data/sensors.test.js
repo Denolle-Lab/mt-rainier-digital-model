@@ -19,8 +19,11 @@ describe("sensors", () => {
     expect(passes(gnss, { ...DEFAULT_FILTER, kinds: new Set(["geophone"]) })).toBe(false);
   });
   it("does not draw station-marker sites twice and counts per kind", () => {
-    const sensors = { sites: [node, gnss, { id: "UW.STAR", kinds: ["seismometer"], temporary: false, status: "operating" }] };
-    expect(extraSites(sensors, { sites: [{ codes: ["UW.STAR"] }] }).map(s => s.id)).toEqual(["node-1", "gnss-P432"]);
+    const sensors = { sites: [{ ...node, name: "Node 1" }, { ...gnss, name: "P432" }, { id: "UW.STAR", name: "UW.STAR", kinds: ["seismometer"], temporary: false, status: "operating" }] };
+    expect(extraSites(sensors, { sites: [{ codes: ["UW.STAR"], kinds: ["seismometer"] }] }).map(s => s.id)).toEqual(["node-1", "gnss-P432"]);
+    const pupy = { id: "UW.PUPY", name: "UW.PUPY", kinds: ["seismometer", "tiltmeter"], temporary: false, status: "operating" };
+    const extra = extraSites({ sites: [pupy] }, { sites: [{ codes: ["UW.PUPY"], kinds: ["seismometer"] }] });
+    expect(extra.map(s => [s.id, s.kinds])).toEqual([["UW.PUPY+extra", ["tiltmeter"]]]);   // only what the marker lacks
     expect(kindCounts([node, old, gnss], DEFAULT_FILTER)).toEqual({ geophone: 1, gnss: 1 });
   });
 });

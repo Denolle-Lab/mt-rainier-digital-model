@@ -64,7 +64,7 @@ function Atlas({ bundle, onError }) {
         if (!inv || cancelled) return;
         const extras = extraSites(inv, bundle.stations);
         s.sensors = new SensorPoints(s, extras, inv.das); s.sensors.setFilter(DEFAULT_FILTER);
-        setSens({ all: [...bundle.stations.sites.filter(x => x.onMap).map(classifyMarker), ...extras], das: inv.das, points: s.sensors });
+        setSens({ all: [...bundle.stations.sites.filter(x => x.onMap).map(classifyMarker), ...extras], das: inv.das, points: s.sensors, notes: inv.notes ?? {} });
       });
       if (bundle.model) loadVolumeMeta(bundle.model.base).then(meta => {
         if (meta && !cancelled) { s.volume = new ModelVolume(s, meta, bundle.model.base); setVolume(s.volume); }
@@ -113,12 +113,12 @@ function Atlas({ bundle, onError }) {
             </div>
           )}
           {modelLayer?.values && <ModelReadout scene={scene} model={bundle.model} layer={modelLayer} box={bundle.overviewBox} />}
-          <Tooltip hover={hover} />
+          <Tooltip hover={hover} notes={sens?.notes} />
           {sens && <SensorTip scene={scene} points={sens.points} />}
           <MobileDock sheet={sheet} onSheet={setSheet} hasModel={!!bundle.model} />
           <NavPad scene={scene} onHelp={() => setHelp(true)} />
           {help && <HelpCard onClose={() => setHelp(false)} />}
-          {site && <StationPanel site={site} bundle={bundle} onFly={s => scene.flyToSite(s)}
+          {site && <StationPanel site={site} bundle={bundle} notes={sens?.notes} onFly={s => scene.flyToSite(s)}
             onClose={() => { setSiteId(null); layerRef.current?.setSelected(null); }} />}
         </>
       )}

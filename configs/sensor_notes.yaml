@@ -1,0 +1,8 @@
+# Notes shown with a station in the 3D viewer (S11 -> model/sensors.json "notes"), for facts that station
+# metadata does not carry. Each note names its source.
+UW.LON9:
+  note: >-
+    Longmire tiltmeter array: three Paroscientific quartz tiltmeters (T1, T2, T3; EarthScope metadata
+    "Quartz QT Tiltmeter S/N 01-03"), two axes (HAX, HAY) at 100 Hz plus a thermometer (HKI), since
+    2024-08-20.
+  source: instrument maker from the project team (M. Denolle, 2026-09-24); channels from EarthScope FDSN
