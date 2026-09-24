@@ -81,3 +81,4 @@ def test_nll_air_skin():
     s = slow_air(air, skin_cells=1)
     assert s[:, 0, 0].tolist() == [True, True, False, False, False, False]
     assert not s[:, 0, 1].any()
+    assert slow_air(air, skin_cells=2)[:, 0, 0].tolist() == [True, False, False, False, False, False]

@@ -110,16 +110,19 @@ def slow_air(air: np.ndarray, skin_cells: int = 1) -> np.ndarray:
 
 
 def write_nll(
-    ds: xr.Dataset, stem: Path, phases=("P", "S"), air_velocity: float | None = 330.0, skin_cells: int = 1
+    ds: xr.Dataset, stem: Path, phases=("P", "S"), air_velocity: float | None = None, skin_cells: int = 2
 ) -> list[Path]:
     """NonLinLoc model grids: stem.P.mod.hdr/.buf etc. SLOW_LEN = slowness (s/km) x cell size (km).
 
     Grid axes are x (east), y (north), z (depth, km, positive down, below sea level) in UTM 10N km;
     the .buf is float32 with z varying fastest, then y, then x (NonLinLoc order).
 
-    For location, air above a one-cell skin gets ``air_velocity`` (m/s; default 330, sound in air): travel
-    times to trial hypocentres above the ground become very long, so NLLoc's likelihood keeps events in
-    rock, while the skin keeps the stations (at the ground surface) in rock. None writes the filled grid.
+    Air cells keep the rock velocity below them by default (unbiased travel times). Optionally, air above a
+    ``skin_cells`` skin gets ``air_velocity`` (m/s, e.g. 330) to penalise hypocentres above the ground. The
+    skin must be at least 2 cells: with 1 cell at 500 m spacing, Grid2Time's finite-difference start box
+    reached slow air around summit stations and delayed P times from UW/CC station OBSR by 0.41 s on
+    average (checked 2026-09-24). NLLoc's LOCTOPO_SURFACE masks the search instead, without touching the
+    velocities, and is the better choice.
     """
     stem.parent.mkdir(parents=True, exist_ok=True)
     dxk = float(ds.attrs["dx_m"]) / 1000.0

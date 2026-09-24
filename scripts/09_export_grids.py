@@ -28,8 +28,8 @@ def main():
     ap.add_argument(
         "--nll-air-velocity",
         type=float,
-        default=330.0,
-        help="m/s in NonLinLoc grids for air above a one-cell skin (0 = keep rock velocity)",
+        default=0.0,
+        help="m/s for NonLinLoc air above a 2-cell rock skin (default 0: air keeps rock velocity)",
     )
     a = ap.parse_args()
     dom = load_domain()

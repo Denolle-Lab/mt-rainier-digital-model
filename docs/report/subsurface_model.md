@@ -300,16 +300,18 @@ For NonLinLoc, the grids go in the model directory used by Grid2Time (`GTFILES <
 
 ### 9.1 Locating earthquakes in 3D, so that none sits above the ground
 
-Of the 15,660 PNSN earthquakes since 1980 drawn in the 3D viewer, 500 have ComCat hypocentres at or above the ground surface. These are mostly shallow edifice events. They were located in one-dimensional models that know neither the topography nor the slow edifice, and whose depths are measured from a single reference elevation, with station elevations absorbed into station corrections. Locating the events in the three-dimensional model removes the problem at its source. The model carries the topography and the edifice explicitly, and the NonLinLoc grids written by S9 make trial hypocentres in the air very unlikely.
+Of the 15,660 PNSN earthquakes since 1980 drawn in the 3D viewer, 500 have ComCat hypocentres at or above the ground surface. These are mostly shallow edifice events. They were located in one-dimensional models that know neither the topography nor the slow edifice, and whose depths are measured from a single reference elevation, with station elevations absorbed into station corrections. Locating in the three-dimensional model, with the search restricted to the rock, removes the problem at its source.
 
-- **Air in the NonLinLoc grids.** Air cells more than one cell above the ground are given 330 m/s, the speed of sound in air, for both P and S (`--nll-air-velocity`). A trial hypocentre above the ground is then predicted seconds late at every station, and NLLoc's likelihood rejects it. The lowest air cell of each column keeps the rock velocity below it, so stations at the ground surface still sit in rock.
+NonLinLoc (Lomax et al., github.com/alomax/NonLinLoc, GPL-3) builds from source with CMake in about a minute on macOS, and it reads the S9 grids as written. For station UW/CC OBSR (OBSR is in the CC network), its Grid2Time P times agree with the pykonal times of Section 8 at the 85 events that station recorded: mean difference 12 ms, RMS 31 ms. NonLinLoc is not on conda-forge and is licensed separately, so it is used here as an external program.
+
+The recipe:
+
 - **Grid spacing.** NonLinLoc needs equal horizontal and vertical spacing. Use 250 m near the edifice (`pixi run s9 -- --dx 250 --dz 250`) or keep the 500 m default for the WRSZ.
-- **Stations.** Give stations in the same UTM 10N kilometre frame, with depth = −elevation/1000: `GTSRCE <sta> XYZ <x_km> <y_km> <−elev_km> 0.0`. Stations need no station corrections to start with. Station terms can be estimated afterwards from the 3D residuals, and should be much smaller than the 1D ones (Section 8.3).
+- **Keep hypocentres out of the air.** Use NLLoc's `LOCTOPO_SURFACE`, which masks the search volume below a topography grid, and leave the velocities as exported: air cells carry the rock velocity below them, so travel times are unbiased. The alternative, slow air above a rock skin (`--nll-air-velocity 330`), needs a skin of at least two cells. With one 500 m cell, Grid2Time's finite-difference start box reached slow air around summit stations and delayed OBSR's P times by 0.41 s on average. The topography mask has not yet been tested with the UTM (`TRANS NONE`) grids.
+- **Stations.** Give stations in the same UTM 10N kilometre frame, with depth = −elevation/1000: `GTSRCE <sta> XYZ <x_km> <y_km> <−elev_km> 0.0`. No station corrections are needed to start with.
 - **Travel times.** Run `Grid2Time` with the finite-difference solver (`GTMODE GRID3D ANGLES_NO`, `GT_PLFD 1.0e-3 0`) for each phase and station.
-- **Location.** Run `NLLoc` with the equal-differential-time likelihood, which is robust to outlier picks and removes the origin time (`LOCMETH EDT_OT_WT 9999.0 4 -1 -1 -1 -1 0 1`), and the oct-tree search. The search grid should run from above the highest station (−4.5 km) to 20 km depth. Give model errors that grow with travel time (`LOCGAU 0.1 0.0`, `LOCGAU2 0.02 0.05 0.5`), and export picks with ObsPy (`write(format="NLLOC_OBS")`).
+- **Location.** Run `NLLoc` with the equal-differential-time likelihood (`LOCMETH EDT_OT_WT 9999.0 4 -1 -1 -1 -1 0 1`) and the oct-tree search, over a search grid from −4.5 km (above the highest station) to 20 km depth. Give model errors that grow with travel time (`LOCGAU 0.1 0.0`, `LOCGAU2 0.02 0.05 0.5`), and export picks with ObsPy (`write(format="NLLOC_OBS")`).
 - **Depths.** Report depths below sea level, as NonLinLoc does. Depth below the local ground follows from `surface_elevation` in the netCDF export.
-
-The recipe has not yet been run end to end. NonLinLoc is not on conda-forge, so it has to be built from its repository (github.com/ut-alomax/NonLinLoc). Relocating the 89 events of Section 8 with it is the planned independent check of the model.
 
 To sample the stored levels directly, open the DataTree:
 
