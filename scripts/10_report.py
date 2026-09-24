@@ -53,6 +53,11 @@ def figures(dom):
         F.fig_pnsn(out / "pnsn_residuals.csv", out / "pnsn_stations.csv", FIG / "fig7_pnsn.png"),
         F.fig_glaciers(out / "glacier_thickness_check.csv", FIG / "fig2_glaciers.png"),
         F.fig_surface_layers(tree, dom, FIG / "fig8_surface_layers.png"),
+        F.fig_vs_calibration(
+            REPO / "configs" / "vs_calibration.yaml",
+            out / "vs_calibration" / "sp_pairs.csv",
+            FIG / "fig9_vs_calibration.png",
+        ),
     ]
     for p in made:
         logging.info("figure %s", p.relative_to(REPO))

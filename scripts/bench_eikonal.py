@@ -99,9 +99,7 @@ for case, (v0, g) in {"homogeneous 6 km/s": (6.0, 0.0), "gradient 4 + 0.1 z km/s
     V = (v0 + g * Z).astype(np.float64)
     ta = analytic(v0, g, REC)
     print(f"\n{case}")
-    print(
-        f"{'solver':36s} {'time s':>7s} {'mean ms':>8s} {'RMS ms':>7s} {'max|e| ms':>9s} {'dm RMS ms':>9s}"
-    )
+    print(f"{'solver':36s} {'time s':>7s} {'mean ms':>8s} {'RMS ms':>7s} {'max|e| ms':>9s} {'dm RMS ms':>9s}")
     for name, fn in SOLVERS.items():
         try:
             fn(V)  # warm-up (numba JIT for fteikpy), then time a second solve

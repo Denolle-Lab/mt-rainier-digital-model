@@ -2,13 +2,15 @@
 <div class="kicker">Gaia Hazlab · Technical report · Model version M1</div>
 <h1>rainier3d: a geology-driven 3D velocity model of Mount Rainier</h1>
 <div class="byline">Marine Denolle, Department of Earth and Space Sciences, University of Washington<br>
-23 September 2026 · Code: <a href="https://github.com/Denolle-Lab/mt-rainier-virtual-3d-model">github.com/Denolle-Lab/mt-rainier-virtual-3d-model</a></div>
+23 September 2026, revised 24 September 2026 · Code: <a href="https://github.com/Denolle-Lab/mt-rainier-virtual-3d-model">github.com/Denolle-Lab/mt-rainier-virtual-3d-model</a></div>
 </header>
 
 <div class="abstract" markdown="1">
 **Summary.** rainier3d is an open, Python-built model of P- and S-wave speed, density and attenuation beneath Mount Rainier and the West Rainier Seismic Zone (WRSZ). It covers a 70 × 75 km box from the ground surface to 20 km below sea level. Mapped geology is extended to depth with explicit rules and converted to seismic properties with a pressure-dependent rock-physics law. The result is then merged with the USGS Cascadia velocity model v1.7 in the wavenumber domain, so the regional model keeps the long wavelengths and the geology supplies the short ones.
 
-Without station corrections, the merged model fits 1828 PNSN analyst P picks with an event-demeaned RMS of 0.135 s, against 0.160 s for the PNSN 1D model. It also accounts for part of the station terms that the 1D model needs (correlation 0.64). This first version is a working framework rather than a finished velocity model. Most rock-physics parameters are still placeholders, and they are flagged as such throughout.
+Without station corrections, the merged model fits 1828 PNSN analyst P picks with an event-demeaned RMS of 0.134 s, against 0.159 s for the PNSN 1D model. It also accounts for part of the station terms that the 1D model needs (correlation 0.62). The regional model predicts S−P times that are 0.36 s too long on average. A depth-dependent factor on the regional Vs, calibrated on half of the events, reduces the S−P RMS of the other half from 0.43 to 0.17 s. After the calibration, the event-demeaned S RMS is 0.221 s, against 0.287 s for the 1D model.
+
+The same grid carries soil thickness, two water-table estimates, NHDPlus HR streams, canopy height, land cover and a Sentinel-2 composite. This first version is a working framework rather than a finished velocity model. Most rock-physics parameters are still placeholders, and they are flagged as such throughout.
 </div>
 
 [TOC]
@@ -23,7 +25,8 @@ This report documents version M1 in five parts:
 - what it looks like (Section 7);
 - how it compares with PNSN travel times (Section 8);
 - how to extract it for ray tracing and earthquake location (Section 9);
-- what it does not yet contain (Sections 10 and 11).
+- which surface layers it carries: soil, water, vegetation, imagery (Section 10);
+- what it does not yet contain (Section 11).
 
 ## 2. Domain, grids and workflow
 
@@ -43,22 +46,25 @@ Properties are stored on three stacked regular grids whose spacing coarsens with
 ```mermaid
 flowchart LR
   A[DEM, 1:100k geology,<br/>glacier thickness] --> B[3D units and<br/>alteration field]
+  S[Soil, water table, streams,<br/>canopy, land cover, Sentinel-2] --> F
   B --> C[Rock physics:<br/>Vp, Vs, density, Q]
   D[CVM v1.7 and<br/>CRESCENT Gen0] --> E[Wavenumber-domain<br/>fusion]
   C --> E
   E --> F[Fused model]
   F --> G[Check against<br/>PNSN travel times]
+  G --> K[Vs level calibrated<br/>on S-P times]
+  K --> E
   F --> H[Exports for ray tracing,<br/>viewer, figures]
 ```
 
-The workflow runs as numbered scripts (S1–S10). Each layer records its data source, and every parameter lives in a version-controlled configuration file.
+The workflow runs as numbered scripts (S1–S12). Each layer records its data source, and every parameter lives in a version-controlled configuration file.
 
 <figure><img src="figures/fig1_map.png" alt="Map of the model domain">
 <figcaption><b>Figure 1.</b> Model domain. The background shows the surface model units derived from the Washington 1:100,000 geologic map over a hillshade, with glacier outlines in blue. Symbols are operating sensors (FDSN metadata, GNSS site metadata and the 2025 node deployment), the white line is the Paradise–Nisqually Entrance DAS fiber, and dots are PNSN earthquakes since 2015 (M ≥ 0.5), coloured by depth. The dashed lines mark sections A–A′ and B–B′ (Figures 3–5).</figcaption></figure>
 
 ## 3. Surface layers
 
-Three surface layers control the top of every model column: ground elevation, the mapped unit, and glacier ice thickness.
+Three surface layers control the top of every model column: ground elevation, the mapped unit, and glacier ice thickness. The environmental layers carried on the same grid (soil, water table, streams, vegetation and imagery) are described in Section 10.
 
 **Elevation** comes from the USGS 3D Elevation Program at 30 m, block-averaged to the 100 m surface grid. It ranges from 24 to 4380 m in the box.
 
@@ -136,6 +142,8 @@ The regional model consists of two parts:
 - **USGS Cascadia velocity model v1.7** (Wirth et al., 2025), for Vp and Vs down to 9.9 km below the ground. Its depth axis is below the ground surface. For the shallow level this is confirmed by a median top-sample Vs of about 206 m/s. For the deeper level it is inferred from continuity: at the summit, Vs is 2841 m/s at 1.2 km and 2870 m/s at 1.5 km.
 - **CRESCENT Gen0 Vs** (He et al., 2026), below 9.9 km, with Vp from Brocher (2005).
 
+The regional Vs is then multiplied by a factor that depends only on depth below the ground. That factor is calibrated on PNSN S−P times (Section 8.2), and the corrected Vs is floored at Vp/1.6. Regional Vp is not changed.
+
 The two models are combined in the logarithm of velocity. Vs and the Vp/Vs ratio are fused rather than Vp and Vs separately, so the fused Vp/Vs always lies between the two input ratios:
 
 $$\ln V = \mathrm{LP}_{\lambda_c}\!\left(\ln V_{\mathrm{reg}}\right) + \left[\ln V_{\mathrm{geo}} - \mathrm{LP}_{\lambda_c}\!\left(\ln V_{\mathrm{geo}}\right)\right].$$
@@ -149,17 +157,17 @@ A Gaussian high-pass filter overshoots at sharp contrasts, producing fast rims a
 
 | Level | RMS of LP(ln V) − LP(ln V_reg), Vp | Same, Vs | Mean ln(V / V_reg), Vp | Same, Vs |
 |---|---|---|---|---|
-| L1 | 0.032 | 0.033 | −0.086 | −0.092 |
+| L1 | 0.031 | 0.027 | −0.085 | −0.058 |
 | L2 | 0.003 | 0.003 | −0.003 | −0.002 |
-| L3 | 0.0005 | 0.0006 | 0.0001 | 0.0001 |
+| L3 | 0.0004 | 0.0006 | 0.0000 | 0.0001 |
 
-<p class="note">Table 4. Departure of the fused model from the regional model at the regional wavelengths, below 1 km depth, and mean offset over all cells. L1 exceeds the 0.03 target: in the top level the clamp and the long-wavelength constraint conflict.</p>
+<p class="note">Table 4. Departure of the fused model from the regional model at the regional wavelengths, below 1 km depth, and mean offset over all cells. The regional model is the calibrated one (Section 8.2). L1 Vp exceeds the 0.03 target, because in the top level the clamp and the long-wavelength constraint conflict.</p>
 
 ## 7. The fused model
 
 Figures 4 and 5 show the fused model along the two sections through the summit, and Figure 6 compares vertical profiles.
 
-- **The edifice.** The edifice and the top kilometre are slower than the regional model, about 9% on average in L1. This follows from the low-pressure velocities of the geology model in the top kilometre, where the regional model has little resolution.
+- **The edifice.** The edifice and the top kilometre are slower than the regional model: on average in L1, Vp by 8% and Vs by 6%. This follows from the low-pressure velocities of the geology model in the top kilometre, where the regional model has little resolution.
 - **Plutons.** The Miocene plutons stand out as fast columns to 10 km below sea level.
 - **Puget Group.** The Puget Group block west of the summit is slow down to 4 km below sea level.
 - **Seismicity.** Summit earthquakes form a column from the edifice to about 3 km below sea level. WRSZ earthquakes concentrate 4–12 km below sea level, 12–18 km west of the summit.
@@ -177,29 +185,74 @@ The placeholder magma body is largely removed at 7–10 km below sea level. This
 
 ## 8. Consistency with PNSN travel times
 
-The test uses the 89 PNSN earthquakes of magnitude 2 or larger in the box between 2015 and 2026, with their origins and analyst picks from the USGS ComCat catalogue: 1828 P and 1280 S picks at 50 stations. Travel times are computed with an eikonal solver (fteikpy) on a 500 m grid, one solve per station and phase, and sampled at the PNSN hypocentres.
+### 8.1 Data and travel times
 
-The one-dimensional reference is the western Washington layered model with linear gradients, as tabulated in the Gaia Hazlab Cascadia catalogue project. Its depths are taken below sea level, with the top gradient extrapolated above sea level. Residuals are compared after removing the mean residual of each event, which absorbs errors in origin time.
+The test uses the 89 PNSN earthquakes of magnitude 2 or larger in the box between 2015 and 2026, with their origins and analyst picks from the USGS ComCat catalogue: 1828 P and 1280 S picks at 50 stations. The event list is stored with the code (`configs/validation_events.csv`), so every run uses the same set.
+
+Travel times are computed on a 500 m grid, with one solve per station and phase, and are sampled at the PNSN hypocentres.
+
+- **Solver.** pykonal's point-source solver (White et al., 2020), which refines the grid around the source. Against analytic travel times on this grid, its error is 2–3 times smaller than that of fteikpy, the solver used in the first version: an RMS of 8 ms against 22 ms in a uniform model, and 11 against 46 ms with a velocity gradient. It costs about 1.2 times as much. The comparison is in `docs/eikonal_benchmark.md`.
+- **Reference.** The western Washington layered model with linear gradients, as tabulated in the Gaia Hazlab Cascadia catalogue project. Its depths are taken below sea level, with the top gradient extrapolated above sea level.
+- **Residuals.** They are compared after removing the mean residual of each event, which absorbs errors in origin time.
+
+### 8.2 Calibrating the level of Vs on S−P times
+
+Before the calibration, the model predicted S arrivals 0.58 s too late on average. S−P times remove the origin time, and with P from the fused model they isolate Vs. Computed with each Vs model in turn, the mean S−P residual (observed − predicted) is:
+
+| Vs model | Mean S−P residual (s) |
+|---|---|
+| Regional only | −0.26 |
+| Fused | −0.36 |
+| Geology only | −0.04 |
+
+The regional model alone is already too slow for S. The fused model, however, has the smallest scatter between stations once each event's mean is removed: 0.211 s, against 0.235 s for the regional model and 0.248 s for the geology. Its pattern is right and its level is too slow.
+
+The level is corrected by a factor on the regional Vs, exp *m*(*d*), where *d* is the depth below the ground and *m* is piecewise linear with knots at 0, 1, 2, 4, 7, 11, 16 and 25 km (script S12).
+
+- **Why depth only.** A factor that depends only on depth passes through the horizontal low-pass filter unchanged, so the fused model keeps its lateral pattern.
+- **Data and fit.** The 1241 S−P pairs are fitted by regularised Gauss–Newton. Jacobians are taken by finite differences of full eikonal solves, with P and the hypocentres fixed.
+- **Validation.** The events are split into two halves, alternating in origin-time order. The smoothing weight is chosen on the held-out half, and the factor is fitted on the other half and scored on the held-out half before being refitted on all events.
+- **Vp/Vs floor.** Raising Vs where the regional Vp/Vs is already low would take the ratio to 1.45. The corrected Vs is therefore floored at Vp/1.6, about the lowest ratio of quartz-rich crustal rock (Christensen, 1996). The floor affects 3% of the L2 cells, between 2 and 5 km depth.
+
+| | Held-out events, before | Held-out events, after | All events, after |
+|---|---|---|---|
+| Mean S−P residual (s) | −0.35 | +0.02 | +0.00 |
+| RMS (s) | 0.43 | 0.17 | 0.17 |
+| RMS, event mean removed (s) | 0.20 | 0.14 | 0.15 |
+
+<p class="note">Table 5. S−P residuals before and after the Vs calibration (635 held-out and 1241 total pairs), from <code>configs/vs_calibration.yaml</code>.</p>
+
+The factor is 0.94–0.95 in the top kilometre, 1.10 at 2 km, and falls to 1.07 at 7 km, 1.01 at 11 km and 0.97 at 25 km (Figure 7a).
+
+- **Top kilometre.** It is weakly constrained by the data, because the fusion passes little of the regional model there (Section 6). A smoother profile, with a factor of about 1.05 already at the surface, fitted the held-out data equally well (0.166 s). It raised the L1 Vs misfit to the regional low-pass to 0.040, above the 0.03 target, and was not kept.
+- **2–7 km.** Vs needs to be 7–10% faster than the Cascadia velocity model here. This is the part the data require.
+
+<figure><img src="figures/fig9_vs_calibration.png" alt="Vs calibration">
+<figcaption><b>Figure 7.</b> (a) Calibrated factor on the regional Vs against depth below the ground. (b) S−P residuals of the held-out events before and after the calibration.</figcaption></figure>
+
+### 8.3 Results
 
 | Phase | RMS, 1D (s) | RMS, 3D (s) | RMS, 1D, event mean removed (s) | RMS, 3D, event mean removed (s) | PNSN reported RMS (s) | Correlation of station terms |
 |---|---|---|---|---|---|---|
-| P | 0.197 | 0.348 | 0.160 | 0.135 | 0.140 | 0.64 (50 stations) |
-| S | 0.388 | 0.803 | 0.291 | 0.286 | 0.227 | 0.53 (45 stations) |
+| P | 0.200 | 0.292 | 0.159 | 0.134 | 0.140 | 0.62 (50 stations) |
+| S | 0.429 | 0.342 | 0.287 | 0.221 | 0.227 | 0.70 (45 stations) |
 
-<p class="note">Table 5. Travel-time residuals. The last column is the correlation, across stations, between the mean 1D residual and the mean 3D − 1D predicted delay.</p>
+<p class="note">Table 6. Travel-time residuals of the calibrated model (script S6). The last column is the correlation, across stations, between the mean 1D residual and the mean 3D − 1D predicted delay.</p>
 
-With the mean of each event removed, the fused model fits the P picks better than the 1D model (0.135 vs 0.160 s), and about as well as the residuals PNSN reports for its own locations (0.140 s), which include station corrections. The per-station 3D − 1D delay correlates with the mean 1D residual (Figure 7b), so the 3D structure explains part of what station corrections absorb.
+With the mean of each event removed, the model fits both phases better than the 1D model: P 0.134 against 0.159 s, and S 0.221 against 0.287 s. It fits about as well as the residuals PNSN reports for its own locations (0.140 and 0.227 s), which include station corrections. The per-station 3D − 1D delay correlates with the mean 1D residual (Figure 8b), for S more strongly after the calibration (0.70, against 0.48 before), so the 3D structure explains part of what station corrections absorb.
 
-The fused model also predicts later arrivals than the 1D model at every station: by 0.32 s on average for P (0.13–0.60 s) and 0.94 s for S (0.44–1.36 s). These offsets explain the larger raw RMS. Part of them is expected, since the events remain at their 1D hypocentres. The size of the S offset, however, points to near-surface Vs that is too slow, which is consistent with the placeholder rock physics in the top kilometre.
+The model still predicts later arrivals than the 1D model at every station: by 0.30 s on average for P (0.14–0.56 s) and 0.55 s for S (0.19–0.97 s). This offset accounts for the larger raw RMS. Part of it is expected, since the events remain at their 1D hypocentres.
+
+The S numbers in Table 6 are not an independent test, since the calibration used the same picks. The held-out score in Table 5 is the fair measure.
 
 <figure><img src="figures/fig7_pnsn.png" alt="PNSN travel-time check">
-<figcaption><b>Figure 7.</b> (a) Distribution of P residuals after removing each event's mean, for the PNSN 1D model and the fused model. (b) Mean 3D − 1D predicted delay against mean 1D residual for each station with at least five picks.</figcaption></figure>
+<figcaption><b>Figure 8.</b> (a) Distribution of P residuals after removing each event's mean, for the PNSN 1D model and the fused model. (b) Mean 3D − 1D predicted delay against mean 1D residual for each station with at least five picks.</figcaption></figure>
 
 Two caveats apply. Which PNSN regional model (P3 or C3) the one-dimensional table represents has not been confirmed with the network. And ComCat depths are treated as depths below sea level.
 
 ## 9. Extracting the fused model for ray tracing
 
-The master product is `data/processed/model.zarr`, an xarray DataTree with one node per level. Ray tracers need a single regular grid, so script S9 resamples the three levels onto one and writes three formats (Table 6).
+The master product is `data/processed/model.zarr`, an xarray DataTree with one node per level. Ray tracers need a single regular grid, so script S9 resamples the three levels onto one and writes three formats (Table 8).
 
 In the resampling, values are interpolated linearly within each level. Cells above the ground surface are filled with the value of the first rock cell beneath them, so receivers placed at the surface sit in rock, and a mask variable `air` flags those cells. The exporter was checked against the stored levels: at level cell centres the grid reproduces `model.zarr` exactly, and the NonLinLoc buffers read back to the same velocities.
 
@@ -209,31 +262,38 @@ In the resampling, values are interpolated linearly within each level. Cells abo
 | `nll/rainier3d.{P,S}.mod.hdr/.buf` | NonLinLoc 3D grid, SLOW_LEN, float32 | x, y in UTM 10N km; depth (km, down, below sea level); TRANSFORM NONE | slowness × cell size | Grid2Time, NLLoc |
 | `rainier3d_emc.nc` | EMC-style netCDF3 | longitude, latitude; depth (km below sea level) | vp, vs (km/s), rho (g/cm³); NaN above ground | IRIS/EarthScope EMC tools, comparison with other models |
 
-<p class="note">Table 6. Exports written by <code>pixi run s9</code> to <code>outputs/grids/</code>. The default spacing is 500 m in all directions (140 × 150 × 49 nodes, 4.25 km above to 19.75 km below sea level); <code>--dx</code> and <code>--dz</code> change it.</p>
+<p class="note">Table 8. Exports written by <code>pixi run s9</code> to <code>outputs/grids/</code>. The default spacing is 500 m in all directions (140 × 150 × 49 nodes, 4.25 km above to 19.75 km below sea level); <code>--dx</code> and <code>--dz</code> change it.</p>
 
 To build the model and the exports from a clean checkout:
 
 ```
 pixi install
-pixi run all            # S1-S8: surface, geology, rock physics, fusion, PNSN check, figures, atlas
+pixi run all            # S1-S8: surface, layers, geology, rock physics, fusion, PNSN check, figures, atlas
 pixi run s9 -- --dx 250 --dz 250   # uniform grids at 250 m
 ```
 
-Travel times with fteikpy from the netCDF export:
+Travel times with pykonal (White et al., 2020), the solver used in Section 8, from the netCDF export:
 
 ```python
-import numpy as np, xarray as xr
-from fteikpy import Eikonal3D
+import numpy as np, xarray as xr, pykonal
+from scipy.interpolate import RegularGridInterpolator
 
 g = xr.open_dataset("outputs/grids/rainier3d_fused_500m.nc")
-dx = float(g.attrs["dx_m"]); dz = float(g.attrs["dz_m"])
-vel = np.transpose(g.vp.values, (0, 2, 1))               # (depth down, x, y) for fteikpy
-eik = Eikonal3D(vel, gridsize=(dz, dx, dx),
-                origin=(-float(g.z[0]), float(g.x[0]), float(g.y[0])))
-# source at a station: (depth below sea level, easting, northing) in metres
-tt = eik.solve((-1500.0, 594500.0, 5189500.0))
-print(tt((5000.0, 604500.0, 5189500.0)))                 # 2.08 s to 5 km depth, 10 km east
+dx = float(g.attrs["dx_m"])                                  # 500 m, equal to dz
+vel = np.transpose(g.vp.values, (2, 1, 0))                  # (x, y, depth down) in m/s
+x, y, depth = g.x.values, g.y.values, -g.z.values            # z runs top-down
+s = pykonal.solver.PointSourceSolver(coord_sys="cartesian")
+s.velocity.min_coords = x[0], y[0], depth[0]
+s.velocity.node_intervals = dx, dx, dx
+s.velocity.npts = vel.shape
+s.velocity.values = vel
+s.src_loc = np.array([594500.0, 5189500.0, -1500.0])         # easting, northing, depth b.s.l. (m)
+s.solve()
+T = RegularGridInterpolator((x, y, depth), s.traveltime.values)
+print(T([[604500.0, 5189500.0, 5000.0]]))                    # 2.05 s to 5 km depth, 10 km east
 ```
+
+The same grids work with fteikpy (`Eikonal3D` with the velocity transposed to depth, x, y); on this ray it gives 2.08 s. `docs/eikonal_benchmark.md` compares the solvers against analytic travel times.
 
 For NonLinLoc, the grids go in the model directory used by Grid2Time (`GTFILES <model dir>/rainier3d <time dir>/rainier3d P`). Because the transform is `NONE`, station and search-grid coordinates must be given in the same UTM 10N kilometre frame, with depth positive down (`GTSRCE <sta> XYZ <x_km> <y_km> <z_km> 0.0`). The grids have been read back and checked, but a full NonLinLoc relocation has not yet been run with them.
 
@@ -248,22 +308,39 @@ vs = L2.vs.interp(x=594500, y=5189500, z=-2000)   # m/s at 2 km below sea level
 
 An interactive viewer (`pixi run atlas`) draws vertical sections and depth slices of every property along any line, with seismicity projected onto them, and a three-dimensional underground view.
 
-## 10. Water: what the model does not yet contain
+## 10. Surface layers: soil, water, vegetation and imagery
 
-The model contains no hydrological state. The rock-physics law assumes hydrostatic pore pressure everywhere and does not vary saturation or porosity with depth or season. Table 7 lists the water-related layers available to the project and whether they cover the model box.
+The model's surface node carries eight environmental layers on the 100 m surface grid, next to elevation, units and ice (Table 7, Figure 9). Script S2 reads each source only over the model box (a window of a cloud-optimised GeoTIFF, a clipped download or an OPeNDAP subset), resamples it onto the grid and records its source. Continuous layers are averaged over each cell, and categorical layers take the most common class. The layers describe the ground surface; none of them changes the seismic properties yet.
 
-| Layer | Source | Resolution | Covers the box | Status |
-|---|---|---|---|---|
-| Stream network | NHDPlus High Resolution flowlines (1998 reaches) | 1:24,000 | yes | available, not in the model |
-| Flow routing from topography | to be derived from the 3DEP DEM | 10 m | yes | not done |
-| Stream gauges | USGS NWIS via Synoptic (15 gauges) | points | yes | shown in the viewer |
-| Water-table depth | Gaia soil-reanalysis baseline | 90 m | only 47.07–47.15° N | available, not in the model |
-| Water-table depth | HydroGEN prior used by the soil reanalysis | 1 km | yes | available, not in the model |
-| Aquifer extents | none found for the park; mostly bedrock with glacial and alluvial valley fill | – | – | – |
+| Layer | Source | Native resolution | Median (5th–95th percentile) over the box |
+|---|---|---|---|
+| Soil thickness | SOLUS100 depth to a lithic contact (Nauman et al., 2024) | 100 m | 1.41 m (0.54–1.97 m) |
+| Water-table depth | Random-forest estimate for the conterminous US (Ma et al., 2026) | about 24 m | 10.1 m (4.8–20.4 m) |
+| Water-table depth, for comparison | Global groundwater model (Fan et al., 2017) | 30″ (about 1 km) | 23 m (0–306 m) |
+| Streams | NHDPlus High Resolution, 60,174 flowlines, Strahler orders 1–8, with mean annual flow | 1:24,000 | – |
+| Canopy height | ETH global canopy height 2020 (Lang et al., 2023) | 10 m | 30 m (9–45 m) |
+| Land cover | NLCD 2021 | 30 m | evergreen forest in 72.5% of cells |
+| NDVI | Sentinel-2 L2A median composite, 1 August to 30 September 2025 | 20 m | 0.85 (0.26–0.92) |
+| NDSI | same composite | 20 m | −0.48 (−0.60 to −0.24) |
 
-<p class="note">Table 7. Water-related layers. The groundwater study of the upper White River (Fuhrig et al., 2024, U.S. Geological Survey Scientific Investigations Report 2024-5015) is the only park-scale groundwater assessment found.</p>
+<p class="note">Table 7. Environmental surface layers (script S2). Percentiles are over the cells of the box.</p>
 
-Adding water would change the shallow model in three ways. A water table would separate dry from saturated cells in Gassmann-type fluid substitution, raising Vp and Vp/Vs below it. Valley-fill aquifers would appear as slow, high-Vp/Vs bodies along the major drainages. And the hydrothermal system described by Frank (1995) would add a fluid-saturated core to the alteration field.
+A few notes on the individual layers:
+
+- **Soil thickness.** SOLUS100 predicts soil depth only to 2.01 m. That value is its upper limit and is read as "at least 2 m".
+- **Water table.** The two estimates differ in level and in pattern. Ma et al. (2026) keep the water table within about 20 m of the ground almost everywhere. Fan et al. (2017) place it hundreds of metres down under ridges. For the shallow model, the choice matters more than either value. The Ma et al. (2026) grid is used under its CC-BY-NC-ND licence for non-commercial research and is not redistributed; its uncertainty layer is served through HydroGEN and was not retrieved.
+- **Imagery.** The Sentinel-2 composite follows the recipe of the Gaia Hazlab bedload study ([seis-hydro-2-sed](https://github.com/gaia-hazlab/seis-hydro-2-sed)):
+    - the least-cloudy scenes (at most 25% cloud) are used, up to six per Sentinel-2 tile, so every part of the box is covered;
+    - the scene classification keeps vegetation, bare soil, water, snow and unclassified pixels;
+    - the median is taken per pixel.
+
+    One correction is needed that the true-colour images did not require. Since processing baseline 04.00 (January 2022), Level-2A reflectance is stored with a +1000 offset, which neither the Planetary Computer nor Earth Search removes. Without the correction, median NDVI over this forest was 0.46 instead of 0.85.
+- **Snow and ice.** Late in the 2025 melt season, NDSI above 0.4 covers 66 km². For comparison, the Randolph Glacier Inventory (about 2000) outlines 97 km² of glaciers. The difference is consistent with debris-covered glacier tongues (Carbon, Emmons, Winthrop), which read as rock in NDSI, and with 25 years of retreat.
+
+<figure><img src="figures/fig8_surface_layers.png" alt="Environmental surface layers">
+<figcaption><b>Figure 9.</b> Environmental surface layers on the model grid, over a hillshade: (a) soil thickness, (b, c) water-table depth from two estimates on the same logarithmic scale, (d) canopy height, (e) land cover, (f) Strahler order of the NHDPlus HR flowlines. A rectangular step in (d) near 12 km west and 20 km north of the summit comes from the canopy product itself.</figcaption></figure>
+
+The model still has no hydrological state, and there are no aquifer maps for the park. The groundwater study of the upper White River (Fuhrig et al., 2024) is the only park-scale assessment found. These layers are the inputs needed to change that. A water table would separate dry from saturated cells in Gassmann-type fluid substitution, raising Vp and Vp/Vs below it. Valley fill along the mapped streams would appear as slow, high-Vp/Vs bodies. And the hydrothermal system described by Frank (1995) would add a fluid-saturated core to the alteration field.
 
 ## 11. Limitations and next steps
 
@@ -275,17 +352,18 @@ The structure of the model is in place, but its values should not yet be used as
 - **Fusion cutoffs.** The cutoff wavelengths are not yet tied to the resolution of the regional models, and L1 exceeds the misfit target (Table 4).
 - **Regional model below 9.9 km.** Below this depth the regional model is CRESCENT Vs with Brocher's Vp only; the deep level of the Cascadia velocity model has still to be added.
 - **Resolution.** The M1 grids are coarse (L1 is 250 m × 50 m), and thin deposit layers fall below the cell size.
-- **Travel-time check.** The check uses fixed PNSN hypocentres and a one-dimensional reference whose identity is unconfirmed. Relocation in 3D, the PNSN station delays and the PNSN AI-ready pick dataset (Ni et al., 2023) will extend it.
+- **Travel-time check and Vs calibration.** Both use fixed PNSN hypocentres located with a one-dimensional model whose identity is unconfirmed. The calibration corrects only a depth profile of Vs, with P held fixed. Joint relocation in 3D, the PNSN station delays and the PNSN AI-ready pick dataset (Ni et al., 2023) will extend both, and a joint calibration of Vp and Vs is the natural next step.
+- **Water table and imagery.** The Ma et al. (2026) uncertainty layer requires a HydroGEN account and was not retrieved. The Sentinel-2 composite covers one late-summer window. The surface layers do not yet change the seismic properties.
 - **Glaciers.** IceBoost exceeds the 1981 radar thicknesses on Emmons and Winthrop glaciers. Its total should be compared with the lidar-based ice volume of Sisson et al. (2011).
 
 ## 12. Data and code availability
 
-The code, configuration and this report are in the repository [Denolle-Lab/mt-rainier-virtual-3d-model](https://github.com/Denolle-Lab/mt-rainier-virtual-3d-model) (BSD-3-Clause). The environment is managed with pixi, and each result in this report is regenerated by the scripts named in the text (S1–S10). The data sets are public and are listed in Appendix A with their DOIs or service addresses.
+The code, configuration and this report are in the repository [Denolle-Lab/mt-rainier-virtual-3d-model](https://github.com/Denolle-Lab/mt-rainier-virtual-3d-model) (BSD-3-Clause). The environment is managed with pixi, and each result in this report is regenerated by the scripts named in the text (S1–S12). The data sets are public and are listed in Appendix A with their DOIs or service addresses.
 
 The Cascadia velocity model v1.7 must be downloaded by hand from ScienceBase. The model files will be archived with a DOI once the rock-physics parameters are sourced.
 
 <div class="note" markdown="1">
-The model code and this report were prepared with an AI coding assistant (Claude, Anthropic) under the direction of the author. All numbers are produced by the scripts in the repository, and all DOIs were resolved against the Crossref and DataCite registries on 23 September 2026.
+The model code and this report were prepared with an AI coding assistant (Claude, Anthropic) under the direction of the author. All numbers are produced by the scripts in the repository, and all DOIs were resolved against the Crossref and DataCite registries on 23 and 24 September 2026.
 </div>
 
 ## Appendix A. Data sets
@@ -303,9 +381,16 @@ The model code and this report were prepared with an AI coding assistant (Claude
 | PNSN origins and phase data (USGS ComCat) | travel-time check | [earthquake.usgs.gov/fdsnws/event/1](https://earthquake.usgs.gov/fdsnws/event/1/) |
 | EarthScope FDSN station metadata | station coordinates, sensor inventory | [service.earthscope.org/fdsnws/station/1](https://service.earthscope.org/fdsnws/station/1/) |
 | PNSN regional 1D models | 1D reference | [PNSN Quarterly Report 2003-A](https://assets.pnsn.org/legacy_reports/Sum03/Quarterly2003A.pdf) |
+| SOLUS100 soil properties (Nauman et al., 2024) | soil thickness | [10.15482/USDA.ADC/25033856](https://doi.org/10.15482/USDA.ADC/25033856) |
+| US water-table depth, 30 m (Ma et al., 2026) | water-table depth | [10.5281/zenodo.18504963](https://doi.org/10.5281/zenodo.18504963) |
+| Global water-table depth (Fan et al., 2017) | water-table depth, 1 km comparison | [GLOBALWTD server](http://thredds-gfnl.usc.es/thredds/catalog/GLOBALWTDFTP/annualmeans/catalog.html) |
+| NHDPlus High Resolution | streams, order, mean annual flow | [staged geodatabases](https://prd-tnm.s3.amazonaws.com/StagedProducts/Hydrography/NHDPlusHR/Beta/GDB/) |
+| ETH global canopy height 2020 (Lang et al., 2023) | canopy height | [10.3929/ethz-b-000609802](https://doi.org/10.3929/ethz-b-000609802) |
+| NLCD 2021 land cover | land cover | [mrlc.gov/data](https://www.mrlc.gov/data) |
+| Copernicus Sentinel-2 L2A | imagery, NDVI, NDSI | [Planetary Computer](https://planetarycomputer.microsoft.com/dataset/sentinel-2-l2a) |
 
 ## References
 
 {{REFERENCES}}
 
-<footer>rainier3d M1 · Gaia Hazlab, University of Washington · Generated by <code>scripts/10_report.py</code> on 23 September 2026.</footer>
+<footer>rainier3d M1 · Gaia Hazlab, University of Washington · Generated by <code>scripts/10_report.py</code> on 24 September 2026.</footer>

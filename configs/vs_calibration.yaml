@@ -1,0 +1,146 @@
+description: 'Depth-dependent factor on the regional Vs, applied in S5 before fusion:
+  Vs_regional * exp(interp(depth below ground, knots_m, log_factor)); constant beyond
+  the ends.'
+knots_m:
+- 0.0
+- 1000.0
+- 2000.0
+- 4000.0
+- 7000.0
+- 11000.0
+- 16000.0
+- 25000.0
+log_factor:
+- -0.06318
+- -0.0507
+- 0.09888
+- 0.08596
+- 0.06933
+- 0.00576
+- -0.02285
+- -0.02884
+factor:
+- 0.9388
+- 0.9506
+- 1.1039
+- 1.0898
+- 1.0718
+- 1.0058
+- 0.9774
+- 0.9716
+vpvs_floor: 1.6
+vpvs_floor_source: christensen_1996
+source_keys:
+- comcat_uw
+data:
+  picks: PNSN analyst P and S picks (ComCat), configs/validation_events.csv
+  n_pairs: 1241
+  n_events: 87
+  n_stations: 50
+  hypocentres: ComCat (PNSN 1D), fixed
+method:
+  solver: pykonal PointSourceSolver
+  grid_dx_m: 500
+  lam_s_rel: 0.1
+  lam_d: 1.0
+  iterations: 2
+  split: events alternating in origin-time order
+held_out:
+  before:
+    mean_s: -0.35016166633233553
+    rms_s: 0.4292703130259294
+    rms_demeaned_s: 0.20341380940922654
+    n: 635
+  after:
+    mean_s: 0.01663585982227989
+    rms_s: 0.16506849338820995
+    rms_demeaned_s: 0.14414226805127786
+    n: 635
+all_events:
+  before:
+    mean_s: -0.3615491830004699
+    rms_s: 0.44530804430522514
+    rms_demeaned_s: 0.2111357774994376
+    n: 1241
+  after:
+    mean_s: 0.0042054478939111605
+    rms_s: 0.16531010839562518
+    rms_demeaned_s: 0.14714180181512604
+    n: 1241
+lam_scan:
+- lam_s: 0.1
+  test:
+    mean_s: -0.0005613736872092153
+    rms_s: 0.16809108090389446
+    rms_demeaned_s: 0.14894258380522415
+    n: 635
+  m:
+  - -0.1097
+  - 0.025
+  - 0.0922
+  - 0.0399
+  - 0.0832
+  - 0.0088
+  - -0.0117
+  - -0.0469
+- lam_s: 1.0
+  test:
+    mean_s: 0.0018581360359246784
+    rms_s: 0.16811911531344473
+    rms_demeaned_s: 0.14914048741699448
+    n: 635
+  m:
+  - -0.0267
+  - 0.0395
+  - 0.0767
+  - 0.0505
+  - 0.076
+  - 0.0113
+  - -0.0145
+  - -0.0413
+- lam_s: 10.0
+  test:
+    mean_s: 0.0032504422771512807
+    rms_s: 0.1690262866590738
+    rms_demeaned_s: 0.149835170102554
+    n: 635
+  m:
+  - 0.036
+  - 0.0513
+  - 0.0621
+  - 0.0644
+  - 0.0641
+  - 0.0165
+  - -0.017
+  - -0.0458
+- lam_s: 100.0
+  test:
+    mean_s: 0.0018063078662153968
+    rms_s: 0.1703130903809821
+    rms_demeaned_s: 0.15083559675219943
+    n: 635
+  m:
+  - 0.0514
+  - 0.0582
+  - 0.0643
+  - 0.0662
+  - 0.0548
+  - 0.0213
+  - -0.0156
+  - -0.0523
+- lam_s: 1000.0
+  test:
+    mean_s: 0.0016270693035270035
+    rms_s: 0.17562276477584907
+    rms_demeaned_s: 0.15448852393110335
+    n: 635
+  m:
+  - 0.0909
+  - 0.0815
+  - 0.072
+  - 0.0611
+  - 0.0452
+  - 0.0222
+  - -0.004
+  - -0.0306
+date: '2026-09-24'

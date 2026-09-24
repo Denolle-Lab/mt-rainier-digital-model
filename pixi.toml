@@ -63,5 +63,6 @@ s8 = "python scripts/08_atlas.py"
 s9 = "python scripts/09_export_grids.py"
 s10 = "python scripts/10_report.py"
 s11 = "python scripts/11_seismic_atlas.py"
+s12 = "python scripts/12_calibrate_vs.py"
 atlas = "python -m http.server 8765 --bind 127.0.0.1 --directory web/atlas"
 all = { depends-on = ["s1", "s2", "s3", "s4", "s5", "s6", "s7", "s8"] }

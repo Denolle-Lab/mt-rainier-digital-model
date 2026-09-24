@@ -128,6 +128,41 @@ def fetch_stations(dom: Domain, picks: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
+def prepare(dom: Domain, events_csv) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+    """Picks, stations and events of the fixed validation set, in the domain, with UTM coordinates.
+
+    The event list in ``events_csv`` is reused when it exists, so reruns compare like with like.
+    """
+    from pathlib import Path
+
+    from pyproj import Transformer
+
+    vc = dom.cfg["validation"]
+    EVENTS = Path(events_csv)
+    events = fetch_events(dom, vc["start"], vc["end"], vc["min_magnitude"])
+    if EVENTS.exists():
+        keep = set(pd.read_csv(EVENTS)["event"])
+        events = [e for e in events if e["id"] in keep]
+    picks = fetch_picks(dom, events)
+    pd.DataFrame({"event": sorted(picks["event"].unique())}).to_csv(EVENTS, index=False)
+    sta = fetch_stations(dom, picks)
+
+    tf = Transformer.from_crs("EPSG:4326", dom.crs, always_xy=True)
+    sta["x"], sta["y"] = tf.transform(sta.lon.values, sta.lat.values)
+    x0, y0, x1, y1 = dom.bounds
+    sta = sta[(sta.x > x0) & (sta.x < x1) & (sta.y > y0) & (sta.y < y1)]
+    ev = picks.drop_duplicates("event")[["event", "lon", "lat", "depth_km"]].copy()
+    ev["x"], ev["y"] = tf.transform(ev.lon.values, ev.lat.values)
+    ev["z"] = -ev.depth_km * 1e3  # ComCat depth: km below sea level for PNSN origins (assumed; verify)
+    ev = ev[(ev.x > x0) & (ev.x < x1) & (ev.y > y0) & (ev.y < y1)]
+    picks = picks.merge(sta[["net", "sta", "x", "y", "elev"]], on=["net", "sta"])
+    picks = picks[picks.event.isin(ev.event)]
+    stations = picks.drop_duplicates(["net", "sta"])[["net", "sta", "x", "y", "elev"]].reset_index(drop=True)
+    log.info("%d events, %d stations, %d picks in the domain", ev.event.nunique(), len(stations), len(picks))
+
+    return picks, stations, ev
+
+
 # ---------------------------------------------------------------- models
 def pnsn_1d(z_m: np.ndarray, phase: str) -> np.ndarray:
     """Velocity (m/s) of the PNSN 1D model at elevations z_m (NAVD88 m; depth = -z)."""

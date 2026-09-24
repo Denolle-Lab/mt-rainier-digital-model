@@ -41,6 +41,13 @@ EXTRA = [
     "U.S. Geological Survey. <i>ComCat earthquake catalog, FDSN event web service</i> (PNSN network 'uw', origins "
     "and phase data). https://earthquake.usgs.gov/fdsnws/event/1/",
     "Luu, K. <i>fteikpy: accurate eikonal solver for Python</i> (v2.4.0) [Software]. https://github.com/keurfonluu/fteikpy",
+    "U.S. Geological Survey. <i>NHDPlus High Resolution, HU4 1703, 1708 and 1711</i> [Dataset, staged file geodatabases]. "
+    "https://prd-tnm.s3.amazonaws.com/StagedProducts/Hydrography/NHDPlusHR/Beta/GDB/",
+    "U.S. Geological Survey. (2023). <i>National Land Cover Database (NLCD) 2021, land cover, conterminous United States</i> "
+    "[Dataset]. Multi-Resolution Land Characteristics Consortium. https://www.mrlc.gov/data",
+    "European Space Agency. <i>Copernicus Sentinel-2 Level-2A surface reflectance</i>, accessed through the Microsoft Planetary "
+    "Computer STAC API [Dataset]. Contains modified Copernicus Sentinel data 2025. "
+    "https://planetarycomputer.microsoft.com/dataset/sentinel-2-l2a",
 ]
 
 CSS = """

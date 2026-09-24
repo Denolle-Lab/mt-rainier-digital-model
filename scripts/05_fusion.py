@@ -14,22 +14,29 @@ import logging
 import numpy as np
 import pandas as pd
 import xarray as xr
+import yaml
 
-from rainier3d.config.domain import load_domain
+from rainier3d.config.domain import REPO, load_domain
 from rainier3d.fusion import blend, regional
 from rainier3d.geomodel.rules import AIR, ICE
 from rainier3d.io.store import read, read_tree, write
 from rainier3d.petro.relations import nafe_drake_rho_from_vp, q_from_vs
 from rainier3d.petro.table import perturbations
+from rainier3d.validate.calibrate import log_factor
 
 
 def main():
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
     ap = argparse.ArgumentParser()
     ap.add_argument("--profile", default=None)
+    ap.add_argument(
+        "--no-vs-calibration", action="store_true", help="ignore configs/vs_calibration.yaml (for S12)"
+    )
     a = ap.parse_args()
     dom = load_domain(a.profile)
     fc = dom.cfg["fusion"]
+    cal_path = REPO / "configs" / "vs_calibration.yaml"
+    cal = None if a.no_vs_calibration or not cal_path.exists() else yaml.safe_load(cal_path.read_text())
     geo = read_tree(dom.path("processed") / "geomodel.zarr")
     props = read_tree(dom.path("processed") / "properties_geology.zarr")
     cvm, cres = regional.load_cvm(dom), regional.load_crescent(dom)
@@ -45,6 +52,13 @@ def main():
         unit, depth = g["unit"].values, g["depth"].values
         mask = unit != AIR
         reg = regional.regional_on_level(lev, depth, cvm, cres)
+        if cal is not None:  # S12: depth-dependent factor on the regional Vs, calibrated on PNSN S-P times
+            reg["vs"] = reg["vs"] * np.exp(
+                log_factor(depth, np.array(cal["log_factor"]), np.array(cal["knots_m"]))
+            )
+            # floor at Vp/Vs = vpvs_floor (quartz-rich crust, Christensen 1996): raising Vs where the regional
+            # ratio is already low would otherwise give unphysical ratios (min 1.45 in L2 without it)
+            reg["vs"] = np.minimum(reg["vs"], reg["vp"] / cal.get("vpvs_floor", 1.6))
         out = g.copy()
         # fuse Vs and Vp/Vs (not Vp and Vs separately), so Vp/Vs stays between its two inputs
         args = (depth, mask, fc["lambda_c_by_depth"], lev.dx, fc["geology_only_depth_m"], fc["taper_depth_m"])
@@ -80,6 +94,8 @@ def main():
             np.where(mask, reg["vs_unc"], np.nan).astype(np.float32),
             {"units": "m/s", "source": "crescent_gen0"},
         )
+        if cal is not None:
+            out.attrs["vs_calibration"] = f"configs/vs_calibration.yaml ({cal['date']})"
         nodes[f"/{name}"] = out
 
     tree = xr.DataTree.from_dict(nodes)

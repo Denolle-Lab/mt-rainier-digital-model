@@ -470,6 +470,8 @@ def fig_glaciers(check_csv, path):
 
 def fig_surface_layers(tree, dom, path):
     """Six environmental surface layers on the model grid, each over a hillshade, in km from the summit."""
+    from matplotlib.colors import LogNorm, Normalize
+
     from rainier3d.export.atlas import NLCD
 
     s = tree["surface"].to_dataset()
@@ -477,15 +479,15 @@ def fig_surface_layers(tree, dom, path):
     ext = [(dom.x[0] - sx) / 1e3, (dom.x[-1] - sx) / 1e3, (dom.y[0] - sy) / 1e3, (dom.y[-1] - sy) / 1e3]
     hs = LightSource(315, 40).hillshade(s["elevation"].values, dx=dom.surface_res_m, dy=dom.surface_res_m)
     panels = [
-        ("soil_thickness", "Soil thickness (m), SOLUS100", cmc.lajolla, (0, 2.01), False),
-        ("water_table_depth", "Water-table depth (m), Ma et al. 2026", cmc.devon, (0.1, 100), True),
-        ("water_table_depth_fan", "Water-table depth (m), Fan et al. 2017", cmc.devon, (0.1, 100), True),
-        ("canopy_height", "Canopy height (m), ETH 2020", cmc.bamako_r, (0, 60), False),
-        ("land_cover", "Land cover, NLCD 2021", None, None, False),
-        ("stream_order", "Stream order, NHDPlus", None, None, False),
+        ("soil_thickness", "(a) Soil thickness, SOLUS100 (m)", cmc.lajolla, (0, 2.01), False),
+        ("water_table_depth", "(b) Water table, Ma et al. 2026 (m)", cmc.devon, (1, 100), True),
+        ("water_table_depth_fan", "(c) Water table, Fan et al. 2017 (m)", cmc.devon, (1, 100), True),
+        ("canopy_height", "(d) Canopy height, ETH 2020 (m)", cmc.bamako_r, (0, 60), False),
+        ("land_cover", "(e) Land cover, NLCD 2021", None, None, False),
+        ("stream_order", "(f) Stream order, NHDPlus HR", cmc.oslo_r, (0, 8), False),
     ]
     panels = [p for p in panels if p[0] in s]
-    fig, axs = plt.subplots(2, 3, figsize=(7.2, 5.6), constrained_layout=True, sharex=True, sharey=True)
+    fig, axs = plt.subplots(2, 3, figsize=(7.2, 6.4), constrained_layout=True, sharex=True, sharey=True)
     for ax, (var, title, cmap, lim, log) in zip(axs.flat, panels, strict=False):
         a = s[var].values.astype(float)
         ax.imshow(hs, cmap="gray", origin="lower", extent=ext, vmin=0, vmax=1.2)
@@ -502,12 +504,9 @@ def fig_surface_layers(tree, dom, path):
                 alpha=0.85,
                 interpolation="nearest",
             )
-        elif var == "stream_order":
-            m = np.ma.masked_less(a, 1)
-            ax.imshow(m, cmap=cmc.oslo_r, vmin=0, vmax=6, origin="lower", extent=ext, interpolation="nearest")
         else:
-            from matplotlib.colors import LogNorm, Normalize
-
+            if var == "stream_order":
+                a = np.where(a >= 1, a, np.nan)
             norm = LogNorm(*lim) if log else Normalize(*lim)
             im = ax.imshow(
                 np.clip(a, lim[0], None) if log else a,
@@ -515,18 +514,57 @@ def fig_surface_layers(tree, dom, path):
                 norm=norm,
                 origin="lower",
                 extent=ext,
-                alpha=0.85,
+                alpha=0.9,
                 interpolation="nearest",
             )
-            fig.colorbar(im, ax=ax, shrink=0.75, pad=0.01)
-        ax.set_title(title, fontsize=7.5)
+            fig.colorbar(im, ax=ax, orientation="horizontal", shrink=0.8, pad=0.02, aspect=30)
+        ax.set_title(title, fontsize=7, loc="left")
         ax.set_aspect("equal")
     for ax in axs.flat[len(panels) :]:
         ax.set_visible(False)
-    for ax in axs[-1]:
-        ax.set_xlabel("km east of summit")
     for ax in axs[:, 0]:
         ax.set_ylabel("km north of summit")
+    fig.supxlabel("km east of summit", fontsize=8.5)
+    fig.savefig(path)
+    plt.close(fig)
+    return path
+
+
+def fig_vs_calibration(cal_yaml, pairs_csv, path):
+    """(a) calibrated log-factor on the regional Vs against depth; (b) held-out S-P residuals before/after."""
+    import yaml
+
+    cal = yaml.safe_load(cal_yaml.read_text())
+    k, f = np.array(cal["knots_m"]) / 1e3, np.array(cal["factor"])
+    p = pd.read_csv(pairs_csv)
+    held = p[~p.train]
+    fig, (a, b) = plt.subplots(
+        1, 2, figsize=(7.2, 3.2), constrained_layout=True, gridspec_kw={"width_ratios": [1, 1.6]}
+    )
+    a.plot(f, k, color=CAT[0], lw=1.6, marker="o", ms=4)
+    a.axvline(1.0, color=MUTED, lw=0.6, ls="--")
+    a.set_ylim(k.max(), 0)
+    a.set_xlabel("Factor on regional Vs")
+    a.set_ylabel("Depth below ground (km)")
+    a.grid(color=GRID, lw=0.4)
+    a.set_title("(a)", loc="left", fontsize=8.5)
+    bins = np.arange(-1.5, 1.0, 0.05)
+    for col, lab, c in (("r_before", "before", CAT[1]), ("r_after", "after", CAT[0])):
+        r = held[col]
+        b.hist(
+            r,
+            bins=bins,
+            histtype="step",
+            lw=1.4,
+            color=c,
+            label=f"{lab}: mean {r.mean():+.2f} s, RMS {np.sqrt((r**2).mean()):.2f} s",
+        )
+    b.axvline(0, color=MUTED, lw=0.6, ls="--")
+    b.set_xlabel("S−P residual, observed − predicted (s)")
+    b.set_ylabel("Held-out pairs")
+    b.legend(fontsize=7, loc="upper left", frameon=False)
+    b.grid(color=GRID, lw=0.4)
+    b.set_title("(b)", loc="left", fontsize=8.5)
     fig.savefig(path)
     plt.close(fig)
     return path

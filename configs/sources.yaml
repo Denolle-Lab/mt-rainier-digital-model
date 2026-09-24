@@ -256,3 +256,9 @@ sentinel2_l2a:
   verified: web-2026-09-24 (8 acquisition days in the composite)
   note: recipe from gaia-hazlab/seis-hydro-2-sed workflows/28_fetch_basemaps.py
   role: true-colour imagery for the atlas; NDVI and NDSI surface layers
+
+christensen_1996:
+  title: Christensen 1996, Poisson's ratio and crustal seismology, JGR 101(B2), 3139-3156
+  doi: 10.1029/95JB03446
+  verified: web-2026-09-24 (DOI resolved)
+  role: Vp/Vs floor of 1.6 on the S-calibrated regional Vs (lowest ratios of quartz-rich crustal rocks)
