@@ -49,7 +49,7 @@ def test_kind_of_maps_instruments_and_ignores_state_of_health():
 def test_colocated_codes_merge_into_one_named_site():
     out = build()
     lon = next(s for s in out["sites"] if "UW.LON" in s["codes"])
-    assert lon["id"] == "UW.LO2" and lon["name"] == "Longmire"
+    assert lon["id"] == "UW.LON" and lon["name"] == "Longmire"   # the major code names the site
     assert sorted(lon["codes"]) == ["UW.LO2", "UW.LON", "UW.LON9"]
     assert lon["kinds"] == ["seismometer", "accelerometer", "tiltmeter"]   # KINDS order
     assert lon["major"] == "Longmire, broadband" and lon["since"] == "2009-01-28"

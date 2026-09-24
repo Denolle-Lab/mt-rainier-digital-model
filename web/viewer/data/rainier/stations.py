@@ -126,13 +126,14 @@ def build_stations(cache_dir, get=fetch.get, as_of: str | None = None, majors: d
     b = E.OVERVIEW
     sites = []
     for g in groups:
-        first = g[0]
+        first = g[0]   # the longest-running code names the site and places it
         lat, lon = first["lat"], first["lon"]
+        ident = next((s["code"] for s in g if s["code"] in majors), first["code"])   # people know the major code
         kinds = [k for k in KINDS if any(i["kind"] == k for s in g for i in s["instruments"])]
         codes = [s["code"] for s in g]
         major = next((majors[c] for c in codes if c in majors), None)
         sites.append({
-            "id": first["code"], "name": clean_name(first["siteName"]), "codes": codes,
+            "id": ident, "name": clean_name(first["siteName"]), "codes": codes,
             "lat": lat, "lon": lon, "x": E.to_x(lon), "z": E.to_z(lat), "elev": first["elev"],
             "kinds": kinds, "since": first["since"], "onMap": b.west <= lon <= b.east and b.south <= lat <= b.north,
             "major": major, "stations": g,
