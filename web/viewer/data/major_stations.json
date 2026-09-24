@@ -1,0 +1,11 @@
+{
+  "UW.STAR": "St. Andrews Rock, 3,365 m",
+  "UW.RCM": "Camp Muir, broadband + GNSS",
+  "UW.RCS": "Camp Schurman",
+  "CC.MILD": "Mildred Point, broadband + infrasound",
+  "CC.PARA": "Paradise, broadband + infrasound",
+  "UW.RER": "Emerald Ridge, broadband + infrasound + GNSS",
+  "UW.FMW": "Mount Fremont, broadband + GNSS",
+  "UW.LON": "Longmire, broadband + accelerometer + tiltmeters",
+  "CC.OBSR": "Observation Rock, broadband"
+}
