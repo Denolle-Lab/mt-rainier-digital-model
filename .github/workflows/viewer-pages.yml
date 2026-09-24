@@ -8,6 +8,8 @@ on:
   push:
     branches: [main]
     paths: ["web/viewer/**", ".github/workflows/viewer-pages.yml"]
+  pull_request:
+    paths: ["web/viewer/**", ".github/workflows/viewer-pages.yml"]
   workflow_dispatch:
 
 permissions:
@@ -44,9 +46,11 @@ jobs:
           npm test
           npm run build
       - uses: actions/upload-pages-artifact@v3
+        if: github.event_name != 'pull_request'
         with:
           path: web/viewer/site/dist
   deploy:
+    if: github.event_name != 'pull_request'   # pull requests build and test only
     needs: build
     runs-on: ubuntu-latest
     environment:
