@@ -12,6 +12,7 @@ import LayerPanel from "./ui/LayerPanel.jsx";
 import ModelLayers from "./ui/ModelLayers.jsx";
 import ModelLegend from "./ui/ModelLegend.jsx";
 import ModelReadout from "./ui/ModelReadout.jsx";
+import MobileDock from "./ui/MobileDock.jsx";
 import QuakeLegend from "./ui/QuakeLegend.jsx";
 import Legend from "./ui/Legend.jsx";
 import StationPanel from "./ui/StationPanel.jsx";
@@ -34,10 +35,10 @@ export function detailText(frame, summit) {
 function Atlas({ bundle, onError }) {
   const canvasRef = useRef(null), overlayRef = useRef(null), layerRef = useRef(null);
   const [scene, setScene] = useState(null), [siteId, setSiteId] = useState(null), [hover, setHover] = useState(null);
-  const [detail, setDetail] = useState("loading…"), [active, setActive] = useState("home"), [modelKey, setModelKey] = useState(null);
+  const [detail, setDetail] = useState("loading…"), [active, setActive] = useState("home"), [modelKey, setModelKey] = useState(null), [sheet, setSheet] = useState(null);
 
   const openSite = useCallback((site, sc) => {
-    setSiteId(site.id); setActive(site.id); setHover(null);
+    setSiteId(site.id); setActive(site.id); setHover(null); setSheet(null);
     layerRef.current?.setSelected(site.id);
     if (site.onMap) sc.flyToSite(site);
   }, []);
@@ -88,8 +89,9 @@ function Atlas({ bundle, onError }) {
               <ModelLegend layer={modelLayer} />
             </div>
           )}
-          {modelLayer && <ModelReadout scene={scene} model={bundle.model} layer={modelLayer} box={bundle.overviewBox} />}
+          {modelLayer?.values && <ModelReadout scene={scene} model={bundle.model} layer={modelLayer} box={bundle.overviewBox} />}
           <Tooltip hover={hover} />
+          <MobileDock sheet={sheet} onSheet={setSheet} hasModel={!!bundle.model} />
           {site && <StationPanel site={site} bundle={bundle} onFly={s => scene.flyToSite(s)}
             onClose={() => { setSiteId(null); layerRef.current?.setSelected(null); }} />}
         </>

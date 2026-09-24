@@ -7,7 +7,7 @@ export default function ModelLegend({ layer }) {
   return (
     <div className="mlegend">
       <div className="eyebrow">{layer.label}{layer.units && layer.kind !== "categorical" ? ` (${layer.units})` : ""}</div>
-      {layer.kind === "categorical" ? (
+      {layer.kind === "image" ? null : layer.kind === "categorical" ? (
         <div className="mclasses">
           {legend.classes.map(c => <div key={c.value} className="row"><span className="swatch" style={{ background: c.color }} />{c.label}</div>)}
         </div>
@@ -18,7 +18,7 @@ export default function ModelLegend({ layer }) {
           {legend.log && <div className="msrc">Log scale</div>}
         </>
       )}
-      <div className="msrc">{layer.note}{layer.note ? ". " : ""}Model grid, 100 m cells.{" "}
+      <div className="msrc">{layer.note}{layer.note ? ". " : ""}{layer.kind === "image" ? "" : "Model grid, 100 m cells. "}
         {layer.sources.map((s, i) => <span key={s.key}>{i ? ", " : "Source: "}{s.link ? <a href={s.link} target="_blank" rel="noreferrer">{s.key}</a> : s.key}</span>)}
       </div>
     </div>
