@@ -11320,6 +11320,16 @@ packages:
   timestamp: 1786599629846
 - pypi: ./
   name: rainier3d
+  requires_dist:
+  - numpy
+  - pandas
+  - xarray>=2025.1
+  - zarr>=3
+  - pyproj
+  - requests
+  - netcdf4
+  - scipy
+  - rioxarray
   requires_python: '>=3.12'
 - pypi: https://files.pythonhosted.org/packages/1a/f3/2b9dab616e9a22bc1c9ab08608165a93b96f8f5be211552f1c645a91b95b/fteikpy-2.4.0-py3-none-any.whl
   name: fteikpy

@@ -47,6 +47,16 @@ The derived products (the fused model, GNSS velocities and strain, the edifice-l
 release assets and listed in `src/rainier3d/products.json` with SHA-256 checksums. Inputs whose licence forbids
 redistributing derivatives are left out and rebuilt locally with your own access (`docs/data_policy.md`).
 
+Outside this repository, the client installs on its own (it needs only numpy, pandas, xarray, zarr, pyproj,
+requests, netCDF4, scipy and rioxarray):
+
+```
+pip install "git+https://github.com/Denolle-Lab/mt-rainier-digital-model"
+rainier3d list
+```
+
+Inside the repository, the same commands run through pixi:
+
 ```
 pixi run python -m rainier3d list
 pixi run python -m rainier3d export model --format specfem --bbox -122.0 46.7 -121.6 47.0 --dx 250 --dz 250 \
