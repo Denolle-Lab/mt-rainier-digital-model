@@ -248,3 +248,11 @@ nhdplus_hr:
   license: public domain
   verified: web-2026-09-24 (staged GDB download; 60,174 flowlines in the domain)
   role: stream network, Strahler order and mean annual flow (surface layer stream_order; atlas stream lines)
+
+sentinel2_l2a:
+  title: Copernicus Sentinel-2 L2A surface reflectance (ESA), via Microsoft Planetary Computer STAC; cloud-masked (SCL 4,5,6,7,11) median of scenes <= 25% cloud, 2025-08-01 to 2025-09-30
+  url: https://planetarycomputer.microsoft.com/dataset/sentinel-2-l2a
+  license: Copernicus open data licence (free, attribution "Contains modified Copernicus Sentinel data 2025")
+  verified: web-2026-09-24 (8 acquisition days in the composite)
+  note: recipe from gaia-hazlab/seis-hydro-2-sed workflows/28_fetch_basemaps.py
+  role: true-colour imagery for the atlas; NDVI and NDSI surface layers

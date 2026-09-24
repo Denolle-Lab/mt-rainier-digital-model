@@ -31,7 +31,9 @@ def main():
     tree = read_tree(dom.path("processed") / "model.zarr")
     hr = dom.path("raw") / "hydrology" / "nhdplus_hr_flowlines.gpkg"
     fl = L.fetch_flowlines_hr(dom) if hr.exists() else L.fetch_flowlines(dom)
-    meta = export_layers(tree, dom, manifest, atlas / "model", fl)
+    from rainier3d.surface.imagery import fetch_s2_composite
+
+    meta = export_layers(tree, dom, manifest, atlas / "model", fl, imagery=fetch_s2_composite(dom))
     size = sum(p.stat().st_size for p in (atlas / "model").iterdir())
     logging.info(
         "wrote %d layers + streams to %s (%.1f MB)", len(meta["layers"]), atlas / "model", size / 1e6

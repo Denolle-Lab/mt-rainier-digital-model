@@ -72,8 +72,6 @@ input[type=range] { width: 120px; accent-color: #cfd6de; }
 .hover .more { color: var(--muted); font-size: 11px; margin-top: 4px; }
 .maplibregl-ctrl-attrib { background: rgba(0,0,0,.4) !important; color: var(--muted); }
 .maplibregl-ctrl-attrib a { color: var(--muted); }
-@media (max-width: 900px) { #controls, #regions { display: none; } #title-card { width: calc(100% - 32px); }
-  #family-bar { max-width: calc(100% - 32px); } }
 
 select { background: #1a1f26; color: var(--text); border: 1px solid var(--line); border-radius: 6px; padding: 3px 6px;
   font: inherit; text-transform: none; letter-spacing: 0; max-width: 150px; }
@@ -104,3 +102,28 @@ select { background: #1a1f26; color: var(--text); border: 1px solid var(--line);
 #ug { position: fixed; inset: 0; z-index: 10; background: #07090c; }
 #ug-canvas { position: absolute; inset: 0; }
 #ug-controls { top: 16px; right: 16px; width: 260px; font-size: 12px; }
+
+/* Phone layout: compact title card, a tab dock at the bottom, one panel at a time as a bottom sheet. */
+#dock { display: none; }
+@media (max-width: 700px) {
+  #title-card { top: calc(8px + env(safe-area-inset-top)); left: 8px; right: 8px; width: auto; padding: 10px 12px; }
+  #title-card .sub { display: none; }
+  #title-card .stats { gap: 14px; margin-top: 6px; padding-top: 6px; }
+  #controls, #regions, #family-bar { display: none; top: auto; left: 8px; right: 8px; width: auto; max-width: none;
+    bottom: calc(68px + env(safe-area-inset-bottom)); max-height: 55vh; overflow-y: auto; transform: none; }
+  html[data-sheet="controls"] #controls, html[data-sheet="regions"] #regions { display: block; }
+  html[data-sheet="legend"] #family-bar { display: flex; flex-wrap: wrap; }
+  #section-panel { left: 8px; right: 8px; bottom: calc(68px + env(safe-area-inset-bottom)); }
+  #sec-cbar, #ug-cbar { width: 100%; }
+  #dock { display: flex; position: fixed; z-index: 6; left: 8px; right: 8px; bottom: calc(8px + env(safe-area-inset-bottom));
+    height: 52px; gap: 4px; padding: 5px; background: rgba(14, 17, 21, .92); backdrop-filter: blur(10px);
+    border: 1px solid var(--line); border-radius: 8px; }
+  #dock button { flex: 1; background: transparent; border: 0; border-radius: 5px; color: var(--muted); font: inherit; font-size: 13px; }
+  #dock button[aria-pressed="true"] { background: var(--text); color: #0e1115; }
+  #ug-controls { top: auto; left: 8px; right: 8px; width: auto; bottom: calc(8px + env(safe-area-inset-bottom));
+    max-height: 50vh; overflow-y: auto; }
+  #ug-controls.folded > :not(:first-child) { display: none; }
+  .hover { max-width: calc(100vw - 16px); }
+  select { max-width: 60vw; }
+  .maplibregl-ctrl-bottom-right { bottom: calc(64px + env(safe-area-inset-bottom)); }
+}

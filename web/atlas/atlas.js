@@ -329,7 +329,8 @@ async function renderSection(sec) {
   const i = state.sections.indexOf(sec), tag = String.fromCharCode(65 + i);
   $("#sec-title").textContent = `${tag}–${tag}′  ${sec.name}`;
   const wrap = cv.parentElement, dpr = Math.min(2, window.devicePixelRatio || 1);
-  const W = Math.min(1400, Math.round(wrap.clientWidth * dpr)), H = Math.min(600, Math.round(wrap.clientHeight * dpr));
+  // floors: the panel can still be laid out at zero size in the frame it is unhidden (phone sheets)
+  const W = Math.max(320, Math.min(1400, Math.round(wrap.clientWidth * dpr))), H = Math.max(160, Math.min(600, Math.round(wrap.clientHeight * dpr)));
   $("#sec-meta").textContent = "computing…";
   const name = subName();
   const r = await Sub.section(name, sec.A, sec.B, { zmin: state.zmin, width: W, height: H });
@@ -470,3 +471,20 @@ async function updateSlice(map, S) {
   map.getSource("slice").updateImage({ url: r.canvas.toDataURL(), coordinates: Sub.meta().surface.corners_lonlat });
   void S;
 }
+
+// Phone layout: the dock opens one panel at a time as a bottom sheet (CSS reads <html data-sheet>);
+// the underground controls fold to their title row so the 3D view stays visible.
+(function wireDock() {
+  const root = document.documentElement;
+  const buttons = [...document.querySelectorAll("#dock button")];
+  const set = (s) => {
+    root.dataset.sheet = s || "";
+    buttons.forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.sheet === s)));
+  };
+  buttons.forEach((b) => b.addEventListener("click", () => set(root.dataset.sheet === b.dataset.sheet ? "" : b.dataset.sheet)));
+  const fold = document.getElementById("ug-fold"), ug = document.getElementById("ug-controls");
+  if (fold && ug) {
+    if (matchMedia("(max-width: 700px)").matches) ug.classList.add("folded");
+    fold.addEventListener("click", () => ug.classList.toggle("folded"));
+  }
+})();

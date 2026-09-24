@@ -145,6 +145,28 @@ CONTINUOUS = {
         False,
         "fused model, mean of the top 100 m below ground",
     ),
+    "ndvi": (
+        "ndvi",
+        "Vegetation index (NDVI)",
+        "Ecology",
+        "",
+        -0.2,
+        0.9,
+        "cmc.bamako_r",
+        False,
+        "Sentinel-2 late-summer 2025 median",
+    ),
+    "ndsi": (
+        "ndsi",
+        "Snow and ice index (NDSI)",
+        "Cryosphere",
+        "",
+        -0.5,
+        1.0,
+        "cmc.oslo",
+        False,
+        "Sentinel-2 late-summer 2025 median; above 0.4 marks ice and perennial snow",
+    ),
 }
 
 
@@ -198,6 +220,15 @@ def _save_png(rgba: np.ndarray, path: Path) -> None:
     Image.fromarray(rgba, "RGBA").save(path, optimize=True)
 
 
+def _save_texture(rgba: np.ndarray, path: Path, categorical: bool) -> str:
+    """Categorical layers keep exact colours (PNG); imagery and ramps go lossy WebP with alpha."""
+    if categorical:
+        _save_png(rgba, path.with_suffix(".png"))
+        return path.with_suffix(".png").name
+    Image.fromarray(rgba, "RGBA").save(path.with_suffix(".webp"), quality=88, method=6)
+    return path.with_suffix(".webp").name
+
+
 def _values_u16(
     v: np.ndarray, categorical: bool, vmin: float = 0, vmax: float = 1
 ) -> tuple[np.ndarray, float, float]:
@@ -230,7 +261,36 @@ def surface_derived(tree: xr.DataTree) -> dict[str, np.ndarray]:
     return out
 
 
-def export_layers(tree: xr.DataTree, dom, manifest: dict, out: Path, flowlines=None) -> dict:
+def imagery_texture(src: str, manifest: dict, width: int = 4080) -> np.ndarray:
+    """Sentinel-2 true colour (seis-hydro-2-sed stretch) warped from its 20 m UTM grid to the overview box."""
+    import rasterio
+
+    from rainier3d.surface.imagery import true_colour
+
+    rgb = true_colour(src)
+    with rasterio.open(src) as ds:
+        st, scrs = ds.transform, ds.crs
+    t, w, h = overview_grid(manifest, width)
+    out = np.zeros((h, w, 4), "uint8")
+    for k in range(3):
+        dst = np.zeros((h, w), "uint8")
+        reproject(
+            rgb[..., k],
+            dst,
+            src_transform=st,
+            src_crs=scrs,
+            src_nodata=0,
+            dst_transform=t,
+            dst_crs="EPSG:4326",
+            dst_nodata=0,
+            resampling=Resampling.bilinear,
+        )
+        out[..., k] = dst
+    out[..., 3] = np.where(out[..., :3].max(-1) > 0, 255, 0)
+    return out
+
+
+def export_layers(tree: xr.DataTree, dom, manifest: dict, out: Path, flowlines=None, imagery=None) -> dict:
     out.mkdir(parents=True, exist_ok=True)
     s = tree["surface"].to_dataset()
     derived = surface_derived(tree)
@@ -249,7 +309,7 @@ def export_layers(tree: xr.DataTree, dom, manifest: dict, out: Path, flowlines=N
             t = _norm(tex, legend["min"], legend["max"], log)
             rgba = (cm(np.nan_to_num(t)) * 255).astype("uint8")
             rgba[..., 3] = np.where(np.isfinite(tex), 255, 0)
-        _save_png(rgba, out / f"{key}.png")
+        tex_name = _save_texture(rgba, out / key, categorical)
         q, scale, offset = _values_u16(val, categorical, legend.get("min", 0), legend.get("max", 1))
         q.tofile(out / f"{key}.u16.bin")
         reg = _sources()
@@ -261,7 +321,7 @@ def export_layers(tree: xr.DataTree, dom, manifest: dict, out: Path, flowlines=N
                 "kind": "categorical" if categorical else "continuous",
                 "units": units,
                 "note": note,
-                "texture": f"{key}.png",
+                "texture": tex_name,
                 "values": {
                     "file": f"{key}.u16.bin",
                     "width": q.shape[1],
@@ -320,6 +380,31 @@ def export_layers(tree: xr.DataTree, dom, manifest: dict, out: Path, flowlines=N
             keys=list(filter(None, s["land_cover"].attrs.get("gaia:source_keys", "").split(","))),
         )
 
+    if imagery:
+        s2_name = _save_texture(imagery_texture(imagery, manifest), out / "sentinel2", False)
+        reg = _sources()
+        layers.insert(
+            0,
+            {
+                "key": "sentinel2",
+                "label": "Sentinel-2 true colour, Aug-Sep 2025",
+                "group": "Imagery",
+                "kind": "image",
+                "units": "",
+                "texture": s2_name,
+                "values": None,
+                "legend": {},
+                "note": "Cloud-masked median, 20 m. Contains modified Copernicus Sentinel data 2025",
+                "sources": [
+                    {
+                        "key": "sentinel2_l2a",
+                        "title": reg["sentinel2_l2a"]["title"],
+                        "link": reg["sentinel2_l2a"]["url"],
+                    }
+                ],
+            },
+        )
+
     streams = None
     if flowlines is not None:
         streams = _streams_png(flowlines, manifest, out / "streams.png")
@@ -339,10 +424,10 @@ def _streams_png(flowlines, manifest: dict, path: Path, width: int = 4080) -> di
     t, w, h = overview_grid(manifest, width)
     img = Image.new("RGBA", (w, h), (0, 0, 0, 0))
     d = ImageDraw.Draw(img)
-    g = flowlines.to_crs(4326).sort_values("streamorde")
+    g = flowlines[flowlines.streamorde.fillna(0) >= 1].to_crs(4326).sort_values("streamorde")  # NaN: no order
     inv = ~t
     for geom, order in zip(g.geometry, g.streamorde, strict=True):
-        if geom is None or not order or order < 1:
+        if geom is None:
             continue
         parts = geom.geoms if geom.geom_type.startswith("Multi") else [geom]
         width_px = {1: 1, 2: 1, 3: 1, 4: 2, 5: 2, 6: 3, 7: 4}.get(int(order), 5)

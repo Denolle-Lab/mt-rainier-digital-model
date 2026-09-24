@@ -168,16 +168,52 @@ def model_on_grid(tree: xr.DataTree, var: str, xs, ys, zs, phase: str) -> np.nda
     return out
 
 
-def travel_times(vel: np.ndarray, xs, ys, zs, dx, sources_xyz, receivers_xyz) -> np.ndarray:
-    """T[source, receiver] (s). Grid in fteikpy order (depth-down, x, y); sources are stations."""
-    from fteikpy import Eikonal3D
+def _pykonal_one(args):
+    """One PointSourceSolver solve (refined spherical grid around the source); T at the receivers."""
+    import pykonal
+    from scipy.interpolate import RegularGridInterpolator
 
-    origin = (-zs[0], xs[0], ys[0])
-    eik = Eikonal3D(vel, gridsize=(dx, dx, dx), origin=origin)
-    src = [(-z, x, y) for x, y, z in sources_xyz]
-    rec = np.array([(-z, x, y) for x, y, z in receivers_xyz])
-    tts = eik.solve(src, nsweep=2)
-    return np.array([tt(rec) for tt in tts])
+    vel_xyd, x0, dx, src_xyd, rec_xyd = args
+    s = pykonal.solver.PointSourceSolver(coord_sys="cartesian")
+    s.velocity.min_coords = x0
+    s.velocity.node_intervals = dx, dx, dx
+    s.velocity.npts = vel_xyd.shape
+    s.velocity.values = vel_xyd
+    s.src_loc = np.asarray(src_xyd, dtype=float)
+    s.solve()
+    axes = [x0[i] + dx * np.arange(vel_xyd.shape[i]) for i in range(3)]
+    return RegularGridInterpolator(axes, s.traveltime.values, bounds_error=False, fill_value=np.nan)(rec_xyd)
+
+
+def travel_times(
+    vel: np.ndarray, xs, ys, zs, dx, sources_xyz, receivers_xyz, solver: str = "pykonal"
+) -> np.ndarray:
+    """T[source, receiver] (s). Grid in fteikpy order (depth-down, x, y); sources are stations (reciprocity).
+
+    pykonal PointSourceSolver is the default: against analytic times on this grid size (0.5 km) it is 2-3x
+    more accurate than fteikpy (event-demeaned RMS 4.6 vs 10.5 ms homogeneous, 5.5 vs 14.8 ms for a gradient)
+    at ~1.2x the cost; see docs/eikonal_benchmark.md.
+    """
+    if solver == "fteikpy":
+        from fteikpy import Eikonal3D
+
+        origin = (-zs[0], xs[0], ys[0])
+        eik = Eikonal3D(vel, gridsize=(dx, dx, dx), origin=origin)
+        src = [(-z, x, y) for x, y, z in sources_xyz]
+        rec = np.array([(-z, x, y) for x, y, z in receivers_xyz])
+        tts = eik.solve(src, nsweep=2)
+        return np.array([tt(rec) for tt in tts])
+    if solver != "pykonal":
+        raise ValueError(f"unknown solver {solver!r}")
+    import os
+    from concurrent.futures import ProcessPoolExecutor
+
+    vel_xyd = np.ascontiguousarray(np.transpose(vel, (1, 2, 0)), dtype=float)  # (x, y, depth)
+    x0 = (xs[0], ys[0], -zs[0])
+    rec = np.array([(x, y, -z) for x, y, z in receivers_xyz])
+    jobs = [(vel_xyd, x0, dx, (x, y, -z), rec) for x, y, z in sources_xyz]
+    with ProcessPoolExecutor(max_workers=min(8, os.cpu_count() or 1)) as ex:
+        return np.array(list(ex.map(_pykonal_one, jobs)))
 
 
 def summarize(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:

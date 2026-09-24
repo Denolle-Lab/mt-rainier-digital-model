@@ -25,6 +25,7 @@ def main():
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
     ap = argparse.ArgumentParser()
     ap.add_argument("--profile", default=None)
+    ap.add_argument("--solver", default="pykonal", choices=["pykonal", "fteikpy"])
     a = ap.parse_args()
     dom = load_domain(a.profile)
     vc = dom.cfg["validation"]
@@ -62,7 +63,7 @@ def main():
     for phase, var in (("P", "vp"), ("S", "vs")):
         models = {"1d": pnsn.pnsn_1d(zz, phase), "3d": pnsn.model_on_grid(tree, var, xs, ys, zs, phase)}
         for m, vel in models.items():
-            tt = pnsn.travel_times(vel, xs, ys, zs, vc["dx"], src, rec)
+            tt = pnsn.travel_times(vel, xs, ys, zs, vc["dx"], src, rec, solver=a.solver)
             sel = picks.phase == phase
             picks.loc[sel, f"tt_{m}"] = [
                 tt[sidx[(n, s)], eidx[e]]

@@ -277,10 +277,13 @@ def _clip_to_cache(dom: Domain, src: str, cache, pad_m: float = 2000) -> str:
     return str(cache)
 
 
-def fetch_ma_wtd(dom: Domain) -> str:
+def fetch_ma_wtd(dom: Domain, download: bool = True) -> str:
     """Ma et al. 2026 water-table depth, mean, ~24 m CONUS2 grid (Zenodo 10.5281/zenodo.18504963).
     The file is stored in full-width strips, so this reads ~3,600 CONUS-wide rows once."""
-    return _clip_to_cache(dom, _vsicurl(MA_URL), dom.path("raw") / "hydrology" / "ma2026_wtd_mean_clip.tif")
+    cache = dom.path("raw") / "hydrology" / "ma2026_wtd_mean_clip.tif"
+    if not (download or cache.exists()):
+        raise FileNotFoundError(f"{cache} not cached; fetch it first with fetch_ma_wtd(dom)")
+    return _clip_to_cache(dom, _vsicurl(MA_URL), cache)
 
 
 def fetch_fan_wtd(dom: Domain) -> str:
