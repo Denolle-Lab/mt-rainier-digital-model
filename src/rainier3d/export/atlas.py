@@ -454,3 +454,122 @@ def _link(rec: dict) -> str:
     if rec.get("doi"):
         return f"https://doi.org/{rec['doi']}"
     return rec.get("url", "")
+
+
+# ---- subsurface volume for the viewer's section and depth slice ----
+# name: (label, units, vmin, vmax, colormap); "unit" is categorical (byte = unit code)
+VOLUME_VARS = {
+    "vs": ("Vs", "m/s", 300, 4200, "cmc.roma"),
+    "vp": ("Vp", "m/s", 1500, 7200, "cmc.roma"),
+    "vpvs": ("Vp/Vs", "", 1.5, 2.3, "cmc.vik"),
+    "rho": ("Density", "kg/m³", 1800, 3100, "cmc.lapaz_r"),
+    "unit": ("Model units", "", 0, 0, None),
+}
+
+
+def scene_frame(atlas: Path) -> dict:
+    """The viewer's local frame (equirectangular km around LON0, LAT0; x east, z south), from its bundle."""
+    t = json.loads((atlas / "terrain" / "terrain.json").read_text())
+    b = json.loads((atlas / "manifest.json").read_text())["extent"]["overview"]
+    kx = t["cols"] * t["dx"] / (b["east"] - b["west"])
+    kz = t["rows"] * t["dz"] / (b["north"] - b["south"])
+    return {"lon0": b["west"] - t["x0"] / kx, "lat0": b["north"] + t["z0"] / kz, "kx": kx, "kz": kz}
+
+
+def _quad_fit(fr: dict, dom, target) -> list[float]:
+    """Coefficients of target(x, z) ~ c0 + c1 x + c2 z + c3 x^2 + c4 x z + c5 z^2 (x, z in scene km).
+    UTM is not linear in the scene frame (grid convergence ~0.9 deg); the quadratic is good to < 1 m here."""
+    from pyproj import Transformer
+
+    lon0, lat0, lon1, lat1 = dom.bbox_4326
+    lon, lat = np.meshgrid(
+        np.linspace(lon0 - 0.05, lon1 + 0.05, 80), np.linspace(lat0 - 0.05, lat1 + 0.05, 80)
+    )
+    x, z = (lon - fr["lon0"]) * fr["kx"], -(lat - fr["lat0"]) * fr["kz"]
+    e, n = Transformer.from_crs(4326, dom.crs, always_xy=True).transform(lon, lat)
+    A = np.c_[np.ones(x.size), x.ravel(), z.ravel(), x.ravel() ** 2, (x * z).ravel(), z.ravel() ** 2]
+    c, *_ = np.linalg.lstsq(A, target(e, n).ravel(), rcond=None)
+    err = np.abs(A @ c - target(e, n).ravel()).max()
+    return [float(v) for v in c], float(err)
+
+
+def export_volume(tree: xr.DataTree, dom, atlas: Path, dx: float = 500.0, dz: float = 250.0) -> dict:
+    """model.zarr -> <atlas>/model/volume/: one uint8 cube per property on a uniform UTM grid (x fastest,
+    then y south->north, then z top->down); 255 = air. volume.json maps scene (x, z) km to texture (u, v)
+    by quadratic fits and elevation to r linearly."""
+    from rainier3d.export.grids import uniform
+
+    out = atlas / "model" / "volume"
+    out.mkdir(parents=True, exist_ok=True)
+    g = uniform(tree, dx=dx, dz=dz, z_bot=-20000.0, variables=("vp", "vs", "rho"))
+    air = g["air"].values.astype(bool)
+    g["vpvs"] = g["vp"] / g["vs"]
+    # units: nearest cell of the level that holds each depth (categorical, never interpolated)
+    unit = np.zeros(air.shape, np.uint8)
+    for lev in ("L1", "L2", "L3"):
+        ds = tree[lev].to_dataset()
+        half = ds.attrs["dz"] / 2
+        sel = (g.z.values <= float(ds.z.max()) + half) & (g.z.values >= float(ds.z.min()) - half)
+        if sel.any():
+            u = ds["unit"].sel(z=g.z.values[sel], y=g.y.values, x=g.x.values, method="nearest")
+            unit[sel] = u.transpose("z", "y", "x").values.astype(np.uint8)
+    nz, ny, nx = air.shape
+    fr = scene_frame(atlas)
+    xe, ye = float(g.x[0]) - dx / 2, float(g.y[0]) - dx / 2
+    cu, eu = _quad_fit(fr, dom, lambda e, n: (e - xe) / (nx * dx))
+    cv, ev = _quad_fit(fr, dom, lambda e, n: (n - ye) / (ny * dx))
+    meta = {
+        "grid": {
+            "nx": nx,
+            "ny": ny,
+            "nz": nz,
+            "dx_m": dx,
+            "dz_m": dz,
+            "x_edge": xe,
+            "y_edge": ye,
+            "z_top_m": float(g.z[0]) + dz / 2,
+            "crs": dom.crs,
+        },
+        "uv_poly": {
+            "u": cu,
+            "v": cv,
+            "terms": "1, x, z, x^2, x z, z^2 (scene km)",
+            "max_error_cells": max(eu * nx, ev * ny),
+        },
+        "vars": {},
+        "source": "rainier3d model.zarr via export.grids.uniform (linear within levels; units nearest)",
+    }
+    for key, (label, units, vmin, vmax, cmap) in VOLUME_VARS.items():
+        if key == "unit":
+            q = np.where(air, 255, unit).astype(np.uint8)
+            lut = [[0, 0, 0]] * 256
+            for u_, col in UNIT_COLORS.items():
+                lut[u_] = [int(col[i : i + 2], 16) for i in (1, 3, 5)]
+            classes = [
+                {"value": int(u_), "label": UNIT_LABELS.get(u_, str(u_)), "color": UNIT_COLORS[u_]}
+                for u_ in sorted(set(np.unique(q)) - {0, 255})
+                if u_ in UNIT_COLORS
+            ]
+            legend = {"classes": classes}
+        else:
+            v = g[key].values
+            # air keeps the rock value below it (as in grids.uniform): the viewer hides everything above the
+            # ground, and linear filtering must not blend a no-data code into the top rock cells
+            q = np.where(~np.isfinite(v), 255, np.clip(np.rint(254 * (v - vmin) / (vmax - vmin)), 0, 254))
+            q = q.astype(np.uint8)
+            cm = _cmap(cmap)
+            lut = [[int(c * 255) for c in cm(min(i, 254) / 254)[:3]] for i in range(256)]
+            legend = {"min": vmin, "max": vmax, "log": False, "ramp": _ramp(cm)}
+        q.tofile(out / f"{key}.u8")
+        meta["vars"][key] = {
+            "label": label,
+            "units": units,
+            "file": f"volume/{key}.u8",
+            "kind": "categorical" if key == "unit" else "continuous",
+            "lut": lut,
+            "legend": legend,
+            "vmin": vmin,
+            "vmax": vmax,
+        }
+    (out.parent / "volume.json").write_text(json.dumps(meta))
+    return meta

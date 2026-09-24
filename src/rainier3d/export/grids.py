@@ -102,11 +102,24 @@ def write_netcdf(ds: xr.Dataset, path: Path) -> Path:
     return path
 
 
-def write_nll(ds: xr.Dataset, stem: Path, phases=("P", "S")) -> list[Path]:
+def slow_air(air: np.ndarray, skin_cells: int = 1) -> np.ndarray:
+    """Air cells (z top-down) more than ``skin_cells`` above the ground. The lowest ``skin_cells`` air cells
+    of each column are the skin, which keeps rock velocity so stations at the surface sit in rock."""
+    k = np.arange(air.shape[0])[:, None, None]
+    return air & (k < air.sum(axis=0)[None] - skin_cells)
+
+
+def write_nll(
+    ds: xr.Dataset, stem: Path, phases=("P", "S"), air_velocity: float | None = 330.0, skin_cells: int = 1
+) -> list[Path]:
     """NonLinLoc model grids: stem.P.mod.hdr/.buf etc. SLOW_LEN = slowness (s/km) x cell size (km).
 
     Grid axes are x (east), y (north), z (depth, km, positive down, below sea level) in UTM 10N km;
     the .buf is float32 with z varying fastest, then y, then x (NonLinLoc order).
+
+    For location, air above a one-cell skin gets ``air_velocity`` (m/s; default 330, sound in air): travel
+    times to trial hypocentres above the ground become very long, so NLLoc's likelihood keeps events in
+    rock, while the skin keeps the stations (at the ground surface) in rock. None writes the filled grid.
     """
     stem.parent.mkdir(parents=True, exist_ok=True)
     dxk = float(ds.attrs["dx_m"]) / 1000.0
@@ -116,6 +129,8 @@ def write_nll(ds: xr.Dataset, stem: Path, phases=("P", "S")) -> list[Path]:
     written = []
     for ph in phases:
         v = ds["vp" if ph == "P" else "vs"].values / 1000.0  # km/s, (z, y, x) with z top-down
+        if air_velocity is not None:
+            v = np.where(slow_air(ds["air"].values.astype(bool), skin_cells), air_velocity / 1000.0, v)
         slow_len = (dxk / v).astype(np.float32)
         arr = np.transpose(slow_len, (2, 1, 0))  # (x, y, z): z fastest in C order
         buf = stem.with_name(f"{stem.name}.{ph}.mod.buf")

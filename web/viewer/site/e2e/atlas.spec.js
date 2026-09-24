@@ -7,7 +7,11 @@ const cam = page => page.evaluate(() => {
 });
 const settle = page => page.waitForFunction(() => !window.__rainier.flight, null, { timeout: 10_000 });
 
-test.beforeEach(async ({ page }) => { await page.goto("./"); await ready(page); });
+// the first-visit help card would cover the scene; mark it seen (test (j) checks the card itself)
+test.beforeEach(async ({ page }, info) => {
+  if (!info.title.startsWith("(j)")) await page.addInitScript(() => { try { localStorage.setItem("rainier-viewer-help-seen", "1"); } catch { /* ignore */ } });
+  await page.goto("./"); await ready(page);
+});
 
 test("(a) loads the map with stations and counts", async ({ page }) => {
   await expect(page.getByTestId("n-stations")).toHaveText("52");
@@ -100,4 +104,36 @@ test("(i) 2D hides the block frame, 3D brings it back", async ({ page }) => {
   await expect(page.locator(".tick").first()).toBeHidden();
   await page.getByRole("button", { name: "3D" }).click();
   await expect(page.locator(".tick").first()).toBeVisible();
+});
+
+test("(j) the help card shows on a first visit and does not come back", async ({ page }) => {
+  await expect(page.getByRole("dialog", { name: "How to move" })).toBeVisible();
+  await page.getByRole("button", { name: "Got it" }).click();
+  await expect(page.getByRole("dialog", { name: "How to move" })).toHaveCount(0);
+  await page.reload(); await ready(page);
+  await expect(page.getByRole("dialog", { name: "How to move" })).toHaveCount(0);
+  await page.getByRole("button", { name: "How to move" }).click();   // the ? button reopens it
+  await expect(page.getByRole("dialog", { name: "How to move" })).toBeVisible();
+});
+
+test("(k) the navigation pad rotates about the target and turns north up", async ({ page }) => {
+  await settle(page);
+  const a = await cam(page);
+  await page.getByRole("button", { name: "Rotate right" }).click(); await settle(page);
+  const b = await cam(page);
+  expect(Math.abs(b.az - a.az)).toBeGreaterThan(0.3); expect(b.dist).toBeCloseTo(a.dist, 1);
+  await page.getByRole("button", { name: "North up" }).click(); await settle(page);
+  expect(Math.abs((await cam(page)).az)).toBeLessThan(0.01);
+});
+
+test("(l) the subsurface section follows the cut and the slice follows its slider", async ({ page }) => {
+  await page.waitForFunction(() => !!window.__rainier.volume, null, { timeout: 30_000 });
+  await page.getByLabel("Subsurface property").selectOption("vs");
+  await page.getByRole("switch", { name: "Section on the cut" }).click();
+  await page.waitForFunction(() => window.__rainier.volume.section.visible, null, { timeout: 20_000 });
+  expect(await page.evaluate(() => window.__rainier.U.clipOn.value)).toBe(1);   // the section switched the cut on
+  await expect(page.getByRole("switch", { name: "Cut away terrain" })).toHaveAttribute("aria-checked", "true");
+  await page.getByRole("switch", { name: "Depth slice" }).click();
+  await page.getByLabel("Slice elevation").fill("-5");
+  expect(await page.evaluate(() => window.__rainier.volume.slice.position.y)).toBe(-5);
 });

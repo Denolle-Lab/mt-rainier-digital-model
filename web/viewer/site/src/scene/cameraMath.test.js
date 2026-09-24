@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { approach, ease, isMoveKey, isTypingTarget, motionDuration, moveStep } from "./cameraMath.js";
+import { approach, ease, isMoveKey, isTypingTarget, motionDuration, moveStep, orbitPose } from "./cameraMath.js";
 
 describe("cameraMath", () => {
   it("arrow keys move forward along the ground at 0.3 × distance per second", () => {
@@ -42,5 +42,22 @@ describe("cameraMath", () => {
   it("a keydown without a key (Chrome autofill) is not a move key", () => {
     expect(isMoveKey({ key: undefined, target: document.createElement("div") })).toBe(false);
     expect(isMoveKey({ target: document.createElement("div") })).toBe(false);
+  });
+});
+
+describe("orbitPose", () => {
+  const T = [0, 0, 0];
+  it("rotates about the vertical and keeps the distance", () => {
+    const p = orbitPose([0, 10, 10], T, { dAz: 90 });
+    expect(p[0]).toBeCloseTo(10); expect(p[1]).toBeCloseTo(10); expect(p[2]).toBeCloseTo(0);
+  });
+  it("tilts toward the horizon and clamps the polar angle", () => {
+    const p = orbitPose([0, 10, 0.001], T, { dPol: 45 });
+    expect(p[1]).toBeCloseTo(10 * Math.cos(Math.PI / 4), 2);
+    expect(orbitPose([0, 10, 0.001], T, { dPol: 500 })[1]).toBeLessThan(0);   // may go below ground, not past the pole
+  });
+  it("zooms and turns north up", () => {
+    const p = orbitPose([10, 0, 0], T, { zoom: 0.5, northUp: true });
+    expect(p[0]).toBeCloseTo(0); expect(p[2]).toBeCloseTo(5);   // camera south of the target, looking north
   });
 });
