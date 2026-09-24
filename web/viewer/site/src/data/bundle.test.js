@@ -28,6 +28,15 @@ describe("loadBundle", () => {
     expect(b.siteById["CC.COPP"].name).toBe("Copper Mountain");
     expect(b.majors.map(s => s.id)).toEqual(["UW.RCM"]);
   });
+  it("loads the earthquakes when the bundle has them, and tolerates their absence", async () => {
+    const withQuakes = { ...files, "atlas/quakes.bin": new Float32Array([1, -2, 3, 1.5]).buffer, "atlas/quakes.json": { count: 1 } };
+    vi.stubGlobal("fetch", vi.fn(async url => (url in withQuakes ? respond(withQuakes[url]) : { ok: false, status: 404 })));
+    const b = await loadBundle("atlas/");
+    expect(Array.from(b.quakes.records)).toEqual([1, -2, 3, 1.5]);
+    expect(b.quakes.meta.count).toBe(1);
+    vi.stubGlobal("fetch", vi.fn(async url => (url in files ? respond(files[url]) : { ok: false, status: 404 })));
+    expect((await loadBundle("atlas/")).quakes).toBeNull();
+  });
   it("reports a missing bundle", async () => {
     vi.stubGlobal("fetch", vi.fn(async () => ({ ok: false, status: 404 })));
     await expect(loadBundle("atlas/")).rejects.toBeInstanceOf(BundleMissingError);

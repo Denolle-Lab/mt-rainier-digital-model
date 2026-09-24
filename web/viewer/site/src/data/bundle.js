@@ -18,8 +18,10 @@ export async function loadBundle(base = `${import.meta.env.BASE_URL}atlas/`) {
     get(`${base}stations.json`),
   ]);
   const siteById = Object.fromEntries(stations.sites.map(s => [s.id, s]));
+  const quakes = await Promise.all([get(`${base}quakes.bin`, "bin"), get(`${base}quakes.json`)])
+    .then(([bin, meta]) => ({ records: new Float32Array(bin), meta }), () => null);   // phase 2 data is optional
   return {
-    base, summit, stations, siteById,
+    base, summit, stations, siteById, quakes,
     terrain: { meta, heights, imageUrl: `${base}terrain/overview.jpg` },
     majors: stations.sites.filter(s => s.major),
   };
