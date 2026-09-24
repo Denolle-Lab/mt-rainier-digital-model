@@ -1,7 +1,7 @@
 # Mount Rainier Seismic Atlas: design
 
 Date: 2026-09-23
-Status: draft for review
+Status: approved 2026-09-23
 Scope: phase 1 (the sensor network on real terrain) and phase 2 (earthquakes beneath it). Each phase gets its own implementation plan.
 
 ## Purpose
@@ -193,7 +193,7 @@ For Rainier:
 - The camera may go below the ground: the polar limit is removed.
 - The near plane follows the zoom, so both 1 m detail and the 60 km overview keep depth precision.
 - **Go to** lists places (Whole area, Summit crater, Paradise, Carbon River, White River, Nisqually) and the major stations.
-- Flying to a station keeps the current heading, settles 1.6 km away, and lifts the camera above ground if the flight starts underground.
+- Flying to a station frames it from 9 km out, 28° above the horizon, on the side away from the summit, so the mountain rises behind it. Stations within 1 km of the summit keep the current heading. The flight takes 1.8 s.
 - **Search** finds a station by code or site name and flies to it.
 
 ### Layout
@@ -289,7 +289,6 @@ From `tokens.css`:
 
 ## Risks and open questions
 
-- **Code license.** `coszo-hub/RCA-Atlas` is marked proprietary (`LICENSE`: all rights reserved). This public repo would copy its tokens, camera code and interaction patterns, and the deployed mockup already includes the copied navigation. **Confirm that copying into a public personal repo is allowed, or make the repo private (Pages then needs a paid plan).**
 - **Earthquake depth datum.** The mockup treats ComCat depth as kilometers below sea level. The negative depths support that, but PNSN's datum should be confirmed before phase 2 ships.
 - **"Active" is metadata, not health.** Stations are active when their channels have no end date. A dead station still shows as active.
 - **Upstream politeness.** A summit rebuild makes about 50 requests to USGS services. Rebuild rarely, with at most four at a time.
