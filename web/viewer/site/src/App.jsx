@@ -9,6 +9,9 @@ import Controls from "./ui/Controls.jsx";
 import GoTo from "./ui/GoTo.jsx";
 import Header from "./ui/Header.jsx";
 import LayerPanel from "./ui/LayerPanel.jsx";
+import ModelLayers from "./ui/ModelLayers.jsx";
+import ModelLegend from "./ui/ModelLegend.jsx";
+import ModelReadout from "./ui/ModelReadout.jsx";
 import QuakeLegend from "./ui/QuakeLegend.jsx";
 import Legend from "./ui/Legend.jsx";
 import StationPanel from "./ui/StationPanel.jsx";
@@ -31,7 +34,7 @@ export function detailText(frame, summit) {
 function Atlas({ bundle, onError }) {
   const canvasRef = useRef(null), overlayRef = useRef(null), layerRef = useRef(null);
   const [scene, setScene] = useState(null), [siteId, setSiteId] = useState(null), [hover, setHover] = useState(null);
-  const [detail, setDetail] = useState("loading…"), [active, setActive] = useState("home");
+  const [detail, setDetail] = useState("loading…"), [active, setActive] = useState("home"), [modelKey, setModelKey] = useState(null);
 
   const openSite = useCallback((site, sc) => {
     setSiteId(site.id); setActive(site.id); setHover(null);
@@ -64,6 +67,7 @@ function Atlas({ bundle, onError }) {
   }, [siteId]);
 
   const site = siteId ? bundle.siteById[siteId] : null;
+  const modelLayer = modelKey ? bundle.model.byKey[modelKey] : null;
   return (
     <>
       <canvas ref={canvasRef} className="atlas-scene" aria-label="3D map of Mount Rainier and its seismic network" />
@@ -75,7 +79,16 @@ function Atlas({ bundle, onError }) {
             {scene.layers && <LayerPanel layers={scene.layers} scene={scene} onStations={on => layerRef.current?.setVisible(on)} />}
           </Controls>
           <GoTo majors={bundle.majors} active={active} onPlace={k => { setActive(k); scene.flyTo(k); }} onSite={s => openSite(s, scene)} />
-          <Legend bundle={bundle}>{bundle.quakes && <QuakeLegend meta={bundle.quakes.meta} drawn={scene.layers?.drawn} />}</Legend>
+          <Legend bundle={bundle}>
+            {bundle.quakes && <QuakeLegend meta={bundle.quakes.meta} drawn={scene.layers?.drawn} />}
+          </Legend>
+          {bundle.model && (
+            <div className="panel model-panel">
+              <ModelLayers model={bundle.model} scene={scene} active={modelKey} onActive={setModelKey} />
+              <ModelLegend layer={modelLayer} />
+            </div>
+          )}
+          {modelLayer && <ModelReadout scene={scene} model={bundle.model} layer={modelLayer} box={bundle.overviewBox} />}
           <Tooltip hover={hover} />
           {site && <StationPanel site={site} bundle={bundle} onFly={s => scene.flyToSite(s)}
             onClose={() => { setSiteId(null); layerRef.current?.setSelected(null); }} />}

@@ -9,6 +9,7 @@ import { SummitLod } from "./summitLod.js";
 import { terrainMaterial } from "./terrainMaterial.js";
 
 const STYLE = { photo: 0, mono: 1, contours: 2 };
+const BLANK = new THREE.DataTexture(new Uint8Array(4), 1, 1); BLANK.needsUpdate = true;
 
 export class RainierScene {
   static async create(canvas, bundle) {
@@ -28,11 +29,14 @@ export class RainierScene {
     this.U = {
       clip: { value: new THREE.Vector4(0, 0, 1, 0) }, clipOn: { value: 0 }, alpha: { value: 1 }, under: { value: 0 },
       style: { value: 0 }, flat: { value: 0 }, hole: { value: new THREE.Vector4(1, -1, 1, -1) }, holeOn: { value: 0 },
+      over: { value: BLANK }, overA: { value: 0 }, lines: { value: BLANK }, linesOn: { value: 0 }, oRect: { value: new THREE.Vector4(0, 0, 1, 1) },
     };
     this.targets = { style: 0, flat: 0 };
     const { meta, heights } = bundle.terrain;
     this.terrainMeta = meta;
     this.ground = makeGround(meta, heights);
+    this.U.oRect.value.copy(this.ground.rect);   // model layers are textures on the same lon/lat box as the photo
+    this._tex = new Map(); this._overOpacity = 0.8;
 
     photo.flipY = false; photo.colorSpace = THREE.NoColorSpace; photo.anisotropy = r.capabilities.getMaxAnisotropy(); photo.needsUpdate = true;
     const km = new Float32Array(heights.length); for (let i = 0; i < km.length; i++) km[i] = heights[i] / 1000;
@@ -98,6 +102,47 @@ export class RainierScene {
   setSeeThrough(pct) {
     this.see = pct; this.U.alpha.value = 1 - pct / 100;
     for (const m of this.materials) { m.transparent = pct > 0; m.depthWrite = pct === 0; }
+  }
+  // Model surface layers (rainier3d): one draped at a time, plus the stream network. null clears.
+  async _texture(url, nearest) {
+    if (!this._tex.has(url)) {
+      this._tex.set(url, new THREE.TextureLoader().loadAsync(url).then(t => {
+        t.flipY = false; t.colorSpace = THREE.NoColorSpace; t.anisotropy = this.renderer.capabilities.getMaxAnisotropy();
+        if (nearest) { t.magFilter = THREE.NearestFilter; }
+        t.needsUpdate = true; return t;
+      }));
+    }
+    return this._tex.get(url);
+  }
+  async setOverlay(url, { categorical = false } = {}) {
+    this._overUrl = url;
+    if (!url) { this.U.overA.value = 0; return; }
+    const t = await this._texture(url, categorical);
+    if (this._overUrl !== url) return;   // a later pick won
+    this.U.over.value = t; this.U.overA.value = this._overOpacity;
+  }
+  setOverlayOpacity(a) { this._overOpacity = a; if (this._overUrl) this.U.overA.value = a; }
+  async setStreams(url) {
+    if (!url) { this.U.linesOn.value = 0; return; }
+    this.U.lines.value = await this._texture(url, false); this.U.linesOn.value = 1;
+  }
+  // Ground point under a screen position: march the view ray against the overview heights, then bisect.
+  groundAt(clientX, clientY) {
+    const ray = new THREE.Raycaster(); ray.setFromCamera(new THREE.Vector2((clientX / innerWidth) * 2 - 1, -(clientY / innerHeight) * 2 + 1), this.camera);
+    const { origin: o, direction: d } = ray.ray, flat = 1 - this.U.flat.value;
+    const above = t => { const x = o.x + d.x * t, z = o.z + d.z * t, e = this.elevKm(x, z); return e == null ? null : o.y + d.y * t - e * flat; };
+    const far = Math.min(400, this.camera.position.distanceTo(this.controls.target) * 8), n = 400;
+    let t0 = 0, h0 = above(0);
+    for (let i = 1; i <= n; i++) {
+      const t = (far * i) / n, h = above(t);
+      if (h != null && h0 != null && h0 > 0 && h <= 0) {
+        let a = t0, b = t;
+        for (let k = 0; k < 24; k++) { const m = (a + b) / 2, hm = above(m); if (hm != null && hm > 0) a = m; else b = m; }
+        const x = o.x + d.x * b, z = o.z + d.z * b; return { x, z, elevKm: this.elevKm(x, z) };
+      }
+      if (h != null) { t0 = t; h0 = h; }
+    }
+    return null;
   }
   setCut({ on, angle, offset }) { this.U.clip.value.set(...cutUniform(angle, offset)); this.U.clipOn.value = on ? 1 : 0; }
   setView(v) {

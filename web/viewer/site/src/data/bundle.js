@@ -1,3 +1,6 @@
+import { fromX, fromZ } from "../scene/geo.js";
+import { loadModelLayers } from "./modelLayers.js";
+
 export class BundleMissingError extends Error {
   constructor() { super("The atlas data bundle has not been built yet."); this.name = "BundleMissingError"; }
 }
@@ -17,11 +20,14 @@ export async function loadBundle(base = `${import.meta.env.BASE_URL}atlas/`) {
     get(`${base}summit/index.json`),
     get(`${base}stations.json`),
   ]);
+  const model = await loadModelLayers(base).catch(() => null);   // rainier3d surface layers are optional
   const siteById = Object.fromEntries(stations.sites.map(s => [s.id, s]));
   const quakes = await Promise.all([get(`${base}quakes.bin`, "bin"), get(`${base}quakes.json`)])
     .then(([bin, meta]) => ({ records: new Float32Array(bin), meta }), () => null);   // phase 2 data is optional
   return {
-    base, summit, stations, siteById, quakes,
+    base, summit, stations, siteById, quakes, model,
+    // lon/lat of the overview box, recovered from the local-km grid (model textures use the same box)
+    overviewBox: { west: fromX(meta.x0), east: fromX(meta.x0 + meta.cols * meta.dx), north: fromZ(meta.z0), south: fromZ(meta.z0 + meta.rows * meta.dz) },
     terrain: { meta, heights, imageUrl: `${base}terrain/overview.jpg` },
     majors: stations.sites.filter(s => s.major),
   };
