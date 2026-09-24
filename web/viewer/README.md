@@ -50,3 +50,7 @@ Measured on an Apple M5 Max (Chrome, ANGLE Metal): 16.7 ms mean frame time while
 Stations are "active" when their channels have no end date in the metadata; that is not a live health check.
 Both ArcGIS export services silently widen a request whose pixels are not square in degrees, so every request
 here uses square-degree pixels (`data/rainier/extent.py`).
+
+## License
+
+Code: MIT, see `LICENSE`. Data and third-party components keep their own terms, see `THIRD_PARTY_NOTICES.md`.
