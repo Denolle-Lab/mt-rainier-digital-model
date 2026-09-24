@@ -269,6 +269,7 @@ canopy_lidar_chm:
   license: "unknown until the lidar source is documented (TODO: WA DNR Lidar Portal or PSLC?)"
   verified: "no"
   role: canopy_height_lidar, vegetation_cover_lidar surface layers (S19)
+  redistribute_derived: false   # lidar source undocumented; not published until it is
 
 sentinel2_lai_2023:
   title: Sentinel-2 L2A leaf area index (ESA SNAP biophysical processor neural network, sentinel-hub custom script), 10 m mosaic, 2023-07-01 to 2023-08-15, via the Copernicus Data Space Ecosystem; canopy-storage project
@@ -305,3 +306,4 @@ soil_map_image:
   license: "unknown (TODO: source and legend)"
   verified: "no"
   role: soil_map image layer in the viewer (display only)
+  redistribute_derived: false   # source and legend undocumented; not published until they are
