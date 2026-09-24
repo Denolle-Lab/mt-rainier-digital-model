@@ -93,16 +93,18 @@ export class SummitLod {
         const g = gridGeometry(n, n, (c, r) => [x0 + (c + 0.5) * sx, z0 + (r + 0.5) * sz, sx, sz], h,
           (c, r) => [((tx * T + c + 0.5) - ch.c * L.chunk_w) / L.chunk_w, ((ty * T + r + 0.5) - ch.r * L.chunk_h) / L.chunk_h], 12 * sz);
         t.mesh = new THREE.Mesh(g, ch.mat); t.mesh.visible = false;
+        t.mesh.frustumCulled = false;   // 2D flattens heights in the shader, so the geometry's bounds are wrong
         this.group.add(t.mesh); t.state = "ready";
       })
       .catch(() => { t.state = "failed"; this.failures++; ch.refs--; })
       .finally(() => { this.inflight--; });
   }
 
-  update(camera) {
+  update(camera, flat = 0) {
     this.frameNo++;
     const cam = camera.position.toArray();
-    const { show, want } = selectTiles(this.index, cam, this._state, this._range);
+    const range = (k, ty, tx) => this._range(k, ty, tx).map(h => h * (1 - flat));
+    const { show, want } = selectTiles(this.index, cam, this._state, range);
     for (const id of want) {
       let t = this.tiles.get(id);
       if (!t) { t = { k: parse(id)[0], state: "queued", used: this.frameNo }; this.tiles.set(id, t); }
