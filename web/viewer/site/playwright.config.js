@@ -1,6 +1,6 @@
 import { defineConfig } from "@playwright/test";
 
-const BASE = process.env.E2E_URL ?? "http://127.0.0.1:4176/rainier-seismic-atlas/";
+const BASE = process.env.E2E_URL ?? "http://127.0.0.1:4176/mt-rainier-digital-model/";
 
 export default defineConfig({
   testDir: "e2e",

@@ -1,6 +1,11 @@
-# Mount Rainier Seismic Atlas
+# Mount Rainier Seismic Atlas: 3D viewer
 
-Live: https://yaoderek.github.io/rainier-seismic-atlas/ · original mockup: [/mockup/](https://yaoderek.github.io/rainier-seismic-atlas/mockup/)
+Live: https://denolle-lab.github.io/mt-rainier-digital-model/ (deployed from this repository)
+
+Written by Derek Yao in [yaoderek/rainier-seismic-atlas](https://github.com/yaoderek/rainier-seismic-atlas) and merged
+here on 24 September 2026. His commit history is kept. The MIT licence in `LICENSE` and the notices in
+`THIRD_PARTY_NOTICES.md` cover this directory; the rest of the repository is BSD-3-Clause. The approved single-file
+mockup stays in the original repository.
 
 A 3D map of the active seismic stations on and around Mount Rainier, on USGS terrain with 1 m lidar at the summit
 that loads as you zoom, with the earthquake catalog beneath the mountain as toggleable layers. Built from the Cascadia
@@ -16,24 +21,27 @@ Go to places and major stations · click a station for its instruments and data 
 ## Layout
 
 ```text
-data/      Python build step: fetches public sources (cached in data/cache/) and writes site/public/atlas/
-site/      React + Vite + Three.js site; site/public/atlas/ is the committed data bundle
-mockup/    the approved single-file mockup
-docs/      design spec and implementation plans
+data/      Python build step: fetches public sources (cached in ../../data/raw/viewer_cache/) and writes site/public/atlas/
+site/      React + Vite + Three.js site; site/public/atlas/ is the data bundle (not in git)
+docs/      design spec and implementation plans (from the original repository)
 ```
 
 ## Build
 
+From the repository root:
+
 ```sh
-uv venv --python 3.12 .venv && uv pip install --python .venv/bin/python -r data/requirements.txt
-cd data && ../.venv/bin/pytest -q
-../.venv/bin/python -m rainier.build --out ../site/public/atlas --cache cache   # ~400 MB of downloads the first time
-cd ../site && npm install && npm test && npm run dev    # http://127.0.0.1:5176/rainier-seismic-atlas/
-npx playwright test                                      # end-to-end against a production build
+pixi run viewer-data-test   # tests of the data build
+pixi run viewer-data        # terrain, imagery, stations, quakes -> web/viewer/site/public/atlas (~400 MB of downloads the first time)
+pixi run s11                # rainier3d model layers -> web/viewer/site/public/atlas/model
+cd web/viewer/site && npm ci && npm test && npm run dev   # http://127.0.0.1:5176/mt-rainier-digital-model/
+npx playwright test                                         # end-to-end against a production build
 ```
 
-Pushing to `main` builds the site and deploys it to GitHub Pages (`.github/workflows/pages.yml`).
-The data bundle is committed because CI does not download from USGS; rebuild it rarely.
+The data bundle is not committed. `pixi run viewer-bundle` packs it into `outputs/viewer-atlas-bundle.tar.gz`, which is
+uploaded as a release asset under the tag in `DATA_RELEASE`. Pushing to `main` (changes under `web/viewer/`) builds the
+site with that bundle and deploys it to GitHub Pages (`.github/workflows/viewer-pages.yml` at the repository root). To
+publish new data, make a new release and update `DATA_RELEASE`.
 
 Measured on an Apple M5 Max (Chrome, ANGLE Metal): 16.7 ms mean frame time while orbiting (60 fps).
 
@@ -59,10 +67,10 @@ same texture lookup (world x/z to lon/lat) serves the overview mesh and the 1 m 
 `site/public/atlas/model/` and is written by the model repository, not by `data/`:
 
 ```sh
-cd ../mt-rainier-digital-model && pixi run s11 -- --atlas ../rainier-seismic-atlas/site/public/atlas
+pixi run s11   # from the repository root; writes web/viewer/site/public/atlas/model
 ```
 
-The bundle is optional: without `model/layers.json` the site runs exactly as before. Imagery and colour-ramp
+The model layers are optional: without `model/layers.json` the viewer shows the terrain, stations and quakes only. Imagery and colour-ramp
 layers are WebP (lossy, with alpha) and categorical layers are PNG. The bundle is about 22 MB, and each layer
 loads only when it is picked.
 

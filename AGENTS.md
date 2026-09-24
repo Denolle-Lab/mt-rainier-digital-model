@@ -17,3 +17,7 @@ Conventions for anyone (human or agent) changing this repo.
 - **Before a PR:** run `pixi run all` and `pixi run test`. Invariants in `tests/test_invariants.py`
   run against the built model. Report any that fail; do not loosen tolerances to make them pass.
 - **Style:** ruff, line length 110. Match the comment density of the surrounding code.
+- **3D viewer (`web/viewer/`, MIT, by Derek Yao):** React + three.js, tested with `npm test` (vitest) and
+  `npx playwright test` in `web/viewer/site`. Its map data (`web/viewer/site/public/atlas/`) is never committed; it
+  is built with `pixi run viewer-data` + `pixi run s11` and deployed from the release asset named in
+  `web/viewer/DATA_RELEASE`. Keep the MIT `LICENSE` and `THIRD_PARTY_NOTICES.md` in that directory.

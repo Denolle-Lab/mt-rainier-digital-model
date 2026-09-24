@@ -1,10 +1,9 @@
-"""S11: model surface layers -> the Rainier seismic atlas front end (Denolle-Lab/rainier-seismic-atlas fork of
-yaoderek/rainier-seismic-atlas).
+"""S11: model surface layers -> the 3D viewer in web/viewer/ (Derek Yao's rainier-seismic-atlas, merged here).
 
 Reads model.zarr (/surface after S2 and S5) and the atlas manifest (for its overview lon/lat box), and writes
 <atlas>/model/: layers.json, one RGBA drape texture and one value grid per layer, and streams.png.
 
-Usage: pixi run s11 [-- --atlas ~/GitHub/rainier-seismic-atlas/site/public/atlas]
+Usage: pixi run s11 [-- --atlas web/viewer/site/public/atlas]
 """
 
 from __future__ import annotations
@@ -14,7 +13,7 @@ import json
 import logging
 from pathlib import Path
 
-from rainier3d.config.domain import load_domain
+from rainier3d.config.domain import REPO, load_domain
 from rainier3d.export.atlas import export_layers
 from rainier3d.io.store import read_tree
 from rainier3d.surface import layers as L
@@ -23,7 +22,7 @@ from rainier3d.surface import layers as L
 def main():
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
     ap = argparse.ArgumentParser()
-    ap.add_argument("--atlas", default="~/GitHub/rainier-seismic-atlas/site/public/atlas")
+    ap.add_argument("--atlas", default=str(REPO / "web" / "viewer" / "site" / "public" / "atlas"))
     a = ap.parse_args()
     atlas = Path(a.atlas).expanduser()
     dom = load_domain()

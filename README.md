@@ -41,6 +41,22 @@ pixi run test
 pixi run viz      # interactive PyVista window
 ```
 
+## 3D viewer (web/viewer)
+
+The main front end is the Mount Rainier Seismic Atlas by Derek Yao: a React + three.js scene with USGS terrain,
+1 m summit lidar, the seismic network and the earthquake catalogue. It also drapes the model's surface layers
+(geology, ice, soil, water table, streams, canopy, land cover, Sentinel-2) and works on phones. It is live at
+https://denolle-lab.github.io/mt-rainier-digital-model/ and is licensed MIT (`web/viewer/LICENSE`). Build steps are
+in `web/viewer/README.md`:
+
+```
+pixi run viewer-data && pixi run s11          # data bundle (not in git)
+cd web/viewer/site && npm ci && npm run dev    # http://127.0.0.1:5176/mt-rainier-digital-model/
+```
+
+The MapLibre atlas below (`web/atlas`) still holds the subsurface sections, depth slices and underground view.
+It will be retired once those are ported to the 3D viewer.
+
 ## Sensor atlas and KMZ layers
 
 `pixi run s8` then `pixi run atlas`, and open http://127.0.0.1:8765. The atlas is a MapLibre GL

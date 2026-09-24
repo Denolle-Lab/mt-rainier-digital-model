@@ -4,7 +4,7 @@ import { loadModelLayers } from "./modelLayers.js";
 export class BundleMissingError extends Error {
   constructor() { super("The atlas data bundle has not been built yet."); this.name = "BundleMissingError"; }
 }
-export const BUILD_COMMAND = "cd data && ../.venv/bin/python -m rainier.build --out ../site/public/atlas --cache cache";
+export const BUILD_COMMAND = "pixi run viewer-data && pixi run s11   (from the repository root)";
 
 async function get(url, kind) {
   const r = await fetch(url);

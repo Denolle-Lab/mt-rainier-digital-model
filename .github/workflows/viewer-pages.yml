@@ -1,0 +1,57 @@
+name: Deploy the 3D viewer to GitHub Pages
+
+# The viewer's map data (terrain, imagery, stations, quakes and the rainier3d model layers) is not in git.
+# It is built with `pixi run viewer-data && pixi run s11 && pixi run viewer-bundle` and published as the
+# release asset viewer-atlas-bundle.tar.gz under the tag named in web/viewer/DATA_RELEASE.
+
+on:
+  push:
+    branches: [main]
+    paths: ["web/viewer/**", ".github/workflows/viewer-pages.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: web/viewer/site/package-lock.json
+      - name: Fetch the map data bundle
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag=$(cat web/viewer/DATA_RELEASE)
+          gh release download "$tag" --pattern viewer-atlas-bundle.tar.gz --dir "$RUNNER_TEMP"
+          mkdir -p web/viewer/site/public
+          tar xzf "$RUNNER_TEMP/viewer-atlas-bundle.tar.gz" -C web/viewer/site/public
+      - name: Build the site
+        working-directory: web/viewer/site
+        run: |
+          npm ci
+          npm test
+          npm run build
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: web/viewer/site/dist
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
