@@ -34,7 +34,9 @@ const FRAG = `
     return -sqrt(d.x) * sign(d.y);
   }
   void main() {
-    vec2 p = gl_PointCoord;   // y points down the sprite
+    // GLSL ES puts the gl_PointCoord origin at the top-left of the sprite, so y grows downward here: the tip at
+    // y = 0.95 is the bottom and the chevron points down. (quakes/cloud.js negates d.y to go to view space, y up.)
+    vec2 p = gl_PointCoord;
     float outer = sdTri(p, vec2(0.03, 0.10), vec2(0.97, 0.10), vec2(0.5, 0.95));
     float notch = sdTri(p, vec2(0.30, -0.02), vec2(0.70, -0.02), vec2(0.5, 0.36));
     float sd = max(outer, -notch);   // the chevron: the triangle minus the notch at its top
