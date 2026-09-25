@@ -1,0 +1,92 @@
+name: Build the paper (HTML and ESSD PDF)
+
+# Builds docs/paper/rainier3d_paper.md into docs/paper/rainier3d_paper.html and .pdf with scripts/23_paper.py (pixi
+# environment "paper": pandoc, pandoc-crossref, tectonic, graphviz). No model data are needed: figures are committed
+# by S10, S16, S21 and S22. The build is byte-reproducible on the same platform (fixed
+# SOURCE_DATE_EPOCH); the committed copy is the one built here on Linux, so local builds are previews.
+# Pull requests build, attach the files as an artifact and report whether the committed paper is up to date. Pushes
+# to main commit a rebuilt paper when its bytes changed and replace the assets of the rolling release paper-latest.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "docs/paper/**"
+      - "docs/references.bib"
+      - "docs/alteration/*.png"
+      - "docs/gnss/*.png"
+      - "scripts/23_paper.py"
+      - ".github/workflows/paper.yml"
+      - "pixi.toml"
+      - "pixi.lock"
+  pull_request:
+    paths:
+      - "docs/paper/**"
+      - "docs/references.bib"
+      - "docs/alteration/*.png"
+      - "docs/gnss/*.png"
+      - "scripts/23_paper.py"
+      - ".github/workflows/paper.yml"
+      - "pixi.toml"
+      - "pixi.lock"
+  workflow_dispatch:
+
+permissions:
+  contents: write   # the rebuilt paper and release assets on main
+  actions: write    # start the Pages deploy after committing the paper
+
+concurrency:
+  group: paper-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: prefix-dev/setup-pixi@v0.10.2
+        with:
+          pixi-version: v0.76.2
+          environments: paper
+          locked: true
+          cache: true
+      - name: Build HTML and PDF
+        run: pixi run -e paper paper
+      - name: Is the committed paper up to date?
+        run: |
+          if git diff --quiet -- docs/paper/rainier3d_paper.html docs/paper/rainier3d_paper.pdf; then
+            echo "The committed paper matches this build." | tee -a "$GITHUB_STEP_SUMMARY"
+          else
+            echo "The committed paper differs from this build; main commits the Linux build after merge." | tee -a "$GITHUB_STEP_SUMMARY"
+          fi
+      - uses: actions/upload-artifact@v4
+        with:
+          name: rainier3d-paper
+          path: |
+            docs/paper/rainier3d_paper.html
+            docs/paper/rainier3d_paper.pdf
+            outputs/paper/rainier3d_paper.tex
+      - name: Commit the rebuilt paper (main only)
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/paper/rainier3d_paper.html docs/paper/rainier3d_paper.pdf
+          if ! git diff --cached --quiet; then
+            git commit -m "Paper: rebuild HTML and PDF (paper.yml)" && git push
+            # pushes by the Actions token start no workflows, so deploy the site explicitly
+            gh workflow run viewer-pages.yml --ref main
+          fi
+        env:
+          GH_TOKEN: ${{ github.token }}
+      - name: Publish to the release paper-latest (main only)
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release view paper-latest >/dev/null 2>&1 || gh release create paper-latest --latest=false \
+            --title "rainier3d paper (rebuilt on every change)" \
+            --notes "Built by .github/workflows/paper.yml from docs/paper/rainier3d_paper.md."
+          gh release upload paper-latest docs/paper/rainier3d_paper.html docs/paper/rainier3d_paper.pdf \
+            outputs/paper/rainier3d_paper.tex --clobber

@@ -1,0 +1,11 @@
+# pandoc-crossref settings for docs/paper/rainier3d_paper.md (scripts/23_paper.py)
+figureTitle: "Figure"
+tableTitle: "Table"
+figPrefix: ["Fig.", "Figs."]
+tblPrefix: ["Table", "Tables"]
+secPrefix: ["Sect.", "Sects."]
+eqnPrefix: ["Eq.", "Eqs."]
+titleDelim: "."
+linkReferences: true
+nameInLink: true
+chapters: false

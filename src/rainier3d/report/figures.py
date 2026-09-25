@@ -1,4 +1,4 @@
-"""Figures for the model report (docs/report/figures/). Each function writes one PNG and returns its path.
+"""Figures for the model report (docs/paper/figures/). Each function writes one PNG and returns its path.
 
 Colour choices: velocities use Crameri's perceptually uniform ``roma`` (red slow, blue fast);
 density ``cividis``; event depth a single-hue sequential ramp; categorical classes use the
@@ -565,6 +565,126 @@ def fig_vs_calibration(cal_yaml, pairs_csv, path):
     b.legend(fontsize=7, loc="upper left", frameon=False)
     b.grid(color=GRID, lw=0.4)
     b.set_title("(b)", loc="left", fontsize=8.5)
+    fig.savefig(path)
+    plt.close(fig)
+    return path
+
+
+def fig_strain(grid_nc, vel_csv, load_tree, tree, dom, gnss_cfg, path):
+    """(a) Secular dilatation rate from GNSS (MIDAS velocities, adaptive Gaussian fit) with the QC-passed
+    velocities; (b) mean stress and maximum shear from the edifice load, west-east through the summit."""
+    from matplotlib.colors import LogNorm, TwoSlopeNorm
+
+    g = xr.open_dataset(grid_nc)
+    v = pd.read_csv(vel_csv)
+    sx, sy = dom.summit_xy
+    tf = Transformer.from_crs(4326, dom.crs, always_xy=True)
+    fig, (a, b) = plt.subplots(
+        1, 2, figsize=(7.2, 3.6), constrained_layout=True, gridspec_kw={"width_ratios": [1, 1.25]}
+    )
+    X, Y = (g.x.values - sx) / 1e3, (g.y.values - sy) / 1e3
+    dil = g["dilatation"].values * 1e9
+    im = a.pcolormesh(
+        X, Y, dil, cmap=cmc.vik, norm=TwoSlopeNorm(0, -60, 60), shading="nearest", rasterized=True
+    )
+    fig.colorbar(im, ax=a, orientation="horizontal", shrink=0.85, pad=0.02, aspect=30).set_label(
+        "Dilatation rate (nanostrain/yr)", fontsize=7.5
+    )
+    x0, y0, x1, y1 = dom.bounds
+    a.plot(
+        np.array([x0, x1, x1, x0, x0]) / 1e3 - sx / 1e3,
+        np.array([y0, y0, y1, y1, y0]) / 1e3 - sy / 1e3,
+        color=INK,
+        lw=0.7,
+    )
+    px, py = tf.transform(*np.array(gnss_cfg["regions"]["wrsz"]["polygon"]).T)
+    a.fill(np.array(px) / 1e3 - sx / 1e3, np.array(py) / 1e3 - sy / 1e3, fill=False, ec=INK, lw=0.7, ls="--")
+    xy = np.array(tf.transform(v.lon.values, v.lat.values)).T
+    ok = v.flag.isna() | (v.flag.astype(str).str.len() == 0)
+    rel = (xy - [sx, sy]) / 1e3
+    ve, vn = v.ve.values * 1e3, v.vn.values * 1e3
+    ve0, vn0 = np.median(ve[ok]), np.median(vn[ok])  # velocities relative to the network median
+    q = a.quiver(
+        rel[ok, 0], rel[ok, 1], ve[ok] - ve0, vn[ok] - vn0, scale=40, width=0.004, color=INK, zorder=3
+    )
+    a.quiverkey(q, 0.8, 0.06, 2, "2 mm/yr", labelpos="N", fontproperties={"size": 7})
+    a.scatter(rel[~ok, 0], rel[~ok, 1], marker="x", s=12, lw=0.8, color="#e34948", zorder=3)
+    a.plot(0, 0, marker="^", ms=6, color=INK, mec="white", zorder=4)
+    a.set_xlim(-70, 70)
+    a.set_ylim(-70, 70)
+    a.set_aspect("equal")
+    a.set_xlabel("km east of summit")
+    a.set_ylabel("km north of summit")
+    a.set_title("(a) Secular dilatation rate, GNSS", fontsize=8, loc="left")
+
+    at = sy
+    zmin = -20000
+    m = None
+    for d, z, val in section_arrays(load_tree, "stress_mean", "x", at):
+        comp = np.where(-val / 1e6 > 0.05, -val / 1e6, np.nan)  # compressive mean stress, MPa
+        m = b.pcolormesh(
+            (d - sx) / 1e3,
+            z / 1e3,
+            comp,
+            cmap=cmc.lajolla,
+            norm=LogNorm(0.5, 40),
+            shading="nearest",
+            rasterized=True,
+        )
+    for d, z, val in section_arrays(load_tree, "stress_max_shear", "x", at):
+        D, Z = np.meshgrid((d - sx) / 1e3, z / 1e3)
+        cs = b.contour(D, Z, val / 1e6, levels=[1, 2, 5, 10], colors=INK, linewidths=0.5)
+        b.clabel(cs, fontsize=6, fmt="%g")
+    surf = tree["surface"].to_dataset()["elevation"].sel(y=at, method="nearest")
+    b.plot((surf.x - sx) / 1e3, surf / 1e3, color=INK, lw=0.8)
+    b.axhline(0, color=MUTED, lw=0.5, ls=(0, (3, 3)))
+    b.set_xlim(-25, 25)
+    b.set_ylim(zmin / 1e3, 4.6)
+    b.set_xlabel("km east of summit")
+    b.set_ylabel("Elevation (km)")
+    b.set_title("(b) Edifice load: mean stress, max shear contours (MPa)", fontsize=8, loc="left")
+    fig.colorbar(m, ax=b, orientation="horizontal", shrink=0.85, pad=0.02, aspect=30).set_label(
+        "Compressive mean stress (MPa)", fontsize=7.5
+    )
+    fig.savefig(path)
+    plt.close(fig)
+    return path
+
+
+def fig_canopy(canopy, tree, dom, path):
+    """Vegetation layers of the canopy-storage project (S19) on the surface grid, over a hillshade."""
+    from matplotlib.colors import Normalize
+
+    s = tree["surface"].to_dataset()
+    sx, sy = dom.summit_xy
+    ext = [(dom.x[0] - sx) / 1e3, (dom.x[-1] - sx) / 1e3, (dom.y[0] - sy) / 1e3, (dom.y[-1] - sy) / 1e3]
+    hs = LightSource(315, 40).hillshade(s["elevation"].values, dx=dom.surface_res_m, dy=dom.surface_res_m)
+    panels = [
+        ("canopy_height_lidar", "(a) Canopy height, airborne lidar (m)", cmc.bamako_r, (0, 60)),
+        ("vegetation_cover_lidar", "(b) Vegetation cover, lidar", cmc.bamako_r, (0, 1)),
+        ("lai_sentinel2", "(c) Leaf area index, Sentinel-2", cmc.bamako_r, (0, 6)),
+        ("gedi_pai", "(d) Plant area index, GEDI L2B", cmc.bamako_r, (0, 6)),
+        ("gedi_canopy_height", "(e) Canopy height, GEDI L3 (m)", cmc.bamako_r, (0, 60)),
+        ("gedi_biomass", "(f) Aboveground biomass, GEDI L4B (Mg/ha)", cmc.bamako_r, (0, 600)),
+    ]
+    fig, axs = plt.subplots(2, 3, figsize=(7.2, 6.4), constrained_layout=True, sharex=True, sharey=True)
+    for ax, (var, title, cmap, lim) in zip(axs.flat, panels, strict=True):
+        ax.imshow(hs, cmap="gray", origin="lower", extent=ext, vmin=0, vmax=1.2)
+        im = ax.imshow(
+            canopy[var].values.astype(float),
+            cmap=cmap,
+            norm=Normalize(*lim),
+            origin="lower",
+            extent=ext,
+            alpha=0.9,
+            interpolation="nearest",
+        )
+        fig.colorbar(im, ax=ax, orientation="horizontal", shrink=0.8, pad=0.02, aspect=30)
+        ax.set_title(title, fontsize=7, loc="left")
+        ax.set_aspect("equal")
+    for ax in axs[:, 0]:
+        ax.set_ylabel("km north of summit")
+    fig.supxlabel("km east of summit", fontsize=8.5)
     fig.savefig(path)
     plt.close(fig)
     return path

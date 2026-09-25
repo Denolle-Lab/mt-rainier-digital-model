@@ -1,0 +1,62 @@
+%% Pandoc template for Copernicus / ESSD (copernicus.cls, fetched by scripts/23_paper.py).
+%% Source: docs/paper/rainier3d_paper.md. Non-ASCII characters are mapped for the class's 8-bit Times fonts below;
+%% the build fails on any character without a mapping.
+\documentclass[essd, manuscript]{copernicus}
+
+\usepackage{longtable,booktabs,array,calc}
+\usepackage{newunicodechar}
+$unicode-map$
+\graphicspath{$for(graphicspath)${$graphicspath$/}$endfor$}
+\emergencystretch=3em % long inline paths and URLs
+\providecommand{\tightlist}{\setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+% pandoc emits \pandocbounded for images
+\providecommand{\pandocbounded}[1]{#1}
+\makeatletter
+\def\fps@figure{htbp}
+\@ifundefined{c@none}{\newcounter{none}}{} % uncaptioned longtables (pandoc)
+\makeatother
+$if(highlighting-macros)$
+$highlighting-macros$
+\usepackage{fvextra}
+\DefineVerbatimEnvironment{Highlighting}{Verbatim}{breaklines,breakanywhere,fontsize=\footnotesize,commandchars=\\\{\}}
+$endif$
+$for(header-includes)$
+$header-includes$
+$endfor$
+
+\begin{document}
+
+\title{$title$}
+
+$for(essd-authors)$
+\Author[$essd-authors.affil$]$if(essd-authors.email)$[$essd-authors.email$]$endif${$essd-authors.given$}{$essd-authors.family$}
+$endfor$
+
+$for(essd-affiliations)$
+\affil[$essd-affiliations.id$]{$essd-affiliations.name$}
+$endfor$
+
+\runningtitle{$runningtitle$}
+\runningauthor{$runningauthor$}
+\correspondence{$correspondence$}
+
+\received{}
+\pubdiscuss{}
+\revised{}
+\accepted{}
+\published{}
+
+\firstpage{1}
+
+\maketitle
+
+\begin{abstract}
+$abstract$
+\end{abstract}
+
+$body$
+
+\bibliographystyle{copernicus}
+\bibliography{references}
+
+\end{document}

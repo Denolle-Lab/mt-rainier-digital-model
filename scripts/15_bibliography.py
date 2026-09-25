@@ -1,7 +1,7 @@
 """Bibliography: every citation in the repository -> docs/references.bib and docs/citations.csv.
 
 Sources scanned: configs/sources.yaml (keys, doi, article_doi, url), and every DOI string in configs/, docs/
-(Markdown and references_resolved.json), src/ and scripts/. BibTeX comes from doi.org content negotiation
+(Markdown), src/ and scripts/. BibTeX comes from doi.org content negotiation
 (Crossref or DataCite) and is cached: entries already in references.bib are not fetched again.
 Keys: the sources.yaml key for its ``doi`` (``<key>_article`` for ``article_doi``), so a ``source_key`` in
 configs/ is also the citation key; other DOIs get ``<firstauthor><year>`` from the record.
@@ -16,6 +16,7 @@ Usage: pixi run bib
 
 from __future__ import annotations
 
+import html
 import logging
 import re
 import time
@@ -30,7 +31,9 @@ from rainier3d.config.domain import REPO
 BIB = REPO / "docs" / "references.bib"
 CSV = REPO / "docs" / "citations.csv"
 DOI_RE = re.compile(
-    r"10\.\d{4,9}/(?:[^\s,;|()\]\"'<>`]|\([^\s()]*\))+"
+    # SICI form, e.g. 10.1130/0016-7606(1997)109<0143:TOMFMR>2.3.CO;2
+    r"10\.\d{4,9}/[\w.-]+\(\d{4}\)\d+<[^\s>]+>\d\.\d\.[A-Za-z]{2};\d"
+    r"|10\.\d{4,9}/(?:[^\s,;|()\]\"'<>`]|\([^\s()]*\))+"
 )  # balanced (...) kept: 0377-0273(94)00081-Q
 SCAN = ["configs", "docs", "src", "scripts", "README.md", "AGENTS.md"]
 SKIP_SUFFIX = {".png", ".html", ".bib", ".csv", ".lock"}
@@ -86,14 +89,50 @@ def fetch(doi: str) -> str | None:
     return r.text.strip()
 
 
-# Records with malformed author fields, corrected from the publications (as report/render.py FIXES)
+# Records with malformed author fields, corrected from the publications
 AUTHOR_FIXES = {
     "10.1007/s000240050012": "Watters, R. J. and Zimbelman, D. R. and Bowman, S. D. and Crowley, J. K.",
     "10.7265/n5-rgi-60": "{RGI Consortium}",
+    "10.1029/2018eo104623": "Blewitt, Geoffrey and Hammond, William C. and Kreemer, Corn{\\'e}",
     "10.5066/p14hj3ic": "Wirth Moriarty, Erin and Grant, Alex R. and Stone, Ian P. and "
     "Stephenson, William J. "
     "and Frankel, Arthur D.",
 }
+
+
+ORG_WORDS = {
+    "service",
+    "survey",
+    "consortium",
+    "center",
+    "centre",
+    "geological",
+    "monitoring",
+    "array",
+    "agency",
+    "society",
+    "laboratory",
+    "institute",
+    "university",
+    "program",
+    "group",
+    "network",
+    "project",
+    "wgms",
+}
+
+
+def unbrace_names(author: str) -> str:
+    """DataCite writes {Gina M Belair}, which BibTeX reads as one surname; organisations stay braced."""
+
+    def fix(m):
+        words = m.group(1).split()
+        if 2 <= len(words) <= 4 and not {w.strip("()").lower() for w in words} & ORG_WORDS:
+            return f"{words[-1]}, {' '.join(words[:-1])}"
+        return m.group(0)
+
+    inner = author[1:-1] if author.startswith("{") and author.endswith("}") else author
+    return "{" + re.sub(r"\{([^{},]+)\}", fix, inner) + "}"
 
 
 def split_fields(body: str) -> list[str]:
@@ -110,7 +149,7 @@ def split_fields(body: str) -> list[str]:
     return [f for f in [*out, cur.strip()] if f]
 
 
-def normalize(entry: str, doi: str, key: str) -> str:
+def normalize(entry: str, doi: str, key: str, override: dict | None = None) -> str:
     """One field per line, BibTeX-safe text (no HTML, ASCII page dashes), key set, author fixes applied."""
     m = re.match(r"\s*@(\w+)\s*\{(.*)\}\s*$", entry, re.S)
     typ, body = m.group(1).lower(), m.group(2)
@@ -125,11 +164,19 @@ def normalize(entry: str, doi: str, key: str) -> str:
         val = val.strip()
         val = re.sub(r"<i>(.*?)</i>", r"\\textit{\1}", val)
         val = re.sub(r"</?(scp|sub|sup|b|span)[^>]*>", "", val)
+        val = html.unescape(val).replace("\u2010", "-").replace("\u2009", " ")  # &amp;, Unicode hyphen
+        val = re.sub(r"(?<!\\)&", r"\\&", val)  # BibTeX needs \& for a literal ampersand
+        if name.strip().lower() not in ("url", "doi"):
+            val = re.sub(r"(?<!\\)([_%#])", r"\\\1", val)  # e.g. ETH_GlobalCanopyHeight in a title
         out[name.strip().lower()] = val
     if "pages" in out:
         out["pages"] = out["pages"].replace("–", "--").replace("—", "--")
+    if "author" in out:
+        out["author"] = unbrace_names(out["author"])
     if doi in AUTHOR_FIXES:
         out["author"] = "{" + AUTHOR_FIXES[doi] + "}"
+    for field, value in (override or {}).items():  # bib_author, bib_title, bib_year from the registry
+        out[field] = "{" + str(value) + "}"
     body = ",\n".join(f"  {k} = {v}" for k, v in out.items())
     return f"@{typ}{{{key},\n{body}\n}}"
 
@@ -159,10 +206,15 @@ def main():
 
     # DOI -> (key, verified) from the registry
     by_doi: dict[str, tuple[str, str]] = {}
+    overrides: dict[str, dict] = {}  # registry corrections of a DOI record: bib_author, bib_title, bib_year
     for k, v in reg.items():
         for field, suffix in (("doi", ""), ("article_doi", "_article"), ("data_doi", "_data")):
             if v.get(field):
                 by_doi[str(v[field]).lower()] = (k + suffix, str(v.get("verified", "")))
+        if v.get("doi"):
+            overrides[str(v["doi"]).lower()] = {
+                f: v[f"bib_{f}"] for f in ("author", "title", "year") if v.get(f"bib_{f}")
+            }
     dois = sorted(set(hits) | set(by_doi))
 
     entries, rows, used = [], [], set()
@@ -176,7 +228,7 @@ def main():
         key, verified = by_doi.get(d, (None, ""))
         if entry:
             key = key or auto_key(entry, used)
-            entry = normalize(entry, d, key)
+            entry = normalize(entry, d, key, overrides.get(d))
             entries.append(entry)
         key = key or d
         used.add(key)
@@ -210,12 +262,15 @@ def main():
             }
         )
         if not internal:
-            entries.append(
-                f"@misc{{{k},\n  title = {{{bib_escape(str(v['title']))}}},\n"
-                f"  howpublished = {{\\url{{{url}}}}},\n"
-                f"  note = {{{bib_escape(str(v.get('license', '')))} "
-                f"Verified: {bib_escape(str(v.get('verified', '')))}}}\n}}"
+            who = (
+                f"  author = {{{v['bib_author']}}},\n  year = {{{v.get('bib_year', '')}}},\n"
+                if v.get("bib_author")
+                else ""
             )
+            entries.append(
+                f"@misc{{{k},\n{who}  title = {{{bib_escape(str(v['title']))}}},\n"
+                f"  howpublished = {{\\url{{{v.get('bib_url', url)}}}}}\n}}"
+            )  # licence and verification are in citations.csv and sources.yaml, not in the citation
 
     # key usage in the code and docs (source_key, citation keys)
     key_re = {r["key"]: re.compile(rf"\b{re.escape(r['key'])}\b") for r in rows}

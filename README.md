@@ -19,18 +19,29 @@ geometry numbers are placeholders, marked `m1_placeholder` in `configs/`.
 
 | Stage | Script | Product (`data/processed/`, `outputs/`) |
 |---|---|---|
+| S0 input manifest | `scripts/00_data_manifest.py` | `docs/data_manifest.csv`: size and SHA-256 of every cached input under `data/raw/`; `--check` compares a rebuilt cache |
 | S1 surface | `scripts/01_surface.py` | `surface.zarr`: elevation (3DEP), surface unit (DNR GeMS 1:100k via `configs/crosswalk_geology.json`), ice thickness |
 | S2 surface layers | `scripts/02_surface_layers.py` | `surface_layers.zarr`: soil thickness (SOLUS100), water-table depth (Ma et al. 2026 with `--ma`; Fan et al. 2017), NHDPlus HR stream order, canopy height (ETH), NLCD land cover, Sentinel-2 NDVI/NDSI |
 | S3 geology | `scripts/03_geomodel.py` | `geomodel.zarr`: 3D unit and alteration on levels L1/L2/L3 (rules in `configs/units.yaml`) |
-| S4 properties | `scripts/04_properties.py` | `properties_geology.zarr`: Vp, Vs, ρ, Q from `configs/petrophysics.csv` and `configs/perturbations.yaml` |
-| S5 fusion | `scripts/05_fusion.py` | `model.zarr` (master product; `/surface` includes the S2 layers), `fusion_report.csv`; applies `configs/vs_calibration.yaml` to the regional Vs |
+| S4 properties | `scripts/04_properties.py` | `properties_geology.zarr`: Vp, Vs, ρ, Q from `configs/petrophysics.csv` and `configs/perturbations.yaml`, scaled by the `geology` block of `configs/velocity_calibration.yaml` |
+| S5 fusion | `scripts/05_fusion.py` | `model.zarr` (master product; `/surface` includes the S2 layers), `fusion_report.csv`; applies the `regional_bias` block of `configs/velocity_calibration.yaml` |
 | S6 PNSN check | `scripts/06_validate_pnsn.py` | `pnsn_report.txt`, `pnsn_residuals.csv`, `pnsn_stations.csv` (pykonal; `--solver fteikpy`) |
 | S7 export/viz | `scripts/07_export_viz.py` | `vtk/*.vti`, `*.vts`, sections, `rainier3d_view.png`/`.html` |
 | S8 sensor atlas | `scripts/08_atlas.py` | `web/atlas/data/`: sites, DAS fiber, PNSN events, overlay images; `data/processed/overlays/*.tif` |
 | S9 ray-tracing grids | `scripts/09_export_grids.py` | `outputs/grids/`: uniform netCDF, NonLinLoc P/S grids, EMC netCDF |
-| S10 report | `scripts/10_report.py` | `docs/report/rainier3d_subsurface_model.html` (self-contained) |
+| S10 paper figures | `scripts/10_report.py` | `docs/paper/figures/*.png` from the built model (committed) |
 | S11 seismic atlas layers | `scripts/11_seismic_atlas.py` | `<rainier-seismic-atlas>/site/public/atlas/model/`: surface layers, imagery, streams for the 3D viewer |
-| S12 Vs calibration | `scripts/12_calibrate_vs.py` | `configs/vs_calibration.yaml`: depth factor on the regional Vs fitted to PNSN S−P times (held-out check); run S5 with `--no-vs-calibration` first |
+| S12 Vs-only calibration | `scripts/12_calibrate_vs.py` | `configs/vs_calibration.yaml`: depth factor on the regional Vs with catalogue hypocentres fixed (the alternative parameterisation compared in the paper) |
+| S13 joint calibration | `scripts/13_joint_calibration.py` | `configs/velocity_calibration.yaml`: geology multipliers and regional bias fitted to PNSN P and S picks with 3D relocation (`docs/joint_calibration.md`) |
+| S14 relocation | `scripts/14_relocate.py` | `outputs/relocation/<model>/`: every PNSN event relocated in a given model, with topography |
+| S15 bibliography | `scripts/15_bibliography.py` | `docs/references.bib`, `docs/citations.csv` from `configs/sources.yaml` (`pixi run bib`) |
+| S16 relocation figures | `scripts/16_relocation_figures.py` | calibration figures in `docs/joint_calibration/` and `docs/paper/figures/` |
+| S17, S18 GNSS | `scripts/17_gnss_fetch.py`, `scripts/18_gnss_strain.py` | GNSS velocities, strain rate, daily strain, edifice-load stress (`docs/gnss_strain.md`); refreshed weekly by `.github/workflows/gnss-weekly.yml` |
+| S19 vegetation layers | `scripts/19_canopy_layers.py` | `surface_canopy.zarr`: lidar canopy, Sentinel-2 LAI, GEDI (`configs/canopy_products.yaml`) |
+| S20 products | `scripts/20_publish_products.py` | release archives and `src/rainier3d/products.json` |
+| S21 iMUSH check | `scripts/21_compare_imush.py` | `outputs/model_comparison/`: comparison with Ulberg et al. (2020) |
+| S22 alteration | `scripts/22_alteration_finn2001.py` | `alteration_finn2001.zarr`: alteration from the 1996 helicopter EM survey (`docs/alteration.md`) |
+| S23 paper | `scripts/23_paper.py` | `docs/paper/rainier3d_paper.html` and `.pdf` (ESSD class) from `docs/paper/rainier3d_paper.md` (`pixi run -e paper paper`; `.github/workflows/paper.yml`) |
 
 `docs/eikonal_benchmark.md` compares the eikonal solvers (`scripts/bench_eikonal.py`).
 
@@ -70,6 +81,15 @@ The `gnss` product is refreshed every Monday by `.github/workflows/gnss-weekly.y
 `rainier3d.api` (`open_model`, `grid`, `export`, `export_surface`, `sample`). Downloads are cached in
 `$RAINIER3D_DATA` (default `~/.cache/rainier3d`). `scripts/20_publish_products.py --tag <tag> --upload` builds
 and uploads a release.
+
+## Paper
+
+The data description paper (ESSD format) is `docs/paper/rainier3d_paper.md`. Its builds are committed next to it:
+[`rainier3d_paper.pdf`](docs/paper/rainier3d_paper.pdf) (Copernicus manuscript class) and
+`rainier3d_paper.html` (one self-contained page). `pixi run -e paper paper` rebuilds both locally, as a preview. The committed copy is built on
+Linux by `.github/workflows/paper.yml`, which is byte-reproducible there: it commits the paper on main when its bytes
+change and attaches it to the release `paper-latest`. The site deploy
+(`.github/workflows/viewer-pages.yml`) publishes it at https://denolle-lab.github.io/mt-rainier-digital-model/paper/. Figures that need the model are made by `pixi run s10`.
 
 ## 3D viewer (web/viewer)
 
