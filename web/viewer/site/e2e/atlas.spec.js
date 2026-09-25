@@ -195,3 +195,20 @@ test("(n) mass movements: events sit on the ground, the legend filters them, Flo
   await expect(page.getByLabel("Surface model layer")).toHaveValue("mass_flows");
   await expect(page.locator(".model-panel")).toContainText("Osceola Mudflow");
 });
+
+test("(p) relocated catalogue: switch catalogues, 3D keeps every event below the ground", async ({ page }) => {
+  await page.waitForFunction(() => !!window.__rainier.reloc, null, { timeout: 30_000 });
+  const r = () => page.evaluate(() => ({ on: window.__rainier.reloc.points.visible, shown: window.__rainier.reloc.shown,
+    above: window.__rainier.reloc.above }));
+  expect((await r()).on).toBe(false);                             // off by default
+  await page.getByRole("switch", { name: "Relocated earthquakes" }).click();
+  const d3 = await r();
+  expect(d3.on).toBe(true);
+  expect(d3.shown).toBeGreaterThan(300);                          // grade A and B events of 2023-2025
+  expect(d3.above).toBe(0);                                       // the 3D locations respect the topography mask
+  await page.getByRole("button", { name: /PNSN 1D/ }).click();
+  expect((await r()).shown).toBe(d3.shown);                       // the same events, located in the 1D model
+  await page.getByRole("switch", { name: "Shift lines" }).click();
+  expect(await page.evaluate(() => window.__rainier.reloc.lines.visible)).toBe(true);
+  await expect(page.getByTestId("reloc-count")).toContainText("shown");
+});
