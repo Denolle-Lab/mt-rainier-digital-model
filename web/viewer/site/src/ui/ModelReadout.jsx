@@ -15,7 +15,7 @@ export default function ModelReadout({ scene, model, layer, box }) {
     const move = e => {
       cancelAnimationFrame(raf.current);
       raf.current = requestAnimationFrame(() => {
-        const g = !scene.sensorHover && values.current && scene.groundAt(e.clientX, e.clientY);
+        const g = !scene.sensorHover && !scene.massHover && values.current && scene.groundAt(e.clientX, e.clientY);
         if (!g) { setRead(null); return; }
         const lon = fromX(g.x), lat = fromZ(g.z);
         setRead({ x: e.clientX, y: e.clientY, text: formatValue(layer, sampleValue(layer, values.current, box, lon, lat)),

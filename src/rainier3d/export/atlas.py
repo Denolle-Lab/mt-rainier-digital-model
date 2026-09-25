@@ -830,3 +830,106 @@ def append_canopy_layers(atlas: Path, dom, ds: xr.Dataset, cfg: dict, keys=None)
     meta["layers"] = [x for x in meta["layers"] if x["key"] not in keys] + new
     (out / "layers.json").write_text(json.dumps(meta, indent=1))
     return sorted(keys)
+
+
+# ---- mass movements (S24): flow deposits as a drape, every other event as a point on the ground ----
+
+
+def append_mass_movements(atlas: Path, flows, events) -> dict:
+    """Flows -> <atlas>/model/mass_flows.png (+ .u16.bin, a categorical entry of layers.json);
+    events -> <atlas>/model/mass_events.json in the scene frame.
+    Classes come from rainier3d.surface.mass_movements.
+    """
+    from rasterio.features import rasterize
+
+    from rainier3d.surface.mass_movements import EVENT_CLASSES, FLOW_CLASSES
+
+    out = atlas / "model"
+    manifest = json.loads((atlas / "manifest.json").read_text())
+    reg = _sources()
+    g = flows.to_crs(4326).sort_values("cls")  # debris flows (4) are drawn over the lahar deposits
+    colour = {k: matplotlib.colors.to_rgb(c) for k, _, c in FLOW_CLASSES}
+
+    # drape at 2x the texture width, like the streams: translucent fill, opaque outline
+    t, w, h = overview_grid(manifest, 2 * TEX_WIDTH)
+    img = Image.new("RGBA", (w, h), (0, 0, 0, 0))
+    fill, edge = Image.new("RGBA", (w, h), (0, 0, 0, 0)), ImageDraw.Draw(img)
+    df = ImageDraw.Draw(fill)
+    inv = ~t
+    for geom, k in zip(g.geometry, g.cls, strict=True):
+        rgb = tuple(int(255 * c) for c in colour[k])
+        for p in geom.geoms if geom.geom_type.startswith("Multi") else [geom]:
+            rings = [p.exterior, *p.interiors]
+            xy = [[inv * c[:2] for c in r.coords] for r in rings]
+            df.polygon(xy[0], fill=(*rgb, 150))
+            for hole in xy[1:]:
+                df.polygon(hole, fill=(0, 0, 0, 0))
+            for r in xy:
+                edge.line(r, fill=(*rgb, 255), width=2)
+    tex = Image.alpha_composite(fill, img)
+    tex.save(out / "mass_flows.png", optimize=True)
+
+    tv, wv, hv = overview_grid(manifest, VAL_WIDTH)
+    val = rasterize(
+        ((geom, int(k)) for geom, k in zip(g.geometry, g.cls, strict=True)),
+        (hv, wv),
+        transform=tv,
+        fill=0,
+        dtype="uint16",
+    )
+    q, _, _ = _values_u16(val.astype("float32"), True)
+    q.tofile(out / "mass_flows.u16.bin")
+    present = set(int(k) for k in g.cls)
+    keys = ("dnr_gems_100k", "wgs_landslide_inventory", "vallance_scott_1997")
+    entry = {
+        "key": "mass_flows",
+        "label": "Lahars and debris flows",
+        "group": "Mass movements",
+        "kind": "categorical",
+        "units": "",
+        "note": "Lahar deposits (Qvl units of the 1:100,000 geology) and debris flows of the Washington "
+        "landslide inventory. Other landslides and the seismically recorded events are the points of the "
+        "mass-movement layer",
+        "grid": "Mapped outlines drawn on the terrain, not resampled to the model grid.",
+        "texture": "mass_flows.png",
+        "values": {
+            "file": "mass_flows.u16.bin",
+            "width": wv,
+            "height": hv,
+            "scale": 1.0,
+            "offset": 0.0,
+            "nodata": 65535,
+        },
+        "legend": {
+            "classes": [{"value": k, "label": lb, "color": c} for k, lb, c in FLOW_CLASSES if k in present]
+        },
+        "sources": [{"key": k, "title": reg[k]["title"], "link": _link(reg[k])} for k in keys],
+    }
+    meta = json.loads((out / "layers.json").read_text())
+    meta["layers"] = [x for x in meta["layers"] if x["key"] != "mass_flows"] + [entry]
+    (out / "layers.json").write_text(json.dumps(meta, indent=1))
+
+    fr = scene_frame(atlas)
+    e = events.to_crs(4326)
+    rows = []
+    for geom, r in zip(e.geometry, e.drop(columns="geometry").to_dict("records"), strict=True):
+        rows.append(
+            {
+                "lon": round(geom.x, 6),
+                "lat": round(geom.y, 6),
+                "x": round((geom.x - fr["lon0"]) * fr["kx"], 4),
+                "z": round(-(geom.y - fr["lat0"]) * fr["kz"], 4),
+                **{k: (None if isinstance(v, float) and np.isnan(v) else v) for k, v in r.items()},
+            }
+        )
+    counts = {k: int((events.cls == k).sum()) for k, _, _ in EVENT_CLASSES}
+    src = sorted(set(events.source))
+    doc = {
+        "classes": [{"key": k, "label": lb, "color": c, "count": counts[k]} for k, lb, c in EVENT_CLASSES],
+        "events": rows,
+        "sources": {k: {"title": reg[k]["title"], "link": _link(reg[k])} for k in src},
+        "note": "Dated events are seismically located (Allstadt et al. 2017) or observed; mapped landslides "
+        "are placed at their crown, the highest point of the mapped outline on the 3DEP DEM.",
+    }
+    (out / "mass_events.json").write_text(json.dumps(doc, separators=(",", ":")))
+    return {"flows": int(len(g)), "events": len(rows), "counts": counts}

@@ -118,3 +118,17 @@ in.
 | 2009 swarm relocations | Shelly, Moran & Thelen 2013, GRL, 10.1002/grl.50354 | V | S6 events (M4) |
 | July 2025 swarm | PNSN blog 2025-07-18; no paper found | V | S6 events (M4) |
 | Temporary networks 6N (2021), 4K (2023) | 10.7914/SN/6N_2021, 10.7914/3wth-ea89 | V | S6 stations (M4) |
+
+## Mass movements and faults
+
+Verified and fetched by S24 on 2026-09-25 (`pixi run s24`); counts are for the model box.
+
+| Item | Ref / access | Status | Use |
+|---|---|---|---|
+| WA landslide inventory: lidar-protocol deposits, recent landslides, compilation | gis.dnr.wa.gov/site3 … Geology/Landslide_Inventory_Database/MapServer, layers 21, 1, 131 | V | S24 debris-flow polygons (463), landslide points (1,630) |
+| Seismogenic mass movements, western US 1977–2017 | Allstadt, McVey & Malone 2017, 10.5066/F7251H3W (Events.csv) | V | S24 dated events (19) |
+| Exotic Seismic Events Catalog v3 | Collins et al. 2025, 10.5066/P90VGCSK | V (record under revision) | not scripted: no file download |
+| Lahar hazard zones of 1998 | Schilling et al. 2008, OFR 2007-1220, 10.3133/ofr20071220 | V | S24 hazard layer, figure |
+| DNR 1:100k faults (GeMS layer 7) | same service as the geology | V | S24 fault traces (134) |
+| Quaternary active faults of Washington | gis.dnr.wa.gov … Earthquakes_and_Faults/MapServer/12 | V | S24 (4 features, incl. WRSZ lineament) |
+| NSHM23 fault sections (3D planes) | Hatem et al. 2021, ver. 3.0, 10.5066/P9AWINWZ | V | none in the box; nearest Olympia 17 km, Tacoma 28 km |

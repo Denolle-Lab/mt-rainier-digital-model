@@ -696,3 +696,75 @@ def load_json(p):
 
 def open_tree(path):
     return xr.open_datatree(path, engine="zarr", consolidated=False).load()
+
+
+def fig_mass_movements(tree, flows, events, faults, zones, path):
+    """(a) lahar deposits, mapped debris flows, lahar inundation zones and faults; (b) the event points."""
+    from rainier3d.surface.mass_movements import EVENT_CLASSES, FLOW_CLASSES
+
+    s = tree["surface"].to_dataset().sortby("y")
+    x, y = s.x.values / 1e3, s.y.values / 1e3
+    hs = LightSource(azdeg=315, altdeg=40).hillshade(s["elevation"].values, vert_exag=1.5, dx=100, dy=100)
+    ext = [x[0] - 0.05, x[-1] + 0.05, y[0] - 0.05, y[-1] + 0.05]
+    km = lambda g: g.affine_transform([1e-3, 0, 0, 1e-3, 0, 0])  # noqa: E731
+    fig, axs = plt.subplots(1, 2, figsize=(7.2, 4.3), sharey=True, constrained_layout=True)
+    for ax in axs:
+        ax.imshow(0.35 + 0.6 * hs, origin="lower", extent=ext, cmap="gray", vmin=0, vmax=1)
+        ax.set_xlim(ext[:2])
+        ax.set_ylim(ext[2:])
+        ax.set_aspect("equal")
+        ax.set_xlabel("UTM 10N easting (km)")
+    ax = axs[0]
+    handles = []
+    for k, label, c in FLOW_CLASSES:
+        g = flows[flows.cls == k]
+        if len(g):
+            km(g.geometry).plot(ax=ax, color=c, alpha=0.75, lw=0.2, edgecolor=c)
+            handles.append(plt.Rectangle((0, 0), 1, 1, color=c, alpha=0.75, label=label))
+    c1 = zones[zones.zone == "case1"]
+    km(c1.boundary).plot(ax=ax, color="#1f5fa8", lw=0.6, ls="--")
+    handles.append(plt.Line2D([], [], color="#1f5fa8", lw=0.8, ls="--", label="Case 1 lahar zone (1998)"))
+    for key, lw in (("gems", 0.5), ("quaternary", 1.2)):
+        km(faults[key].geometry).plot(ax=ax, color="k", lw=lw)
+    handles.append(plt.Line2D([], [], color="k", lw=0.5, label="Faults (1:100k)"))
+    handles.append(plt.Line2D([], [], color="k", lw=1.2, label="Quaternary faults, zones"))
+    ax.legend(handles=handles, loc="lower left", fontsize=6, framealpha=0.85)
+    ax.set_ylabel("UTM 10N northing (km)")
+    ax.set_title("(a) Flow deposits, hazard zones, faults", fontsize=8, loc="left")
+    ax = axs[1]
+    handles = []
+    for key, label, c in EVENT_CLASSES:
+        n = int((events.cls == key).sum())
+        for seismic in (False, True):
+            e = events[(events.cls == key) & ((events.located == "seismic") == seismic)]
+            if len(e):
+                ax.scatter(
+                    e.geometry.x / 1e3,
+                    e.geometry.y / 1e3,
+                    s=30 if seismic else 4,
+                    marker="*" if seismic else "o",
+                    color=c,
+                    edgecolor="k" if seismic else "none",
+                    lw=0.4,
+                    zorder=4 if seismic else 3,
+                )
+        if n:
+            handles.append(plt.Line2D([], [], ls="", marker="o", ms=4, color=c, label=f"{label} ({n})"))
+    handles.append(
+        plt.Line2D(
+            [],
+            [],
+            ls="",
+            marker="*",
+            ms=8,
+            mfc="w",
+            mec="k",
+            mew=0.5,
+            label=f"Seismically recorded ({int((events.located == 'seismic').sum())})",
+        )
+    )
+    ax.legend(handles=handles, loc="lower left", fontsize=6, framealpha=0.85)
+    ax.set_title("(b) Landslides and recorded events", fontsize=8, loc="left")
+    fig.savefig(path, dpi=200)
+    plt.close(fig)
+    return path

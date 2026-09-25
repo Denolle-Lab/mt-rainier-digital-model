@@ -78,6 +78,7 @@ viewer-bundle = "mkdir -p outputs && tar czf outputs/viewer-atlas-bundle.tar.gz 
 atlas = "python -m http.server 8765 --bind 127.0.0.1 --directory web/atlas"
 all = { depends-on = ["s1", "s2", "s3", "s4", "s5", "s6", "s7", "s8"] }
 s22 = "python scripts/22_alteration_finn2001.py"
+s24 = "python scripts/24_mass_movements.py"
 
 # Slim environment for the weekly GNSS refresh on GitHub Actions (.github/workflows/gnss-weekly.yml): only what
 # S17, S18 (--no-load) and S20 (--only gnss) import. The package runs from src/ without installing it.

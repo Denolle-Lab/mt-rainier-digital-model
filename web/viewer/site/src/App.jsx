@@ -17,6 +17,10 @@ import NavPad from "./ui/NavPad.jsx";
 import SubsurfacePanel from "./ui/SubsurfacePanel.jsx";
 import SensorTip from "./ui/SensorTip.jsx";
 import { SensorPoints } from "./scene/SensorPoints.js";
+import { MassEventPoints } from "./scene/MassEventPoints.js";
+import { DEFAULT_MASS_FILTER, loadMassEvents, massCounts } from "./data/massEvents.js";
+import MassFilter from "./ui/MassFilter.jsx";
+import MassTip from "./ui/MassTip.jsx";
 import { DEFAULT_FILTER, classifyMarker, extraSites, kindCounts, loadSensors, passes } from "./data/sensors.js";
 import { ModelVolume, loadVolumeMeta } from "./scene/ModelVolume.js";
 import HelpCard, { helpSeen } from "./ui/HelpCard.jsx";
@@ -43,6 +47,7 @@ function Atlas({ bundle, onError }) {
   const canvasRef = useRef(null), overlayRef = useRef(null), layerRef = useRef(null);
   const [scene, setScene] = useState(null), [siteId, setSiteId] = useState(null), [hover, setHover] = useState(null);
   const [detail, setDetail] = useState("loading…"), [active, setActive] = useState("home"), [modelKey, setModelKey] = useState(null), [sheet, setSheet] = useState(null), [help, setHelp] = useState(() => !helpSeen()), [volume, setVolume] = useState(null), [sens, setSens] = useState(null), [sfilter, setSfilter] = useState(DEFAULT_FILTER);
+  const [mass, setMass] = useState(null), [mfilter, setMfilter] = useState(DEFAULT_MASS_FILTER);
 
   const openSite = useCallback((site, sc) => {
     setSiteId(site.id); setActive(site.id); setHover(null); setSheet(null);
@@ -66,6 +71,11 @@ function Atlas({ bundle, onError }) {
         s.sensors = new SensorPoints(s, extras, inv.das); s.sensors.setFilter(DEFAULT_FILTER);
         setSens({ all: [...bundle.stations.sites.filter(x => x.onMap).map(classifyMarker), ...extras], das: inv.das, points: s.sensors, notes: inv.notes ?? {} });
       });
+      if (bundle.model) loadMassEvents(bundle.base).then(doc => {
+        if (!doc || cancelled) return;
+        s.mass = new MassEventPoints(s, doc); s.mass.setFilter(DEFAULT_MASS_FILTER);
+        setMass({ doc, points: s.mass });
+      });
       if (bundle.model) loadVolumeMeta(bundle.model.base).then(meta => {
         if (meta && !cancelled) { s.volume = new ModelVolume(s, meta, bundle.model.base); setVolume(s.volume); }
       });
@@ -77,7 +87,7 @@ function Atlas({ bundle, onError }) {
       };
       setScene(s);
     }, onError);
-    return () => { cancelled = true; layer?.dispose(); sc?.layers?.dispose(); sc?.volume?.dispose(); sc?.sensors?.dispose(); sc?.dispose(); };
+    return () => { cancelled = true; layer?.dispose(); sc?.layers?.dispose(); sc?.volume?.dispose(); sc?.sensors?.dispose(); sc?.mass?.dispose(); sc?.dispose(); };
   }, [bundle, onError, openSite]);
 
   useEffect(() => {   // the panel pushes the right-hand controls inward, as in the Cascadia atlas
@@ -91,6 +101,16 @@ function Atlas({ bundle, onError }) {
   };
   const sensorLegend = sens && { filter: sfilter, onFilter: applyFilter, counts: kindCounts(sens.all, sfilter), das: sens.das };
   const modelLayer = modelKey ? bundle.model.byKey[modelKey] : null;
+  const flowLayer = bundle.model?.byKey.mass_flows;
+  const showFlows = on => {   // the flow deposits are a draped model layer: the same slot as the layer menu
+    setModelKey(on ? "mass_flows" : null);
+    scene.setOverlay(on ? bundle.model.base + flowLayer.texture : null, { categorical: true });
+  };
+  const massLegend = mass && {
+    doc: mass.doc, filter: mfilter, counts: massCounts(mass.points.events, mfilter),
+    onFilter: f => { setMfilter(f); mass.points.setFilter(f); },
+    flows: modelKey === "mass_flows", onFlows: flowLayer ? showFlows : null,
+  };
   return (
     <>
       <canvas ref={canvasRef} className="atlas-scene" aria-label="3D map of Mount Rainier and its seismic network" />
@@ -102,8 +122,9 @@ function Atlas({ bundle, onError }) {
             {scene.layers && <LayerPanel layers={scene.layers} scene={scene} onStations={on => layerRef.current?.setVisible(on)} />}
           </Controls>
           <GoTo majors={bundle.majors} active={active} onPlace={k => { setActive(k); scene.flyTo(k); }} onSite={s => openSite(s, scene)} />
-          <Legend bundle={bundle} sensors={sensorLegend}>
+          <Legend bundle={bundle} sensors={sensorLegend} mass={!!mass}>
             {bundle.quakes && <QuakeLegend meta={bundle.quakes.meta} drawn={scene.layers?.drawn} />}
+            {massLegend && <MassFilter {...massLegend} />}
           </Legend>
           {bundle.model && (
             <div className="panel model-panel">
@@ -115,6 +136,7 @@ function Atlas({ bundle, onError }) {
           {modelLayer?.values && <ModelReadout scene={scene} model={bundle.model} layer={modelLayer} box={bundle.overviewBox} />}
           <Tooltip hover={hover} notes={sens?.notes} />
           {sens && <SensorTip scene={scene} points={sens.points} />}
+          {mass && <MassTip scene={scene} points={mass.points} doc={mass.doc} />}
           <MobileDock sheet={sheet} onSheet={setSheet} hasModel={!!bundle.model} />
           <NavPad scene={scene} onHelp={() => setHelp(true)} />
           {help && <HelpCard onClose={() => setHelp(false)} />}
