@@ -147,7 +147,7 @@ def figure(tab: pd.DataFrame, path):
 def main():
     dom = load_domain()
     df = ulberg_nodes(dom)
-    trees = {p: read_tree(REPO / p) for p, _ in MODELS.values()}
+    trees = {p: read_tree(REPO / p) for p in {p for p, _ in MODELS.values()}}  # each file read once
     surf = trees["data/processed/model_v2.zarr"]["surface"].to_dataset()["elevation"]
     g = surf.interp(x=xr.DataArray(df.x.values, dims="p"), y=xr.DataArray(df.y.values, dims="p")).values
     df["depth_bg"] = g - df.z.values
