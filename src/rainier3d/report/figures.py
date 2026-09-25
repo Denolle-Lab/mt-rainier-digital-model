@@ -987,6 +987,10 @@ def fig_mass_movements(tree, flows, events, faults, zones, path):
     ax.set_title("(a) Flow deposits, hazard zones, faults", fontsize=8, loc="left")
     ax = axs[1]
     handles = []
+    # the viewer's marker: a downward chevron (material moving downslope), not used by any other layer
+    from matplotlib.path import Path as MPath
+
+    chev = MPath([(-0.94, 0.8), (-0.4, 0.8), (0, 0.28), (0.4, 0.8), (0.94, 0.8), (0, -0.9), (-0.94, 0.8)])
     for key, label, c in EVENT_CLASSES:
         n = int((events.cls == key).sum())
         for seismic in (False, True):
@@ -995,26 +999,26 @@ def fig_mass_movements(tree, flows, events, faults, zones, path):
                 ax.scatter(
                     e.geometry.x / 1e3,
                     e.geometry.y / 1e3,
-                    s=30 if seismic else 4,
-                    marker="*" if seismic else "o",
+                    s=45 if seismic else 9,
+                    marker=chev,
                     color=c,
-                    edgecolor="k" if seismic else "none",
-                    lw=0.4,
+                    edgecolor="w" if seismic else "none",
+                    lw=0.6,
                     zorder=4 if seismic else 3,
                 )
         if n:
-            handles.append(plt.Line2D([], [], ls="", marker="o", ms=4, color=c, label=f"{label} ({n})"))
+            handles.append(plt.Line2D([], [], ls="", marker=chev, ms=5, color=c, label=f"{label} ({n})"))
     handles.append(
         plt.Line2D(
             [],
             [],
             ls="",
-            marker="*",
-            ms=8,
-            mfc="w",
-            mec="k",
-            mew=0.5,
-            label=f"Seismically recorded ({int((events.located == 'seismic').sum())})",
+            marker=chev,
+            ms=9,
+            mfc="0.5",
+            mec="w",
+            mew=0.6,
+            label=f"Seismically recorded, larger ({int((events.located == 'seismic').sum())})",
         )
     )
     ax.legend(handles=handles, loc="lower left", fontsize=6, framealpha=0.85)
