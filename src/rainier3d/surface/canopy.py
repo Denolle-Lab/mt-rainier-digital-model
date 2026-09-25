@@ -24,8 +24,12 @@ PIPELINE_OUT = REPO / "data" / "raw" / "canopy_storage" / "output_non-seismic_co
 def source_path(spec: dict, root: Path) -> Path:
     """The file of a layer or image spec: the S26 pipeline product (``pipeline_file``) when it exists,
     else the delivered file, with ~/Downloads replaced by the configured root."""
-    if spec.get("pipeline_file") and (PIPELINE_OUT / spec["pipeline_file"]).exists():
-        return PIPELINE_OUT / spec["pipeline_file"]
+    if spec.get("pipeline_file"):
+        rel = Path(spec["pipeline_file"])
+        if rel.is_absolute() or ".." in rel.parts:
+            raise ValueError(f"pipeline_file must be relative to {PIPELINE_OUT}: {rel}")
+        if (PIPELINE_OUT / rel).exists():
+            return PIPELINE_OUT / rel
     return Path(spec["file"].replace("~/Downloads", str(root))).expanduser()
 
 

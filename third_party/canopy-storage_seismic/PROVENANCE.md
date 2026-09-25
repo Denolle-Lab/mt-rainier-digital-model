@@ -4,7 +4,9 @@
 - **Commit:** `0ea36d47df80759b82f413c0c696813f1a8093e1` (main, 2026-09-25, "update readme").
 - **Licences:** code MIT (`LICENSE`, "Copyright (c) 2026 koepflma"). `LICENSE-DATA` (CC-BY 4.0) is copied
   with it; upstream applies it to `seismic_data/` only, which is not vendored.
-- **Changes:** none. The files under `non-seismic_code/` are byte-identical to that commit. `environment.yml`
+- **Changes:** none. The files under `non-seismic_code/` are byte-identical to that commit; `SHA256SUMS` lists
+  the checksum of every vendored file (`shasum -a 256 -c SHA256SUMS` in this folder), and
+  `tests/test_canopy_pipeline.py` checks them. `environment.yml`
   is the upstream environment, kept for reference; this repository runs the code in the pixi environment
   `canopy` (`pixi.toml`).
 
