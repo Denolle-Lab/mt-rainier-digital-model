@@ -44,13 +44,28 @@ def _sha256(path: Path) -> str:
     return h.hexdigest()
 
 
+def _remote_sha256(url: str) -> str | None:
+    """The checksum a rolling release publishes as <file>.sha256 ('<hex>  <file>'); None when unreachable."""
+    import requests
+
+    try:
+        r = requests.get(url, timeout=60)
+        r.raise_for_status()
+    except requests.RequestException:
+        return None
+    return r.text.split()[0]
+
+
 def fetch(name: str, url: str | None = None, sha256: str | None = None, force: bool = False) -> Path:
     """Download (or copy, for a local path) a product archive, check its SHA-256, unzip it; return the folder.
 
-    ``url``/``sha256`` default to the catalog entry. Raises if the product is not published yet or the
-    checksum does not match.
+    ``url``/``sha256`` default to the catalog entry. A rolling product (refreshed on a schedule, e.g. gnss)
+    publishes its checksum next to the archive; the cached copy is kept while that checksum is unchanged and
+    replaced when a newer archive is out. Raises if the product is not published yet or the checksum does
+    not match.
     """
     p = products().get(name, {})
+    explicit = url is not None
     url, sha256 = url or p.get("url"), sha256 or p.get("sha256")
     if not url:
         raise LookupError(
@@ -59,7 +74,13 @@ def fetch(name: str, url: str | None = None, sha256: str | None = None, force: b
     root = cache_dir() / name
     archive = root / Path(url.split("?")[0]).name
     target = root / "extracted"
-    if target.exists() and not force:
+    if sha256 is None and not explicit and p.get("sha256_url"):
+        sha256 = _remote_sha256(p["sha256_url"])
+        if sha256 is None and target.exists():
+            return target  # offline: keep the cached copy
+        if target.exists() and archive.exists() and _sha256(archive) == sha256 and not force:
+            return target
+    elif target.exists() and not force:
         return target
     root.mkdir(parents=True, exist_ok=True)
     if Path(url).expanduser().exists():

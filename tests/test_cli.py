@@ -64,3 +64,28 @@ def test_cli_list(capsys):
 
     assert main(["list"]) == 0
     assert "model" in capsys.readouterr().out
+
+
+def test_rolling_fetch_follows_published_checksum(tmp_path, monkeypatch):
+    """A rolling product (weekly GNSS) keeps its cache while the published <file>.sha256 is unchanged,
+    replaces it when a newer archive is out, and keeps it when the checksum cannot be reached (offline)."""
+    monkeypatch.setenv("RAINIER3D_DATA", str(tmp_path / "cache"))
+    src = tmp_path / "rainier3d_gnss.zip"
+
+    def publish(text):
+        with zipfile.ZipFile(src, "w") as z:
+            z.writestr("gnss/summary.json", text)
+        return hashlib.sha256(src.read_bytes()).hexdigest()
+
+    entry = {"url": str(src), "sha256_url": "https://example.org/rainier3d_gnss.zip.sha256", "rolling": True}
+    monkeypatch.setattr(api, "products", lambda: {"gnss": entry})
+    remote = {"sha": publish('{"as_of": "2026-09-21"}')}
+    monkeypatch.setattr(api, "_remote_sha256", lambda url: remote["sha"])
+    out = api.fetch("gnss")
+    assert "09-21" in (out / "gnss" / "summary.json").read_text()
+    publish("stale local file that must not be read")  # unchanged checksum -> cache is kept
+    assert "09-21" in (api.fetch("gnss") / "gnss" / "summary.json").read_text()
+    remote["sha"] = publish('{"as_of": "2026-09-28"}')  # new refresh -> replaced
+    assert "09-28" in (api.fetch("gnss") / "gnss" / "summary.json").read_text()
+    remote["sha"] = None  # offline -> cached copy
+    assert "09-28" in (api.fetch("gnss") / "gnss" / "summary.json").read_text()

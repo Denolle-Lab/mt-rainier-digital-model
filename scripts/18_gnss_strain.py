@@ -10,11 +10,15 @@
   data/processed/edifice_load.zarr      stress from the edifice weight on the model levels L1-L3 (Boussinesq
                                         half-space)
 
-Usage: pixi run s18
+The as_of date is the one S17 used (data/processed/gnss/fetch.json). --no-load skips the edifice load, which
+needs the local model.zarr and does not change with the GNSS data (the weekly refresh runs without it).
+
+Usage: pixi run s18 [-- --no-load]
 """
 
 from __future__ import annotations
 
+import argparse
 import json
 import logging
 
@@ -151,9 +155,14 @@ def daily_strain(sel, series, xy, min_sites=4):
 
 def main():
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--no-load", action="store_true", help="skip the edifice load (needs model.zarr)")
+    a = ap.parse_args()
     dom = load_domain()
     cfg = yaml.safe_load((REPO / "configs" / "gnss.yaml").read_text())
     gdir, odir = dom.path("processed") / "gnss", dom.path("outputs") / "gnss"
+    fetched = json.loads((gdir / "fetch.json").read_text()) if (gdir / "fetch.json").exists() else {}
+    as_of = fetched.get("as_of", cfg["as_of"])
     odir.mkdir(parents=True, exist_ok=True)
     daily = pd.read_parquet(gdir / "daily.parquet")
     steps = pd.read_csv(gdir / "steps.csv")
@@ -243,7 +252,7 @@ def main():
         "method": "MIDAS velocities; adaptive Gaussian-weighted velocity-gradient fit",
         "archives": "PANGA (CWU) primary, UNR (NGL) where PANGA has no site; UNR aligned to PANGA by a "
         "translation + rotation fit on shared sites",
-        "as_of": cfg["as_of"],
+        "as_of": as_of,
         "frame_fit_rms_m_per_yr": rms,
     }
     ds.to_netcdf(gdir / "strain_grid.nc")
@@ -258,6 +267,8 @@ def main():
 
     # daily strain of the station groups around each region
     summary = {
+        "as_of": as_of,
+        "last_day": fetched.get("last_day"),
         "frame_fit": {"shared_sites": nshared, "rms_mm_per_yr": rms * 1e3},
         "regions": {},
         "qc_flagged": dict(zip(flagged.site, flagged.flag, strict=True)),
@@ -293,6 +304,11 @@ def main():
             U["dilatation_sigma"] * 1e9,
             U["max_shear"] * 1e9,
         )
+
+    if a.no_load:
+        (odir / "summary.json").write_text(json.dumps(summary, indent=1, default=float))
+        log.info("wrote %s, %s (edifice load skipped)", gdir / "strain_grid.nc", odir / "summary.json")
+        return
 
     # edifice load on the model levels (surface and level grids are geometry only: calibration-independent)
     lc = cfg["load"]
