@@ -42,7 +42,20 @@ rainier3d export model --format specfem --bbox -122.0 46.7 -121.6 47.0 --out out
 rainier3d export model --format nll --dx 500 --dz 500 --out out/nll/rainier3d   # NonLinLoc P and S grids
 rainier3d export model --format emc --out out/rainier3d_emc.nc
 rainier3d export surface --layers elevation soil_thickness ice_thickness --out out/surface/   # GeoTIFFs
+rainier3d export model --format pylith --dx 1000 --dz 500 --out out/pylith/rainier3d_elastic.spatialdb
 ```
+
+**For PyLith.** `--format pylith` writes two files:
+- a spatialdata `SimpleGridDB` of the elastic properties PyLith's isotropic linear-elastic material reads:
+  `density` (kg/m³), `vs` and `vp` (m/s), in UTM 10N metres with z the elevation (`crs-string = EPSG:32610`);
+- a `.cfg` snippet that points a material's `db_auxiliary_field` at the database.
+
+At 1 km × 500 m the database has 257,250 nodes (13 MB). Air cells carry the rock values below them, so a mesh
+that follows the topography finds rock everywhere. Two limits:
+- **Model box only.** The database covers the model box. A PyLith domain larger than the box needs a regional
+  database outside it, for example CVM v1.7 or CRESCENT combined in a `CompositeDB`.
+- **Header format.** Check the header against the spatialdata version in use; the format follows the spatialdata
+  `SimpleGridDB` documentation.
 
 ```python
 import rainier3d.api as r3

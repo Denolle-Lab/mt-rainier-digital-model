@@ -835,6 +835,7 @@ Resampled grids are interpolated linearly within each level. Cells above the gro
 | NonLinLoc 3D grids (P, S), slowness × cell size | UTM 10N km, depth down below sea level, `TRANSFORM NONE` | Grid2Time, NLLoc |
 | EMC netCDF3 | longitude, latitude, depth below sea level (km) | EarthScope Earth Model Collaboration tools |
 | SPECFEM3D `tomography_model.xyz` | UTM 10N m, elevation up, x fastest | SPECFEM3D Cartesian |
+| PyLith spatial database (SimpleGridDB): density, Vs, Vp, with a parameter snippet | UTM 10N m, elevation up | PyLith static and quasi-static elasticity |
 | CSV | x, y, z and variables, one row per node | spreadsheets, GIS |
 | GeoTIFF (surface layers) | UTM 10N, 100 m | GIS |
 
