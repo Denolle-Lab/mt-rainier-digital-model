@@ -11,7 +11,7 @@
       "description": "Fused 3D model: levels L1-L3 (Vp, Vs, rho, Qp, Qs, units, alteration, geology and regional inputs) and the surface layers, UTM 10N + NAVD88 (xarray DataTree, zarr v3)",
       "license": "CC-BY-4.0 (derived product); see docs/data_policy.md for each input",
       "excluded": [],
-      "cite": "Denolle, M. and Yao, D. (2026). rainier3d: a geology-driven 3D velocity model of Mount Rainier. https://github.com/Denolle-Lab/mt-rainier-digital-model"
+      "cite": "Denolle, M., Yao, D., Hemmett, M., Köpfli, M., Han, S., and Kidiwela, M. (2026). rainier3d: a geology-driven 3D velocity model of Mount Rainier. https://github.com/Denolle-Lab/mt-rainier-digital-model"
     },
     "gnss": {
       "version": "weekly",
