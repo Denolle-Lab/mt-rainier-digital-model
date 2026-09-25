@@ -67,7 +67,6 @@ class Grid:
             out[:, k] = (self.sample(f, p + e) - self.sample(f, p - e)) / (2 * h)
         return out
 
-
     def sample2d(self, f_xy: np.ndarray, p: np.ndarray) -> np.ndarray:
         idx = ((np.atleast_2d(p)[:, :2] - self.o[:2]) / self.dx).T
         return map_coordinates(f_xy, idx, order=1, mode="nearest", output=np.float64)

@@ -21,7 +21,12 @@ def main():
     a = ap.parse_args()
     dom = load_domain(a.profile)
     surf = read(dom.path("processed") / "surface.zarr")
-    surf2, levels = rules.build(dom, surf, units_config())
+    cfg = units_config()
+    if cfg["geometry"]["alteration"].get("source") == "finn_2001":
+        # near-surface alteration maps from the helicopter EM survey (S22), on the same surface grid
+        alt = read(dom.path("processed") / "alteration_finn2001.zarr")
+        surf = surf.merge(alt.reindex_like(surf, method="nearest", tolerance=1.0), compat="override")
+    surf2, levels = rules.build(dom, surf, cfg)
     tree = xr.DataTree.from_dict({"/surface": surf2, **{f"/{k}": v for k, v in levels.items()}})
     tree.attrs = {
         "crs": dom.crs,

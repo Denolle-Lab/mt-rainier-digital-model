@@ -60,7 +60,16 @@ geometry:
     semi_axis_h_m: 5000
     semi_axis_v_m: 6500
     source_key: moran_1999
-  alteration:                     # conduit-centred Gaussian; M2 replaces with Finn et al. 2001 HEM/magnetics
+  alteration:
+    source: finn_2001             # finn_2001 (S22 maps from the 1996 helicopter EM survey) or gaussian (below)
+    finn_2001:                    # rainier3d.alteration.finn2001; S22 writes data/processed/alteration_finn2001.zarr
+      start_decades: 0.3          # intensity > 0 from 0.3 decades (x0.5) below each frequency's edifice median; m1_placeholder
+      full_decades: 1.0           # intensity 1 at one decade (x0.1) below it; m1_placeholder
+      doi_skin_fraction: 0.5      # depth of investigation = 0.5 x skin depth; m1_placeholder
+      doi_max_m: 150              # 837 Hz reaches ~150 m beneath the ice (Rystrom et al. 2000)
+      units: [6, 7]               # edifice lavas and young volcanic rocks only
+      source_key: rystrom_2000
+    # gaussian placeholder (M1): conduit-centred, fading to zero at z_bottom
     r0_m: 1500
     z_bottom: 1000                # m NAVD88; alteration fades to zero at this elevation
     source_key: john_2008

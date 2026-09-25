@@ -107,6 +107,14 @@ finn_2001:
   verified: web-2026-09-23
   role: extent of altered rock; M1 alteration field is a placeholder to be replaced by these grids
 
+rystrom_2000:
+  title: Rystrom, Finn & Deszcz-Pan 2000, High resolution, low altitude aeromagnetic and electromagnetic survey of Mt Rainier, USGS Open-File Report 00-027
+  doi: 10.3133/ofr200027
+  url: https://pubs.usgs.gov/of/2000/ofr-00-0027/data/
+  license: public domain (USGS)
+  verified: web-2026-09-24 (grids and flight lines downloaded; registration checked against topography and ice)
+  role: apparent resistivity (33 kHz, 4737 Hz, 4341 Hz, 837 Hz) and reduced-to-pole magnetic grids for the alteration field (S22)
+
 john_2008:
   title: John, Sisson, Breit, Rye & Vallance 2008, JVGR, hydrothermal alteration at Mount Rainier
   doi: 10.1016/j.jvolgeores.2008.04.004

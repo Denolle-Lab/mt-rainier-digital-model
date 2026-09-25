@@ -125,14 +125,28 @@ CONTINUOUS = {
     ),
     "alteration_surface": (
         "alteration_surface",
-        "Hydrothermal alteration",
+        "Hydrothermal alteration, surface rock",
         "Geology",
         "index 0 to 1",
         0,
         1,
-        "cmc.bilbao",
+        "cmc.bilbao_r",
         False,
-        "model alteration field in the top rock cell",
+        "From the 1996 helicopter EM survey (Finn et al. 2001): low apparent resistivity of the edifice "
+        "lavas, "
+        "top ~20-150 m below the glacier bed; transparent below 0.1 and outside the survey",
+    ),
+    "apparent_magnetization": (
+        "apparent_magnetization",
+        "Apparent magnetisation (terrain-correlated)",
+        "Geology",
+        "A/m",
+        -1,
+        5,
+        "cmc.vik",
+        False,
+        "Reduced-to-pole anomaly of the 1996 survey regressed on the terrain effect, 500 m window; "
+        "low values mark demagnetised (altered) or reversed rock",
     ),
     "vs_top": (
         "vs_top",
@@ -253,6 +267,15 @@ def surface_derived(tree: xr.DataTree) -> dict[str, np.ndarray]:
     n = top.sum(0)
     out = {}
     for key, var in (("vs_top", "vs"), ("alteration_surface", "alteration")):
+        if key == "alteration_surface" and "alt_a_surface" in s:  # S22 map at the surface resolution
+            cov = (
+                s["alt_coverage"].values > 0
+                if "alt_coverage" in s
+                else np.isfinite(s["alt_a_surface"].values)
+            )
+            a = s["alt_a_surface"].values  # drape only altered ground (>= 0.1) so the imagery shows elsewhere
+            out[key] = np.where(cov & (a >= 0.1), a, np.nan)
+            continue
         v = np.where(top, l1[var].values, 0.0).sum(0) / np.maximum(n, 1)
         v = np.where(n > 0, v, np.nan)
         # L1 is coarser than the surface grid: repeat cells onto it
@@ -360,8 +383,14 @@ def export_layers(tree: xr.DataTree, dom, manifest: dict, out: Path, flowlines=N
         keys = list(filter(None, s[var].attrs.get("gaia:source_keys", "").split(","))) if var in s else []
         if key in ("vs_top", "alteration_surface"):
             keys = (
-                ["cvm17", "crescent_gen0", "dnr_gems_100k"] if key == "vs_top" else ["finn_2001", "john_2008"]
+                ["cvm17", "crescent_gen0", "dnr_gems_100k"]
+                if key == "vs_top"
+                else ["finn_2001", "rystrom_2000"]
+                if "alt_a_surface" in s
+                else ["finn_2001", "john_2008"]
             )
+        if key == "apparent_magnetization":
+            keys = ["finn_2001", "rystrom_2000"]
         legend = {"min": vmin, "max": vmax, "log": log, "ramp": _ramp(_cmap(cmap)), "cmap": cmap}
         emit(key, label, group, a, False, legend, units, note, keys, log)
 
@@ -463,6 +492,7 @@ VOLUME_VARS = {
     "vp": ("Vp", "m/s", 1500, 7200, "cmc.roma"),
     "vpvs": ("Vp/Vs", "", 1.5, 2.3, "cmc.vik"),
     "rho": ("Density", "kg/m³", 1800, 3100, "cmc.lapaz_r"),
+    "alteration": ("Hydrothermal alteration", "0-1", 0, 1, "cmc.bilbao_r"),
     "unit": ("Model units", "", 0, 0, None),
 }
 
@@ -501,7 +531,7 @@ def export_volume(tree: xr.DataTree, dom, atlas: Path, dx: float = 500.0, dz: fl
 
     out = atlas / "model" / "volume"
     out.mkdir(parents=True, exist_ok=True)
-    g = uniform(tree, dx=dx, dz=dz, z_bot=-20000.0, variables=("vp", "vs", "rho"))
+    g = uniform(tree, dx=dx, dz=dz, z_bot=-20000.0, variables=("vp", "vs", "rho", "alteration"))
     air = g["air"].values.astype(bool)
     g["vpvs"] = g["vp"] / g["vs"]
     # units: nearest cell of the level that holds each depth (categorical, never interpolated)

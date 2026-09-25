@@ -88,7 +88,9 @@ def ellipsoid(xx, yy, zz, cx, cy, cz, ah, av):
 
 def surface_on_level(surf: xr.Dataset, lev: Level) -> xr.Dataset:
     """Surface fields at the level's cell centres: linear for continuous fields, nearest for units."""
-    cont = surf[["elevation", "ice_thickness", "edifice_base"]].interp(x=lev.x, y=lev.y, method="linear")
+    alt = [v for v in surf.data_vars if v.startswith(("alt_a_", "alt_doi_"))]  # S22 maps, when present
+    cont = surf[["elevation", "ice_thickness", "edifice_base", *alt]]
+    cont = cont.interp(x=lev.x, y=lev.y, method="linear")
     cat = surf[["surface_unit", "bedrock_unit", "bedrock_unit_under", "footprint"]]
     cat = cat.sel(x=lev.x, y=lev.y, method="nearest")
     cat = cat.assign_coords(x=lev.x, y=lev.y)
@@ -136,9 +138,19 @@ def build_level(
     unit = np.where(inside & (unit != AIR), MAGMA, unit).astype(np.uint8)
 
     al = geo["alteration"]
-    r2 = ((xx - summit_xy[0]) ** 2 + (yy - summit_xy[1]) ** 2)[None]
-    fz = np.clip((z - al["z_bottom"]) / (summit_z - al["z_bottom"]), 0, 1)
-    alt = np.exp(-r2 / al["r0_m"] ** 2) * fz
+    if al.get("source") == "finn_2001":
+        # S22 maps from the helicopter EM survey; depth below the glacier bed (the EM sounds the rock)
+        from rainier3d.alteration.finn2001 import alteration_3d
+
+        fields = {v: s[v].fillna(0).values[None] for v in s.data_vars if v.startswith(("alt_a_", "alt_doi_"))}
+        if not fields:
+            raise ValueError("alteration source finn_2001 needs the S22 maps: run S22, then S3")
+        allowed = np.isin(unit, al["finn_2001"]["units"])
+        alt = alteration_3d(fields, d - np.nan_to_num(ice), allowed)
+    else:
+        r2 = ((xx - summit_xy[0]) ** 2 + (yy - summit_xy[1]) ** 2)[None]
+        fz = np.clip((z - al["z_bottom"]) / (summit_z - al["z_bottom"]), 0, 1)
+        alt = np.exp(-r2 / al["r0_m"] ** 2) * fz
     alt = np.where((unit == AIR) | (unit == ICE), 0.0, alt).astype(np.float32)
 
     coords = {"z": lev.z, "y": lev.y, "x": lev.x}
