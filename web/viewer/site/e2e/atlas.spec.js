@@ -59,7 +59,7 @@ test("(d) the summit reaches 1 m detail", async ({ page }) => {
 });
 
 test("(e) 2D flattens the terrain", async ({ page }) => {
-  await dock(page, "Layers");
+  await dock(page, "View");
   await page.getByRole("button", { name: "2D" }).click();
   await page.waitForFunction(() => window.__rainier.U.flat.value > 0.99, null, { timeout: 5_000 });
 });
@@ -107,7 +107,7 @@ test("(h) the cut hides stations on the removed side", async ({ page }) => {
 
 test("(i) 2D hides the block frame, 3D brings it back", async ({ page }) => {
   await expect(page.locator(".tick").first()).toBeVisible();
-  await dock(page, "Layers");
+  await dock(page, "View");
   await page.getByRole("button", { name: "2D" }).click();
   await expect(page.locator(".tick").first()).toBeHidden();
   await page.getByRole("button", { name: "3D" }).click();
@@ -128,11 +128,11 @@ test("(j) a first visit gets a one-line hint, not a card over the map; ? opens H
 });
 
 test("(q) the map opens clear: every dock panel starts closed, stays open until its button is clicked again, and the dock moves aside for a station", async ({ page }) => {
-  for (const cls of [".controls", ".legend", ".model-panel", ".helppanel"]) await expect(page.locator(cls)).toBeHidden();
+  for (const cls of [".controls", ".quakes-panel", ".mass-panel", ".legend", ".model-panel", ".helppanel"]) await expect(page.locator(cls)).toBeHidden();
   await expect(page.locator(".goto")).toBeVisible();
-  await dock(page, "Layers"); await dock(page, "Legend");
+  await dock(page, "View"); await dock(page, "Sensors");
   await expect(page.locator(".controls")).toBeVisible(); await expect(page.locator(".legend")).toBeVisible();
-  await page.getByRole("button", { name: "Layers", exact: true }).click();
+  await page.getByRole("button", { name: "View", exact: true }).click();
   await expect(page.locator(".controls")).toBeHidden(); await expect(page.locator(".legend")).toBeVisible();
   const right = () => page.locator(".hud-dock").evaluate(e => innerWidth - e.getBoundingClientRect().right);
   expect(await right()).toBeLessThan(20);
@@ -153,7 +153,7 @@ test("(k) the navigation pad rotates about the target and turns north up", async
 
 test("(l) the subsurface section follows the cut and the slice follows its slider", async ({ page }) => {
   await page.waitForFunction(() => !!window.__rainier.volume, null, { timeout: 30_000 });
-  await dock(page, "Surface model"); await dock(page, "Layers");
+  await dock(page, "Models"); await dock(page, "View");
   await page.getByLabel("Subsurface property").selectOption("vs");
   await page.getByRole("switch", { name: "Section on the cut" }).click();
   await page.waitForFunction(() => window.__rainier.volume.section.visible, null, { timeout: 20_000 });
@@ -170,7 +170,7 @@ test("(o) strain properties draw their orientation bars on the depth slice", asy
   await page.waitForFunction(() => !!window.__rainier.volume.bars, null, { timeout: 30_000 });
   const shown = () => page.evaluate(() => Object.entries(window.__rainier.volume.bars.meshes)
     .flatMap(([k, list]) => list.filter(m => m.visible).map(() => k)));
-  await dock(page, "Surface model");
+  await dock(page, "Models");
   await page.getByLabel("Subsurface property").selectOption("wrsz_shear_rate");
   await page.getByRole("switch", { name: "Depth slice" }).click();
   await page.getByLabel("Slice elevation").fill("-5");
@@ -188,7 +188,7 @@ test("(m) the sensor legend filters: geophones show the 2025 nodes, Past adds ea
   const nodes2025 = await page.evaluate(() => window.__rainier.sensors.sites.filter(s =>
     s.kinds.includes("geophone") && s.status === "operating" && s.source.startsWith("2025")).length);
   expect(nodes2025).toBeGreaterThan(150);
-  await dock(page, "Legend");
+  await dock(page, "Sensors");
   await page.locator(".sf-kind", { hasText: "Geophone" }).click();
   expect(await on()).toBe(nodes2025);                             // operating geophones = the 2025 nodes
   await page.getByRole("button", { name: "Past", exact: true }).click();
@@ -212,7 +212,7 @@ test("(n) mass movements: events sit on the ground, the legend filters them, Flo
   expect(seismic).toBeGreaterThanOrEqual(19);                     // Allstadt et al. (2017) events in the box
   expect(minOff).toBeGreaterThanOrEqual(0.015 - 1e-6);             // every point at least 15 m above the ground
   expect(maxOff).toBeLessThan(0.3);                               // and on it: the highest ground within 60 m
-  await dock(page, "Legend"); await dock(page, "Surface model");
+  await dock(page, "Mass movements"); await dock(page, "Models");
   await page.getByRole("button", { name: "Events", exact: true }).click();
   expect(await on()).toBe(n);
   await page.getByRole("button", { name: "Dated only", exact: true }).click();
@@ -230,7 +230,7 @@ test("(p) relocated catalogue: switch catalogues, 3D keeps every event below the
   const r = () => page.evaluate(() => ({ on: window.__rainier.reloc.points.visible, shown: window.__rainier.reloc.shown,
     above: window.__rainier.reloc.above }));
   expect((await r()).on).toBe(false);                             // off by default
-  await dock(page, "Surface model");
+  await dock(page, "Earthquakes");
   await page.getByRole("switch", { name: "Relocated earthquakes" }).click();
   const d3 = await r();
   expect(d3.on).toBe(true);

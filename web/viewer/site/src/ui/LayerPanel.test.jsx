@@ -42,4 +42,15 @@ describe("LayerPanel", () => {
     fireEvent.keyDown(window, { key: "t" });
     expect(onStations).toHaveBeenCalledWith(false);
   });
+  it("a panel with some parts shows and answers only those", () => {
+    const layers = { state: { cloud: true, shells: true, dots: false }, set: vi.fn() };
+    const scene = { setSeeThrough: vi.fn(), setCut: vi.fn() };
+    render(<LayerPanel layers={layers} scene={scene} onStations={vi.fn()} parts={["ground"]} />);
+    expect(screen.queryByRole("switch", { name: /Dots/ })).toBeNull();
+    expect(screen.queryByRole("switch", { name: /Stations/ })).toBeNull();
+    fireEvent.keyDown(window, { key: "g" });
+    expect(layers.set).not.toHaveBeenCalled();
+    fireEvent.keyDown(window, { key: "x" });
+    expect(scene.setCut).toHaveBeenCalledWith({ on: true, angle: 90, offset: 0 });
+  });
 });

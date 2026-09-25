@@ -7,7 +7,7 @@ export default function QuakeLegend({ meta, drawn }) {
   const notDrawn = drawn != null ? meta.count - drawn : meta.aboveGround;
   return (
     <div>
-      <div className="eyebrow">Earthquakes</div>
+      <div className="eyebrow">Event density</div>
       <div className="qramp" />
       <div className="ramp-labels"><span>few</span><span>many</span></div>
       <div className="row">Shells enclose {SHELLS.map(s => `${Math.round(s.fraction * 100)}`).join(" / ")}% of events</div>
