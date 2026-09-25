@@ -731,11 +731,13 @@ CANOPY_STYLE = {
     "gedi_pai": ("Plant area index, GEDI L2B", 0, 6, "cmc.bamako_r"),
     "gedi_canopy_height": ("Canopy height, GEDI L3", 0, 60, "cmc.bamako_r"),
     "gedi_biomass": ("Aboveground biomass, GEDI L4B", 0, 600, "cmc.lajolla"),
+    "gedi_biomass_se": ("Biomass standard error, GEDI L4B", 0, 100, "cmc.lajolla"),
 }
 
 
 def rgb_texture(src: str, manifest: dict, width: int = 4080) -> np.ndarray:
-    """A 3-band image (any CRS) warped to the overview box; alpha 0 where all bands are 0 or 255 (masked)."""
+    """A 3-band image (any CRS) warped to the overview box; alpha 0 where all bands are 0 or 255 (masked).
+    Nearest-neighbour, so a rendered map keeps its exact legend colours and its mask."""
     import rasterio
 
     t, w, h = overview_grid(manifest, width)
@@ -748,7 +750,7 @@ def rgb_texture(src: str, manifest: dict, width: int = 4080) -> np.ndarray:
                 dst,
                 dst_transform=t,
                 dst_crs="EPSG:4326",
-                resampling=Resampling.bilinear,
+                resampling=Resampling.nearest,
             )
             out[..., k] = dst
     rgb = out[..., :3].astype(int)
@@ -756,15 +758,18 @@ def rgb_texture(src: str, manifest: dict, width: int = 4080) -> np.ndarray:
     return out
 
 
-def append_canopy_layers(atlas: Path, dom, ds: xr.Dataset, cfg: dict) -> list[str]:
-    """Add S19 layers and the soil image to <atlas>/model/layers.json, replacing same-key entries."""
+def append_canopy_layers(atlas: Path, dom, ds: xr.Dataset, cfg: dict, keys=None) -> list[str]:
+    """Add S19 layers and the soil image to <atlas>/model/layers.json, replacing same-key entries.
+    ``keys`` limits the update to those layers (default: all)."""
+    from rainier3d.surface.canopy import source_path
+
     out = atlas / "model"
     manifest = json.loads((atlas / "manifest.json").read_text())
     meta = json.loads((out / "layers.json").read_text())
     reg, specs = _sources(), {s["name"]: s for s in cfg["layers"]}
     new = []
     for key, (label, vmin, vmax, cmap) in CANOPY_STYLE.items():
-        if key not in ds:
+        if key not in ds or (keys is not None and key not in keys):
             continue
         a = ds[key].values.astype("float32")
         tex, val = (
@@ -800,7 +805,12 @@ def append_canopy_layers(atlas: Path, dom, ds: xr.Dataset, cfg: dict) -> list[st
             }
         )
     for im in cfg.get("images", []):
-        src = str(Path(im["file"].replace("~/Downloads", str(Path(cfg["root"]).expanduser()))).expanduser())
+        if keys is not None and im["name"] not in keys:
+            continue
+        src = source_path(im, Path(cfg["root"]).expanduser())
+        if not src.exists():
+            continue
+        src = str(src)
         tname = _save_texture(rgb_texture(src, manifest), out / im["name"], False)
         new.append(
             {

@@ -18,9 +18,14 @@ from rainier3d.config.domain import Domain
 from rainier3d.surface.layers import _da, warp
 
 
+def source_path(spec: dict, root: Path) -> Path:
+    """The delivered file of a layer or image spec, with ~/Downloads replaced by the configured root."""
+    return Path(spec["file"].replace("~/Downloads", str(root))).expanduser()
+
+
 def layer(dom: Domain, spec: dict, root: Path) -> xr.DataArray:
     """One product from its spec: file, resampling, valid range, units, long name, source key, native res."""
-    src = str(Path(spec["file"].replace("~/Downloads", str(root))).expanduser())
+    src = str(source_path(spec, root))
     rs = {"average": Resampling.average, "bilinear": Resampling.bilinear, "mode": Resampling.mode}[
         spec["resampling"]
     ]
