@@ -752,7 +752,9 @@ The code and this paper were written with an AI coding assistant (Claude, Anthro
 
 # Author contributions {.authorcontribution .unnumbered}
 
-MD designed the model, the calibration and the validation and directed the work. DY designed and built the three-dimensional viewer. MKö produced the vegetation products of the canopy-storage project (lidar canopy height and cover, Sentinel-2 leaf area index and the gridded GEDI products). MH, SH and MKi: contributions to be stated.
+MD designed the model, the calibration and the validation and directed the work. DY designed and built the three-dimensional viewer. MKö produced the vegetation products of the canopy-storage project (lidar canopy height and cover, Sentinel-2 leaf area index and the gridded GEDI products).
+
+<!-- TODO(#13): contributions of MH, SH and MKi, to be supplied by the authors. -->
 
 # Competing interests {.competinginterests .unnumbered}
 
