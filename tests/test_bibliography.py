@@ -25,3 +25,25 @@ def test_cross_references_are_not_citations():
     mod = _bib_script()
     found = {k for k in mod.CITE_RE.findall("see [@fig:map] and [@tbl:raw]; @eq:crack; [@ni2023]; x@y.z")}
     assert {k for k in found if k.split(":")[0] not in mod.XREF} == {"ni2023"}
+
+
+def test_missing_keys_are_reported_by_cause(tmp_path, monkeypatch):
+    """A registry key whose DOI fetch fails is reported as a fetch failure, an unknown key as unregistered."""
+    import pytest
+
+    mod = _bib_script()
+    (tmp_path / "configs").mkdir()
+    (tmp_path / "configs" / "sources.yaml").write_text("known2020:\n  title: t\n  doi: 10.9999/none\n")
+    (tmp_path / "docs" / "paper").mkdir(parents=True)
+    (tmp_path / "docs" / "paper" / "p.md").write_text("[@known2020] and [@unknown2021]\n")
+    monkeypatch.setattr(mod, "REPO", tmp_path)
+    monkeypatch.setattr(mod, "PAPER", tmp_path / "docs" / "paper")
+    monkeypatch.setattr(mod, "BIB", tmp_path / "docs" / "references.bib")
+    monkeypatch.setattr(mod, "CSV", tmp_path / "docs" / "citations.csv")
+    monkeypatch.setattr(mod, "SCAN", ["configs"])
+    monkeypatch.setattr(mod, "fetch", lambda doi: None)
+    with pytest.raises(SystemExit) as e:
+        mod.main()
+    assert "could not be fetched from doi.org for known2020" in str(e.value)
+    assert "not in configs/sources.yaml: unknown2021" in str(e.value)
+    assert not (tmp_path / "docs" / "references.bib").exists()

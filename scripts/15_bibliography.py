@@ -303,11 +303,22 @@ def main():
 
     # every key the paper cites must be produced here; otherwise stop before overwriting references.bib
     produced = {re.match(r"@\w+\{([^,]+),", e).group(1) for e in entries}
-    missing = sorted(paper_keys() - produced)
+    missing = paper_keys() - produced
     if missing:
+        failed = {r["key"] for r in rows if r["fetched"] == "failed"}
+        msg = []
+        if missing & failed:
+            msg.append(
+                "BibTeX could not be fetched from doi.org for "
+                f"{', '.join(sorted(missing & failed))}: check the DOI and the network, then rerun"
+            )
+        if missing - failed:
+            msg.append(
+                f"not in configs/sources.yaml: {', '.join(sorted(missing - failed))}; add them "
+                "(doi, or url with bib_author and bib_year)"
+            )
         raise SystemExit(
-            f"the paper cites keys this run does not produce: {', '.join(missing)}. "
-            "Add them to configs/sources.yaml (doi, or url with bib_author/bib_year); "
+            "the paper cites keys this run does not produce. " + "; ".join(msg) + ". "
             "references.bib was not written."
         )
 
