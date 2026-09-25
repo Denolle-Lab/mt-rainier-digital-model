@@ -1,0 +1,153 @@
+description: 'Depth-dependent factors on the regional Vp and Vs, applied in S5 before
+  fusion: V_regional * exp(interp(depth below ground, knots_m, log_factor)); constant
+  beyond the ends.'
+knots_m:
+- 0.0
+- 1000.0
+- 2000.0
+- 4000.0
+- 7000.0
+- 11000.0
+- 16000.0
+- 25000.0
+vp:
+  log_factor:
+  - 0.17362
+  - 0.13045
+  - 0.07006
+  - 0.00335
+  - -0.02709
+  - -0.02146
+  - -0.01496
+  - -0.0128
+  factor:
+  - 1.1896
+  - 1.1393
+  - 1.0726
+  - 1.0034
+  - 0.9733
+  - 0.9788
+  - 0.9852
+  - 0.9873
+vs:
+  log_factor:
+  - 0.07472
+  - 0.10114
+  - 0.11866
+  - 0.09395
+  - 0.05778
+  - -0.00983
+  - -0.03645
+  - -0.0495
+  factor:
+  - 1.0776
+  - 1.1064
+  - 1.126
+  - 1.0985
+  - 1.0595
+  - 0.9902
+  - 0.9642
+  - 0.9517
+vpvs_floor: 1.6
+vpvs_floor_source: christensen_1996
+source_keys:
+- comcat_uw
+- pavlis_booker_1980
+- kissling_1994
+- lomax_2000
+data:
+  picks: PNSN analyst P and S picks (ComCat), configs/validation_events.csv
+  n_events: 88
+  n_p: 1823
+  n_s: 1280
+  n_stations: 50
+  hypocentres: relocated in 3D at every iteration (S13); catalogue locations only
+    as starting points
+  pick_sigma_s:
+    P: 0.14
+    S: 0.23
+method:
+  solver: pykonal PointSourceSolver, reciprocity (one field per station and phase)
+  grid_dx_m: 500
+  location: L1 grid search +-15 km around the catalogue epicentre, then Huber Gauss-Newton
+    (k = 1.5 sigma, picks beyond 5.0 sigma rejected)
+  derivatives: ray integrals down grad T (step dx/4)
+  separation: Pavlis & Booker (1980), per event
+  lam_s_rel: 0.1
+  lam_d_rel: 0.01
+  iterations_fitting_half: 4
+  iterations_all: 3
+  split: events alternating in origin-time order
+held_out:
+  before:
+    P:
+      n: 948
+      rms_s: 0.12040023571249092
+      median_abs_s: 0.07150633341953005
+      rejected: 1
+    S:
+      n: 654
+      rms_s: 0.3172046521677334
+      median_abs_s: 0.19523348637042037
+      rejected: 1
+  after:
+    P:
+      n: 949
+      rms_s: 0.09293345326621213
+      median_abs_s: 0.05075961288222708
+      rejected: 0
+    S:
+      n: 655
+      rms_s: 0.18883955961198334
+      median_abs_s: 0.11873437726617198
+      rejected: 0
+all_events:
+  before:
+    P:
+      n: 1819
+      rms_s: 0.12199304029818021
+      median_abs_s: 0.07270078730408125
+      rejected: 4
+    S:
+      n: 1278
+      rms_s: 0.3157665674811244
+      median_abs_s: 0.19157082704566086
+      rejected: 2
+  after:
+    P:
+      n: 1820
+      rms_s: 0.09256748455851348
+      median_abs_s: 0.0503935498240321
+      rejected: 3
+    S:
+      n: 1280
+      rms_s: 0.188749758049365
+      median_abs_s: 0.11780248835124096
+      rejected: 0
+vpvs_1_10km:
+  before:
+    median: 1.840774290979774
+    p05: 1.761595684332828
+    frac_lt_1_65: 0.002867669698725074
+  after:
+    median: 1.7199462433754773
+    p05: 1.6553261309322564
+    frac_lt_1_65: 0.04257667559062515
+fd_check:
+  parameter: S log-factor at 4000 m
+  n_picks: 1280
+  slope_ray_on_fd: 0.9303788926521652
+  corr: 0.9953519979085641
+  rms_fd_s: 2.02029043040689
+  rms_diff_s: 0.1299938208847554
+lam_scan:
+- lam_s: 0.01
+  held_out_linear_nrms: 0.721097051365934
+- lam_s: 0.1
+  held_out_linear_nrms: 0.7184362407827053
+- lam_s: 1.0
+  held_out_linear_nrms: 0.723044281690828
+- lam_s: 10.0
+  held_out_linear_nrms: 0.7301795385726916
+runtime_min: 8.3
+date: '2026-09-24'

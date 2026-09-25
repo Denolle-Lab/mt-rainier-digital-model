@@ -19,14 +19,15 @@ from pathlib import Path
 import numpy as np
 import xarray as xr
 
-VARS = ("vp", "vs", "rho", "qp", "qs")
-UNITS = {"vp": "m/s", "vs": "m/s", "rho": "kg/m3", "qp": "1", "qs": "1"}
+VARS = ("vp", "vs", "rho", "qp", "qs", "alteration")
+UNITS = {"vp": "m/s", "vs": "m/s", "rho": "kg/m3", "qp": "1", "qs": "1", "alteration": "1"}
 LONG = {
     "vp": "P-wave speed",
     "vs": "S-wave speed",
     "rho": "density",
     "qp": "P quality factor",
     "qs": "S quality factor",
+    "alteration": "hydrothermal alteration intensity (0 fresh, 1 fully altered)",
 }
 
 
@@ -168,7 +169,7 @@ def write_emc(
     xi = xr.DataArray(X, dims=("latitude", "longitude"))
     yi = xr.DataArray(Y, dims=("latitude", "longitude"))
     zi = xr.DataArray(-np.asarray(depths_km) * 1000.0, dims=("depth",))
-    sub = grid[["vp", "vs", "rho", "air"]].interp(x=xi, y=yi, z=zi, method="linear")
+    sub = grid[["vp", "vs", "rho", "alteration", "air"]].interp(x=xi, y=yi, z=zi, method="linear")
     out = xr.Dataset(
         coords={
             "depth": (
@@ -180,7 +181,12 @@ def write_emc(
             "longitude": ("longitude", lon, {"units": "degrees_east"}),
         }
     )
-    for v, scale, u in (("vp", 1e-3, "km.s-1"), ("vs", 1e-3, "km.s-1"), ("rho", 1e-3, "g.cm-3")):
+    for v, scale, u in (
+        ("vp", 1e-3, "km.s-1"),
+        ("vs", 1e-3, "km.s-1"),
+        ("rho", 1e-3, "g.cm-3"),
+        ("alteration", 1.0, "1"),
+    ):
         a = sub[v].where(sub["air"] < 0.5).transpose("depth", "latitude", "longitude") * scale
         out[v] = a.astype(np.float32)
         out[v].attrs = {"units": u, "long_name": LONG[v], "_FillValue": np.float32(np.nan)}

@@ -20,6 +20,7 @@ nps_gri_mora:
 fiske_1963:
   title: Fiske, Hopson & Waters 1963, Geology of Mount Rainier National Park, USGS PP 444
   url: https://pubs.usgs.gov/pp/0444/report.pdf
+  doi: 10.3133/pp444
   verified: web-2026-09-23
   role: stratigraphy and unit thicknesses of the pre-volcanic basement
 
@@ -105,6 +106,14 @@ finn_2001:
   doi: 10.1038/35054533
   verified: web-2026-09-23
   role: extent of altered rock; M1 alteration field is a placeholder to be replaced by these grids
+
+rystrom_2000:
+  title: Rystrom, Finn & Deszcz-Pan 2000, High resolution, low altitude aeromagnetic and electromagnetic survey of Mt Rainier, USGS Open-File Report 00-027
+  doi: 10.3133/ofr200027
+  url: https://pubs.usgs.gov/of/2000/ofr-00-0027/data/
+  license: public domain (USGS)
+  verified: web-2026-09-24 (grids and flight lines downloaded; registration checked against topography and ice)
+  role: apparent resistivity (33 kHz, 4737 Hz, 4341 Hz, 837 Hz) and reduced-to-pole magnetic grids for the alteration field (S22)
 
 john_2008:
   title: John, Sisson, Breit, Rye & Vallance 2008, JVGR, hydrothermal alteration at Mount Rainier
@@ -263,3 +272,49 @@ christensen_1996:
   doi: 10.1029/95JB03446
   verified: web-2026-09-24 (DOI resolved)
   role: Vp/Vs floor of 1.6 on the S-calibrated regional Vs (lowest ratios of quartz-rich crustal rocks)
+
+# ---- joint calibration with 3D relocation (S13, S14)
+pavlis_booker_1980:
+  title: Pavlis & Booker 1980, The mixed discrete-continuous inverse problem, application to the simultaneous determination of earthquake hypocenters and velocity structure, JGR 85(B9)
+  doi: 10.1029/JB085iB09p04801
+  verified: web-2026-09-24 (Crossref)
+  role: parameter separation (hypocentres removed from the velocity update)
+
+kissling_1994:
+  title: Kissling, Ellsworth, Eberhart-Phillips & Kradolfer 1994, Initial reference models in local earthquake tomography, JGR 99(B10)
+  doi: 10.1029/93JB03138
+  verified: web-2026-09-24 (Crossref)
+  role: minimum 1D model scheme (alternating relocation and velocity update)
+
+lomax_2000:
+  title: Lomax, Virieux, Volant & Berge-Thierry 2000, Probabilistic earthquake location in 3D and layered models, in Advances in Seismic Event Location (Springer)
+  doi: 10.1007/978-94-015-9536-0_5
+  verified: web-2026-09-24 (Crossref)
+  role: grid-search location on station travel-time grids (reciprocity)
+
+thurber_1983:
+  title: Thurber 1983, Earthquake locations and three-dimensional crustal structure in the Coyote Lake area, central California, JGR 88(B10)
+  doi: 10.1029/JB088iB10p08226
+  verified: web-2026-09-24 (Crossref)
+  role: ray-based derivatives in coupled hypocentre-velocity inversion
+
+white_2020:
+  title: White, Fang, Nakata & Ben-Zion 2020, PyKonal, a Python package for solving the eikonal equation in spherical and Cartesian coordinates using the fast marching method, SRL 91(4)
+  doi: 10.1785/0220190318
+  verified: web-2026-09-24 (Crossref)
+  role: eikonal solver (PointSourceSolver) for S6, S12, S13, S14
+
+huber_1964:
+  title: Huber 1964, Robust estimation of a location parameter, Ann. Math. Statist. 35(1)
+  doi: 10.1214/aoms/1177703732
+  verified: web-2026-09-24 (Crossref)
+  role: Huber loss in the 3D location (S13, S14)
+
+ulberg_2020:
+  title: Ulberg, Creager, Moran, Abers, Thelen, Levander, Kiser, Schmandt, Hansen & Crosson 2020, Local source Vp and Vs tomography in the Mount St. Helens region with the iMUSH broadband array, G3 21
+  doi: 10.17611/dp/emc.2020.imushloceq.1
+  article_doi: 10.1029/2019GC008888
+  url: https://data.earthscope.org/archive/seismology/products/emc/netcdf/iMUSH-localEQ-Ulberg-2020.r0.0-n4c.nc
+  verified: web-2026-09-24 (EMC file and metadata read; authors from Crossref)
+  note: depth axis is km below sea level (EMC page, figure captions); the netCDF long_name says below earth surface
+  role: independent check of the S13 static bias and Vp/Vs (S21)

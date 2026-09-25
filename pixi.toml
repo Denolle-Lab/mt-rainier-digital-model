@@ -39,6 +39,7 @@ pynhd = ">=0.20.0,<0.21"
 pystac-client = ">=0.9.0,<0.10"
 planetary-computer = ">=1.0.0,<2"
 odc-stac = ">=0.5.3,<0.6"
+harmonica = ">=0.7"
 
 [pypi-dependencies]
 rainier3d = { path = ".", editable = true }
@@ -64,9 +65,13 @@ s9 = "python scripts/09_export_grids.py"
 s10 = "python scripts/10_report.py"
 s11 = "python scripts/11_seismic_atlas.py"
 s12 = "python scripts/12_calibrate_vs.py"
+s13 = "python scripts/13_joint_calibration.py"
+s14 = "python scripts/14_relocate.py"
+bib = "python scripts/15_bibliography.py"
 # 3D viewer (web/viewer, React + three.js): terrain, stations and quakes from USGS/EarthScope, then S11 model layers
 viewer-data = { cmd = "python -m rainier.build --out ../site/public/atlas --cache ../../../data/raw/viewer_cache", cwd = "web/viewer/data" }
 viewer-data-test = { cmd = "pytest -q", cwd = "web/viewer/data" }
 viewer-bundle = "mkdir -p outputs && tar czf outputs/viewer-atlas-bundle.tar.gz -C web/viewer/site/public atlas"
 atlas = "python -m http.server 8765 --bind 127.0.0.1 --directory web/atlas"
 all = { depends-on = ["s1", "s2", "s3", "s4", "s5", "s6", "s7", "s8"] }
+s22 = "python scripts/22_alteration_finn2001.py"
