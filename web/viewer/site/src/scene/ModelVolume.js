@@ -1,9 +1,11 @@
 import * as THREE from "three";
+import { nearestLevel, segmentPositions } from "./strainBars.js";
 
 // The rainier3d volume below ground: a vertical section on the terrain-cut plane and a horizontal depth slice.
 // Both sample one 3D texture per property (atlas/model/volume.json) in the fragment shader: scene (x, z) km map to
 // the model's UTM grid by quadratic fits (< 0.001 cell error) and elevation maps to depth linearly. Everything
-// above the ground is discarded with the same ground test as the earthquake layers.
+// above the ground is discarded with the same ground test as the earthquake layers. Strain properties carry
+// orientation bars (volume.json "bars"), drawn on the depth slice at the nearest exported level.
 const VERT = `
   varying vec3 vPos;
   void main() { vec4 wp = modelMatrix * vec4(position, 1.0); vPos = wp.xyz; gl_Position = projectionMatrix * viewMatrix * wp; }`;
@@ -24,6 +26,11 @@ const FRAG = `
     gl_FragColor = vec4(texture2D(uLut, vec2((q * 255.0 + 0.5) / 256.0, 0.5)).rgb, uOpacity);
   }`;
 
+const BAR_FRAG = `
+  uniform vec3 uColor; varying vec3 vPos;
+  void main() { if (vPos.y > groundKm(vPos.xz)) discard; gl_FragColor = vec4(uColor, 0.9); }`;
+const rsGroundUniforms = rs => ({ ...rs.ground.uniforms });
+
 export class ModelVolume {
   constructor(rs, meta, base) {
     this.rs = rs; this.meta = meta; this.base = base; this.cache = new Map(); this.key = null;
@@ -43,6 +50,25 @@ export class ModelVolume {
     this.slice.rotation.x = -Math.PI / 2;
     for (const m of [this.section, this.slice]) { m.visible = false; m.frustumCulled = false; m.renderOrder = 3; rs.scene.add(m); }
     this.want = { section: false, slice: false, sliceKm: -2 };
+    this.bars = null;   // { levels_km, meshes: { tectonic: [LineSegments per level], load: [...] } }
+    if (meta.bars) fetch(base + meta.bars).then(r => (r.ok ? r.json() : null)).then(j => j && this._buildBars(j)).catch(() => {});
+  }
+
+  _buildBars(j) {
+    const mat = new THREE.ShaderMaterial({ uniforms: { ...rsGroundUniforms(this.rs), uColor: { value: new THREE.Color("#111111") } },
+      vertexShader: VERT, fragmentShader: this.rs.ground.glsl + BAR_FRAG, transparent: true, depthWrite: false });
+    const meshes = {};
+    for (const kind of ["tectonic", "load"]) {
+      meshes[kind] = (j[kind] || []).map(flat => {
+        const geo = new THREE.BufferGeometry();
+        geo.setAttribute("position", new THREE.BufferAttribute(segmentPositions(flat, 0), 3));
+        const m = new THREE.LineSegments(geo, mat);
+        m.visible = false; m.frustumCulled = false; m.renderOrder = 4; this.rs.scene.add(m);
+        return m;
+      });
+    }
+    this.bars = { levels: j.levels_km, meshes, mat };
+    this._apply();
   }
 
   async _load(key) {
@@ -81,6 +107,16 @@ export class ModelVolume {
     this.section.visible = ready && this.want.section && this.rs.U.clipOn.value > 0.5;
     this.slice.visible = ready && this.want.slice;
     this.slice.position.y = this.want.sliceKm;
+    if (this.bars) {
+      const kind = this.key && this.meta.vars[this.key]?.bars;
+      const lev = nearestLevel(this.bars.levels, this.want.sliceKm);
+      for (const [k, list] of Object.entries(this.bars.meshes)) {
+        list.forEach((m, i) => {
+          m.visible = this.slice.visible && k === kind && i === lev;
+          if (m.visible) m.position.y = this.want.sliceKm + 0.02;   // just above the slice plane
+        });
+      }
+    }
   }
 
   // every frame: the section follows the terrain cut (removed side where dot(xz, n) > offset)
@@ -91,7 +127,13 @@ export class ModelVolume {
     this._apply();
   }
 
-  dispose() { for (const m of [this.section, this.slice]) { this.rs.scene.remove(m); m.geometry.dispose(); m.material.dispose(); } }
+  dispose() {
+    for (const m of [this.section, this.slice]) { this.rs.scene.remove(m); m.geometry.dispose(); m.material.dispose(); }
+    if (this.bars) {
+      for (const list of Object.values(this.bars.meshes)) for (const m of list) { this.rs.scene.remove(m); m.geometry.dispose(); }
+      this.bars.mat.dispose();
+    }
+  }
 }
 
 export async function loadVolumeMeta(modelBase) {

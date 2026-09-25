@@ -10,7 +10,8 @@ Usage: pixi run s11 [-- --atlas web/viewer/site/public/atlas]
        pixi run s11 -- --layers alteration_surface,apparent_magnetization
 
 The canopy-storage layers of S19 (data/processed/surface_canopy.zarr) and the soil-map image are appended when
-that store exists; their keys can also be given to --layers.
+that store exists; their keys can also be given to --layers. The strain fields of S24
+(data/processed/strain_3d.zarr) are added to the volume, with their orientation bars, when that store exists.
 """
 
 from __future__ import annotations
@@ -24,7 +25,13 @@ import xarray as xr
 import yaml
 
 from rainier3d.config.domain import REPO, load_domain
-from rainier3d.export.atlas import append_canopy_layers, export_layers, export_sensors, export_volume
+from rainier3d.export.atlas import (
+    append_canopy_layers,
+    export_layers,
+    export_sensors,
+    export_strain,
+    export_volume,
+)
 from rainier3d.io.store import read_tree
 from rainier3d.surface import layers as L
 
@@ -81,6 +88,10 @@ def main():
         ", ".join(vol["vars"]),
         vol["uv_poly"]["max_error_cells"],
     )
+    strain_store = dom.path("processed") / "strain_3d.zarr"
+    if strain_store.exists():  # S24: strain fields in the volume and orientation bars on the depth slice
+        st = export_strain(xr.open_zarr(strain_store, consolidated=False), dom, atlas)
+        logging.info("strain: %d fields, bars on %d levels %s", len(st["vars"]), st["levels"], st["segments"])
     size = sum(p.stat().st_size for p in (atlas / "model").rglob("*") if p.is_file())
     logging.info(
         "wrote %d layers + streams to %s (%.1f MB)", len(meta["layers"]), atlas / "model", size / 1e6

@@ -690,6 +690,260 @@ def fig_canopy(canopy, tree, dom, path):
     return path
 
 
+# ---- strain in the model volume (S24) ----
+def _bars(ax, x, y, az_deg, length, **kw):
+    """Centred orientation bars (no arrowheads) at (x, y), azimuth in degrees east of north."""
+    from matplotlib.collections import LineCollection
+
+    a = np.radians(np.asarray(az_deg))
+    hx, hy = 0.5 * np.asarray(length) * np.sin(a), 0.5 * np.asarray(length) * np.cos(a)
+    segs = np.stack([np.column_stack([x - hx, y - hy]), np.column_stack([x + hx, y + hy])], axis=1)
+    ok = np.isfinite(segs).all(axis=(1, 2))
+    ax.add_collection(LineCollection(segs[ok], capstyle="round", **kw))
+
+
+def _km(dom, x, y):
+    sx, sy = dom.summit_xy
+    return (np.asarray(x) - sx) / 1e3, (np.asarray(y) - sy) / 1e3
+
+
+def fig_strain_wrsz(ds, dom, wrsz_xy, polygon_xy, path, spacing_m=5000):
+    """(a) Maximum horizontal shear strain rate with the axes of maximum shortening; (b) right-lateral shear
+    strain rate on vertical planes parallel to the WRSZ. GNSS field, the same at every depth (S24)."""
+    from matplotlib.colors import TwoSlopeNorm
+
+    lev = ds.isel(z=int(np.argmin(np.abs(ds.z.values - 0.0))))
+    X, Y = _km(dom, *np.meshgrid(lev.x.values, lev.y.values))
+    step = max(1, int(round(spacing_m / float(ds.x[1] - ds.x[0]))))
+    sub = lev.isel(x=slice(step // 2, None, step), y=slice(step // 2, None, step))
+    bx, by = _km(dom, *np.meshgrid(sub.x.values, sub.y.values))
+    ms = sub.tect_max_shear_rate.values * 1e9
+    strike = float(ds.attrs["wrsz_strike_deg"])
+    fig, axs = plt.subplots(1, 2, figsize=(7.2, 4.4), constrained_layout=True, sharey=True)
+    panels = [
+        ("tect_max_shear_rate", "(a) Max shear rate, shortening axes", cmc.lajolla, None, (0, 25)),
+        (
+            "wrsz_shear_rate",
+            f"(b) Right-lateral shear rate on N{strike:.0f}°E planes",
+            cmc.vik,
+            TwoSlopeNorm(0, -20, 20),
+            None,
+        ),
+    ]
+    px, py = _km(dom, *np.asarray(polygon_xy).T)
+    wx, wy = _km(dom, wrsz_xy[:, 0], wrsz_xy[:, 1])
+    for ax, (var, title, cmap, norm, lim) in zip(axs, panels, strict=True):
+        a = lev[var].values * 1e9
+        kw = {"norm": norm} if norm else {"vmin": lim[0], "vmax": lim[1]}
+        im = ax.pcolormesh(X, Y, a, cmap=cmap, shading="nearest", rasterized=True, **kw)
+        ax.scatter(wx, wy, s=0.6, color=INK, alpha=0.35, lw=0, zorder=2)
+        ax.fill(px, py, fill=False, ec=INK, lw=0.8, ls="--", zorder=3)
+        _bars(
+            ax,
+            bx.ravel(),
+            by.ravel(),
+            sub.tect_az_shortening.values.ravel(),
+            1.2 + 3.6 * np.clip(ms.ravel() / 20, 0, 1),
+            colors=INK,
+            linewidths=1.3,
+            zorder=4,
+        )
+        cx, cy = px.mean(), py.mean()
+        t = np.radians(strike)
+        ax.plot(
+            [cx - 22 * np.sin(t), cx + 22 * np.sin(t)],
+            [cy - 22 * np.cos(t), cy + 22 * np.cos(t)],
+            color="#2a78d6",
+            lw=1.2,
+            zorder=3,
+        )
+        ax.plot(0, 0, marker="^", ms=6, color=INK, mec="white", zorder=5)
+        ax.set_title(title, fontsize=8, loc="left")
+        ax.set_aspect("equal")
+        ax.set_xlabel("km east of summit")
+        fig.colorbar(im, ax=ax, orientation="horizontal", shrink=0.85, pad=0.02, aspect=30).set_label(
+            "nanostrain/yr", fontsize=7.5
+        )
+    axs[0].set_ylabel("km north of summit")
+    fig.savefig(path)
+    plt.close(fig)
+    return path
+
+
+def _inplane_compression(exx, exz, ezz):
+    """Angle (degrees from horizontal) of the most compressive in-plane principal strain of a 2D tensor."""
+    ang = 0.5 * np.degrees(np.arctan2(2 * exz, exx - ezz))  # most extensional axis from +horizontal
+    return ang + 90.0
+
+
+def fig_strain_edifice(ds, dom, tree, events, sel, path, z_slice=1000.0, half_km=12.0):
+    """Edifice-load strain: (a) volumetric strain at an elevation above sea level with SHmax bars and the
+    shallow summit seismicity; (b, c) W-E and S-N sections with the in-plane axis of maximum compression."""
+    from matplotlib.colors import SymLogNorm
+
+    sx, sy = dom.summit_xy
+    norm = SymLogNorm(linthresh=10, vmin=-1000, vmax=1000)
+    ev = np.array([(*f["geometry"]["coordinates"][:2], f["properties"]["depth"]) for f in events["features"]])
+    ex, ey = Transformer.from_crs(4326, dom.crs, always_xy=True).transform(ev[:, 0], ev[:, 1])
+    ekx, eky = _km(dom, ex, ey)
+    near = (np.hypot(ekx, eky) <= sel["radius_km"]) & (ev[:, 2] <= sel["max_depth_km"])
+    fig = plt.figure(figsize=(7.2, 7.4), constrained_layout=True)
+    gs = fig.add_gridspec(2, 2, height_ratios=[1.05, 1])
+    a = fig.add_subplot(gs[0, :])
+    lev = ds.sel(z=z_slice, method="nearest")
+    X, Y = _km(dom, *np.meshgrid(lev.x.values, lev.y.values))
+    im = a.pcolormesh(
+        X, Y, lev.load_volumetric.values * 1e6, cmap=cmc.vik, norm=norm, shading="nearest", rasterized=True
+    )
+    step = 4
+    sub = lev.isel(x=slice(2, None, step), y=slice(2, None, step))
+    bx, by = _km(dom, *np.meshgrid(sub.x.values, sub.y.values))
+    mag = np.log10(np.clip(sub.load_max_shear_h.values * 1e6, 0.1, 100))
+    _bars(
+        a,
+        bx.ravel(),
+        by.ravel(),
+        sub.load_shmax_az.values.ravel(),
+        0.6 + 0.6 * (mag.ravel() + 1),
+        colors=INK,
+        linewidths=1.0,
+        zorder=4,
+    )
+    a.scatter(ekx[near], eky[near], s=5, facecolor="white", edgecolor=INK, lw=0.4, zorder=5)
+    a.plot(0, 0, marker="^", ms=7, color=INK, mec="white", zorder=6)
+    a.set_xlim(-half_km, half_km)
+    a.set_ylim(-half_km * 0.62, half_km * 0.62)
+    a.set_aspect("equal")
+    a.set_xlabel("km east of summit")
+    a.set_ylabel("km north of summit")
+    a.set_title(
+        f"(a) Load volumetric strain at {lev.z.values:.0f} m a.s.l., SHmax axes, summit events "
+        f"(depth < {sel['max_depth_km']} km)",
+        fontsize=8,
+        loc="left",
+    )
+    for k, (axis, other, at, lab) in enumerate((("x", "y", sy, "(b) W–E"), ("y", "x", sx, "(c) S–N"))):
+        b = fig.add_subplot(gs[1, k])
+        sec = ds.sel({other: at}, method="nearest")
+        d = (sec[axis].values - (sx if axis == "x" else sy)) / 1e3
+        z = sec.z.values / 1e3
+        D, Zm = np.meshgrid(d, z)
+        b.pcolormesh(
+            D,
+            Zm,
+            sec.load_volumetric.values * 1e6,
+            cmap=cmc.vik,
+            norm=norm,
+            shading="nearest",
+            rasterized=True,
+        )
+        e_hh = sec[f"load_e{axis}{axis}"].values
+        e_hz = sec[f"load_e{axis}z"].values
+        ang = np.radians(_inplane_compression(e_hh, e_hz, sec.load_ezz.values))
+        s2 = sec.isel({axis: slice(2, None, 4), "z": slice(2, None, 6)})
+        dd, zz = np.meshgrid((s2[axis].values - (sx if axis == "x" else sy)) / 1e3, s2.z.values / 1e3)
+        aa = ang[2::6, 2::4]
+        L = 0.9
+        from matplotlib.collections import LineCollection
+
+        segs = np.stack(
+            [
+                np.column_stack(
+                    [dd.ravel() - L / 2 * np.cos(aa.ravel()), zz.ravel() - L / 2 * np.sin(aa.ravel())]
+                ),
+                np.column_stack(
+                    [dd.ravel() + L / 2 * np.cos(aa.ravel()), zz.ravel() + L / 2 * np.sin(aa.ravel())]
+                ),
+            ],
+            1,
+        )
+        segs = segs[np.isfinite(segs).all(axis=(1, 2))]
+        b.add_collection(LineCollection(segs, colors=INK, linewidths=0.8, zorder=4))
+        surf = tree["surface"].to_dataset()["elevation"].sel({other: at}, method="nearest")
+        b.plot((surf[axis] - (sx if axis == "x" else sy)) / 1e3, surf / 1e3, color=INK, lw=0.8)
+        cut = np.hypot(ekx, eky) <= half_km
+        on = np.abs((ey if axis == "x" else ex) - at) <= 2000
+        b.scatter(
+            ((ex if axis == "x" else ey) - (sx if axis == "x" else sy))[cut & on] / 1e3,
+            -ev[cut & on, 2],
+            s=3,
+            facecolor="white",
+            edgecolor=INK,
+            lw=0.3,
+            zorder=5,
+        )
+        b.axhline(0, color=MUTED, lw=0.5, ls=(0, (3, 3)))
+        b.set_xlim(-half_km, half_km)
+        b.set_ylim(-12, 4.6)
+        b.set_xlabel(f"km {'east' if axis == 'x' else 'north'} of summit")
+        b.set_title(f"{lab}: volumetric strain, in-plane compression axes", fontsize=8, loc="left")
+        if k == 0:
+            b.set_ylabel("Elevation (km)")
+    fig.colorbar(im, ax=fig.axes, orientation="horizontal", shrink=0.6, pad=0.02, aspect=40).set_label(
+        "Volumetric strain from the edifice load (microstrain; compression negative)", fontsize=7.5
+    )
+    fig.savefig(path)
+    plt.close(fig)
+    return path
+
+
+def fig_strain_bars_depth(ds, dom, path, elevations=(1000, 0, -2000, -5000, -10000, -15000), half_km=25.0):
+    """Shortening directions at fixed elevations, for comparison with shear-wave splitting: tectonic (GNSS,
+    grey, the same at every depth) and SHmax of the edifice load (coloured by its horizontal shear strain)."""
+    from matplotlib.colors import LogNorm
+
+    fig, axs = plt.subplots(2, 3, figsize=(7.2, 5.6), constrained_layout=True, sharex=True, sharey=True)
+    norm = LogNorm(0.1, 30)
+    lc = None
+    for ax, zm in zip(axs.flat, elevations, strict=True):
+        lev = ds.sel(z=zm, method="nearest")
+        t = lev.isel(x=slice(5, None, 10), y=slice(5, None, 10))
+        tx, ty = _km(dom, *np.meshgrid(t.x.values, t.y.values))
+        _bars(
+            ax,
+            tx.ravel(),
+            ty.ravel(),
+            t.tect_az_shortening.values.ravel(),
+            3.6,
+            colors="#b8b6ae",
+            linewidths=2.2,
+            zorder=2,
+        )
+        s = lev.isel(x=slice(2, None, 5), y=slice(2, None, 5))
+        sxk, syk = _km(dom, *np.meshgrid(s.x.values, s.y.values))
+        keep = (np.hypot(sxk, syk) <= half_km).ravel()
+        from matplotlib.collections import LineCollection
+
+        az = np.radians(s.load_shmax_az.values.ravel()[keep])
+        cx, cy = sxk.ravel()[keep], syk.ravel()[keep]
+        segs = np.stack(
+            [
+                np.column_stack([cx - 0.9 * np.sin(az), cy - 0.9 * np.cos(az)]),
+                np.column_stack([cx + 0.9 * np.sin(az), cy + 0.9 * np.cos(az)]),
+            ],
+            1,
+        )
+        vals = s.load_max_shear_h.values.ravel()[keep] * 1e6
+        ok = np.isfinite(segs).all(axis=(1, 2)) & np.isfinite(vals)
+        lc = LineCollection(segs[ok], array=vals[ok], cmap=cmc.batlow, norm=norm, linewidths=1.1, zorder=3)
+        ax.add_collection(lc)
+        ax.plot(0, 0, marker="^", ms=5, color=INK, mec="white", zorder=5)
+        ax.set_xlim(-half_km, half_km)
+        ax.set_ylim(-half_km, half_km)
+        ax.set_aspect("equal")
+        ax.set_title(f"{float(lev.z) / 1e3:+.1f} km elevation", fontsize=8, loc="left")
+    for ax in axs[:, 0]:
+        ax.set_ylabel("km north of summit")
+    for ax in axs[1]:
+        ax.set_xlabel("km east of summit")
+    fig.colorbar(lc, ax=axs, orientation="horizontal", shrink=0.6, pad=0.02, aspect=40).set_label(
+        "Edifice-load horizontal shear strain (microstrain); grey: GNSS shortening axis", fontsize=7.5
+    )
+    fig.savefig(path)
+    plt.close(fig)
+    return path
+
+
 def load_json(p):
     return json.loads(p.read_text())
 

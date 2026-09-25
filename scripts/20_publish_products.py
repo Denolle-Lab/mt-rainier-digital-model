@@ -5,6 +5,7 @@
   gnss          outputs/gnss/ (velocities, strain series, summary), data/processed/gnss/strain_grid.nc and
                 the download record (data/raw/gnss/manifest.csv, data/processed/gnss/fetch.json)
   edifice_load  data/processed/edifice_load.zarr
+  strain_3d     data/processed/strain_3d.zarr (S24: GNSS strain rate and edifice-load strain in the volume)
 
 Each archive gets its SHA-256; the catalog shipped in the package (src/rainier3d/products.json) is updated
 with version, url, size and checksum. With --upload the archives become assets of GitHub release <tag>.
@@ -84,6 +85,7 @@ def package_gnss(dom, tmp: Path, out: Path):
     for p in [
         *(dom.path("outputs") / "gnss").glob("*.csv"),
         dom.path("outputs") / "gnss" / "summary.json",
+        dom.path("outputs") / "gnss" / "strain_3d_summary.json",
         dom.path("processed") / "gnss" / "strain_grid.nc",
         dom.path("processed") / "gnss" / "fetch.json",
         dom.path("raw") / "gnss" / "manifest.csv",
@@ -114,7 +116,9 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--tag", required=True, help="release tag, e.g. products-v1")
     ap.add_argument("--upload", action="store_true")
-    ap.add_argument("--only", nargs="+", choices=["model", "gnss", "edifice_load"], help="default: all")
+    ap.add_argument(
+        "--only", nargs="+", choices=["model", "gnss", "edifice_load", "strain_3d"], help="default: all"
+    )
     ap.add_argument("--rolling", action="store_true", help="replace the assets of an existing release")
     a = ap.parse_args()
     dom = load_domain()
@@ -126,13 +130,16 @@ def main():
     catalog = json.loads(CATALOG.read_text())
     built = {}
 
-    only = set(a.only or ["model", "gnss", "edifice_load"])
+    only = set(a.only or ["model", "gnss", "edifice_load", "strain_3d"])
 
     # model: drop variables built from sources that may not be redistributed
     if "model" in only:
         built["model"] = package_model(dom, tmp, out, bad)
     if "gnss" in only:
         built["gnss"] = package_gnss(dom, tmp, out)
+    s3 = dom.path("processed") / "strain_3d.zarr"
+    if "strain_3d" in only and s3.exists():
+        built["strain_3d"] = (zip_dir(s3, out / "rainier3d_strain_3d.zarr.zip", "strain_3d.zarr"), [])
     el = dom.path("processed") / "edifice_load.zarr"
     if "edifice_load" in only and el.exists():
         built["edifice_load"] = (

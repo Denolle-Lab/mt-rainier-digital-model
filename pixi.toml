@@ -71,6 +71,7 @@ s14 = "python scripts/14_relocate.py"
 bib = "python scripts/15_bibliography.py"
 s17 = "python scripts/17_gnss_fetch.py"
 s18 = "python scripts/18_gnss_strain.py"
+s24 = "python scripts/24_strain_volume.py"
 # 3D viewer (web/viewer, React + three.js): terrain, stations and quakes from USGS/EarthScope, then S11 model layers
 viewer-data = { cmd = "python -m rainier.build --out ../site/public/atlas --cache ../../../data/raw/viewer_cache", cwd = "web/viewer/data" }
 viewer-data-test = { cmd = "pytest -q", cwd = "web/viewer/data" }

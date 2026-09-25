@@ -94,3 +94,69 @@ The grid (`data/processed/gnss/strain_grid.nc`, 5 km, adaptive smoothing) gives 
 
 - **Limitations.** Homogeneous half-space; flat reference plane; ν = 0.25 and ρ = 2,500 kg/m³ are placeholders; points within 250 m of the plane are left out.
 - **Scale comparison.** The secular geodetic strain rates correspond to stress rates of order 1 kPa/yr (µ ≈ 30 GPa × 3 × 10⁻⁸/yr), against a static load stress of 1–40 MPa.
+
+## Strain in the model volume (S24, `pixi run s24`)
+
+S24 puts two strain fields on the grid of the 3D viewer volume: 500 m × 250 m, from the surface to 20 km below
+sea level, rock cells only. The results go to:
+- `data/processed/strain_3d.zarr` (the product `strain_3d`);
+- `outputs/gnss/strain_orientation.csv`;
+- `outputs/gnss/strain_3d_summary.json`;
+- the paper figures 16–18.
+
+The numbers below come from that summary.
+
+**Tectonic strain rate.** GNSS measures the horizontal strain rate at the surface only. We carry the S18 tensor
+down unchanged through the elastic upper crust and take the vertical strain from plane stress,
+e_zz = −ν/(1 − ν)(e_xx + e_yy) with ν = 0.25. Both are assumptions. The field is resolved on vertical planes
+parallel to the West Rainier Seismic Zone. The zone's strike, N174.4°E (elongation 3.1), is the long axis of its
+1294 epicentres in the ComCat catalogue.
+
+| WRSZ (inside its polygon, 5 km below sea level) | Value |
+|---|---|
+| Axis of maximum shortening | N48°E |
+| Maximum shear strain rate | 10.4 nanostrain/yr |
+| Right-lateral shear rate on WRSZ-parallel planes | 10.0 nanostrain/yr |
+| Normal strain rate across the zone | −12.9 nanostrain/yr (contraction) |
+
+With shortening at N48°E, the planes of maximum shear strike N3.5°E and N93.5°E. The WRSZ strike lies 9° from
+the first, so the GNSS field loads the zone almost optimally for right-lateral slip: 96% of the maximum shear.
+
+**Edifice-load strain.**
+- **Method.** The Boussinesq stress of S18 is turned into strain with the local stiffness of the velocity
+  model (μ = ρVs², λ = ρVp² − 2μ).
+- **Cone interior.** Inside the cone, above the half-space (higher than 1539 m, the reference plane minus
+  250 m), the stress is taken as the laterally confined overburden: σzz = −ρgd and σh = ν/(1 − ν) σzz. That
+  gives volumetric strain but no SHmax, because horizontal stress is isotropic there.
+- **Output.** SHmax is the most compressive horizontal stress; the product also stores the full strain tensor.
+
+| Elevation beneath the summit (m) | 2500 | 1500 | 1000 | 500 | 0 | −2000 | −5000 | −11,500 |
+|---|---|---|---|---|---|---|---|---|
+| Volumetric strain (microstrain) | −563 | −831 | −668 | −518 | −413 | −208 | −73 | −24 |
+
+The load compresses the whole edifice root, and the compression is strongest just below the base of the cone.
+Neither field produces dilatation above sea level beneath the summit, where the shallow swarms occur:
+
+| Field | Value there |
+|---|---|
+| Edifice load | −410 to −830 microstrain |
+| GNSS areal strain rate | −15 nanostrain/yr |
+
+Dilatation there would need a source these models do not contain, such as the pressurisation of the
+hydrothermal system.
+
+SHmax of the load is tangential (circumferential) around the summit at and above sea level, and radial at
+5 km below sea level and deeper (Fig. 18 of the paper). The horizontal shear strain of the load is
+1–30 microstrain within 20 km of the summit. That is the strain the GNSS rates would accumulate in
+10³–10⁴ years.
+
+**For shear-wave splitting.** `strain_orientation.csv` lists, at elevations 1.5, 1, 0, −2, −5, −10 and −15 km:
+- the GNSS shortening axis, every 5 km;
+- the SHmax of the load, every 2 km within 20 km of the summit.
+
+Each row gives the magnitude with the azimuth (degrees east of north). Fast directions of splitting from
+aligned cracks are expected parallel to the most compressive horizontal stress.
+
+**In the 3D viewer.** The five strain fields are properties of "Below ground". With the depth slice on, the
+bars of the selected field are drawn at the nearest 1 km level: GNSS shortening axes for the tectonic fields,
+SHmax for the load fields.

@@ -461,7 +461,7 @@ The fit is resolved as follows ([@tbl:multipliers], [@tbl:bias], [@fig:calibrati
 - **Seismicity.** Summit earthquakes form a column from the edifice to about 3 km below sea level. WRSZ earthquakes concentrate 4–12 km below sea level, 12–18 km west of the summit.
 - **Magma body.** The slow body at 7–10 km below sea level is largely removed by the fusion, because neither regional model holds a slow body there at the wavelengths they resolve. Whether a body of the size imaged by @moran_1999 and @pang_2025 belongs in the model is a question for data that resolve it.
 
-![Fused model along A–A′ (west–east through the summit): (a) Vp, (b) Vs, (c) density, (d) model units. Light blue at the surface is glacier ice. White dots are PNSN earthquakes within 2 km of the section. The dashed line is sea level.](figures/fig4_section_AA.png){#fig:sectionA width=100%}
+![Fused model along A–A′ (west–east through the summit): (a) Vp, (b) Vs, (c) density, (d) model units. Light blue at the surface is glacier ice. White dots are PNSN earthquakes within 2 km of the section. The dashed line is sea level.](figures/fig4_section_AA.png){#fig:sectionA width=92%}
 
 ![Fused model along B–B′ (south–north through the summit): (a) Vs, (b) Vp/Vs, (c) model units. The step in Vp/Vs near 9 km below the ground marks the change from the Cascadia model to CRESCENT with Brocher's Vp.](figures/fig5_section_BB.png){#fig:sectionB width=100%}
 
@@ -534,6 +534,69 @@ The weight of the edifice is a static load on the crust beneath it.
 The load stress decays from tens of megapascals beneath the summit to a few megapascals at the depth of the magma body ([@tbl:load], [@fig:strain]b). That is three to four orders of magnitude above the tectonic stress rate implied by the geodetic strain rates (about 1 kPa yr⁻¹ for a shear modulus of 30 GPa and 3 × 10⁻⁸ yr⁻¹). The load stress therefore sets the orientation of stresses in the upper crust beneath the edifice. The model is a homogeneous half-space with a flat reference plane, and its Poisson's ratio (0.25) and density (2500 kg m⁻³) are author choices.
 
 ![(a) Secular dilatation rate from the GNSS velocities, with the velocities of quality-controlled sites relative to the network median (arrows) and flagged sites (red crosses). The solid box is the model domain and the dashed polygon the WRSZ region. (b) Compressive mean stress from the edifice load along a west–east section through the summit, with contours of maximum shear (MPa).](figures/fig15_strain.png){#fig:strain width=100%}
+
+## Strain in the model volume {#sec:strain3d}
+
+Script S24 puts two strain fields on the 500 m × 250 m grid of the three-dimensional viewer, from the surface
+to 20 km below sea level. Both are written with the axes of maximum shortening, so that they can be compared
+with the fast directions of shear-wave splitting.
+
+**Tectonic strain rate at depth.** GNSS constrains the horizontal strain rate at the surface only. The
+horizontal tensor of [@tbl:strain] is carried down unchanged through the elastic upper crust. The vertical
+component follows from plane stress, $\dot\varepsilon_{zz} = -\nu/(1-\nu)\,(\dot\varepsilon_{xx}+\dot\varepsilon_{yy})$,
+with $\nu = 0.25$. Both steps are assumptions, not observations. The tensor is then resolved on vertical
+planes parallel to the WRSZ. The zone's strike, N174°E, is the long axis of its 1294 epicentres (elongation
+3.1).
+
+At 5 km below sea level inside the WRSZ polygon:
+
+| Quantity | Value |
+|---|---|
+| Axis of maximum shortening | N48°E |
+| Maximum shear strain rate | 10.4 nanostrain yr⁻¹ |
+| Right-lateral shear strain rate on WRSZ-parallel planes | 10.0 nanostrain yr⁻¹ |
+| Normal strain rate across the zone | −12.9 nanostrain yr⁻¹ (contraction) |
+
+: Tectonic strain rate in the WRSZ (S24). {#tbl:wrsz}
+
+The planes of maximum shear strike N3.5°E and N93.5°E. The WRSZ lies 9° from the first, so the geodetic
+field loads it almost optimally for right-lateral slip ([@tbl:wrsz], [@fig:strainwrsz]).
+
+![Tectonic strain rate from GNSS, the same at every depth under the stated assumptions: (a) maximum horizontal shear strain rate with the axes of maximum shortening (bars, length scaled with the shear rate); (b) right-lateral shear strain rate on vertical planes parallel to the WRSZ. The dashed polygon is the WRSZ region, grey dots its epicentres, and the blue line the strike fitted to them.](figures/fig16_strain_wrsz.png){#fig:strainwrsz width=100%}
+
+**Static strain of the edifice load.**
+- **Method.** The Boussinesq stress of [@sec:strain] is converted to strain with the local stiffness of the
+  velocity model, $\mu = \rho V_S^2$ and $\lambda = \rho V_P^2 - 2\mu$.
+- **Cone interior.** Inside the cone above the half-space, that is higher than 1539 m, the stress is taken as
+  the laterally confined overburden, $\sigma_{zz} = -\rho g d$ and $\sigma_h = \nu/(1-\nu)\,\sigma_{zz}$.
+  This approximation defines the volumetric strain but no horizontal stress direction.
+
+Beneath the summit ([@tbl:edificestrain]), the volumetric strain is compressive throughout. It is largest at the
+base of the cone and decays below. Neither the load nor the geodetic field produces dilatation in the edifice
+above sea level, where the shallow swarms of the summit occur ([@fig:strainedifice]). The GNSS areal strain rate
+there is −15 nanostrain yr⁻¹. Dilatation in that volume would need a source these models do not contain, such
+as the pressurisation of the hydrothermal system.
+
+| Elevation (m) | 2500 | 1500 | 1000 | 500 | 0 | −2000 | −5000 | −11,500 |
+|---|---|---|---|---|---|---|---|---|
+| Volumetric strain (microstrain) | −563 | −831 | −668 | −518 | −413 | −208 | −73 | −24 |
+
+: Volumetric strain of the edifice load beneath the summit (S24). Above 1539 m the stress is the confined overburden. {#tbl:edificestrain}
+
+![Static strain of the edifice load. (a) Volumetric strain at 1125 m above sea level, with the direction of the most compressive horizontal stress (SHmax, bars) and the summit earthquakes shallower than 4 km (dots). (b, c) West–east and south–north sections through the summit, with the in-plane axis of maximum compression; inside the cone, the confined overburden makes it vertical.](figures/fig17_strain_edifice.png){#fig:strainedifice width=82%}
+
+SHmax of the load is tangential around the summit at and above sea level and radial from 5 km below sea level
+down ([@fig:strainorient]). The horizontal shear strain of the load reaches 1–30 microstrain within 20 km of the
+summit, which is 10³–10⁴ years of accumulation at the geodetic rates.
+
+The two fields are published on regular grids at fixed elevations (`strain_orientation.csv`):
+- the geodetic shortening axes, every 5 km;
+- the SHmax of the load, every 2 km within 20 km of the summit.
+
+These grids are for comparison with the fast directions of shear-wave splitting, which aligned cracks orient
+parallel to the most compressive horizontal stress.
+
+![Axes of maximum horizontal shortening at six elevations: GNSS (grey, the same at every depth) and SHmax of the edifice load (coloured by its horizontal shear strain).](figures/fig18_strain_orientation.png){#fig:strainorient width=100%}
 
 # Geohydrology {#sec:hydro}
 
@@ -627,6 +690,7 @@ The derived products are published as release assets of the code repository, und
 | `model` | `model.zarr`: surface node and levels L1–L3 with Vp, Vs, density, Qp, Qs, units, alteration, and the geology and regional inputs; variables from sources that forbid redistribution are removed | with each model release |
 | `gnss` | station velocities with quality flags, strain-rate grid, daily regional strain series, the download manifest and the cut-off date | weekly (rolling release `gnss-latest`, with dated copies) |
 | `edifice_load` | stress from the edifice load on L1–L3 | with each model release |
+| `strain_3d` | strain in the volume ([@sec:strain3d]): GNSS strain rate carried down and edifice-load strain, with their orientations | with each model release |
 
 : Downloadable products. {#tbl:products}
 
@@ -682,7 +746,7 @@ The viewer runs in a web browser, including on phones. It is a React and three.j
 - the seismic, geodetic, infrasound, tiltmeter and fibre sensors, with permanent and temporary networks separated;
 - the PNSN seismicity.
 
-Below the ground it shows Vs, Vp, Vp/Vs, density, units and alteration, on a vertical section along the terrain cut and on a horizontal depth slice. Its map data are built by scripts S8 and S11 and published as a release asset named in `web/viewer/DATA_RELEASE`.
+Below the ground it shows Vs, Vp, Vp/Vs, density, units, alteration and the strain fields of [@sec:strain3d], on a vertical section along the terrain cut and on a horizontal depth slice. For the strain fields, the depth slice also carries their orientation bars. Its map data are built by scripts S8 and S11 and published as a release asset named in `web/viewer/DATA_RELEASE`.
 
 # Limitations {#sec:limits}
 
@@ -698,7 +762,7 @@ Below the ground it shows Vs, Vp, Vp/Vs, density, units and alteration, on a ver
 - **Regional model below 9.9 km.** The regional model there is CRESCENT Vs with Brocher's Vp; the deep level of the Cascadia model (10.8–59.4 km) is not used.
 - **Resolution.** L1 is 250 m × 50 m, so thin deposits fall below the cell size.
 - **Glaciers.** IceBoost exceeds the 1981 radar thicknesses on Emmons and Winthrop glaciers; its total should be compared with the lidar-based ice volume of @sisson2011.
-- **Geodesy.** The GNSS network does not resolve strain on the edifice. The edifice-load model is a homogeneous half-space.
+- **Geodesy.** The GNSS network does not resolve strain on the edifice. The geodetic strain rate at depth rests on two assumptions (depth-invariant horizontal rate, plane stress). The edifice-load stress is a homogeneous half-space, with a confined-overburden approximation inside the cone.
 - **Hydrology.** The model has no hydrological state ([@sec:hydro]).
 
 # Conclusions {#sec:conclusions}

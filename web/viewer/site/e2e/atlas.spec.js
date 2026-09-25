@@ -138,6 +138,22 @@ test("(l) the subsurface section follows the cut and the slice follows its slide
   expect(await page.evaluate(() => window.__rainier.volume.slice.position.y)).toBe(-5);
 });
 
+test("(n) strain properties draw their orientation bars on the depth slice", async ({ page }) => {
+  await page.waitForFunction(() => !!window.__rainier.volume, null, { timeout: 30_000 });
+  test.skip(!(await page.evaluate(() => !!window.__rainier.volume.meta.bars)), "bundle without strain (S24)");
+  await page.waitForFunction(() => !!window.__rainier.volume.bars, null, { timeout: 30_000 });
+  const shown = () => page.evaluate(() => Object.entries(window.__rainier.volume.bars.meshes)
+    .flatMap(([k, list]) => list.filter(m => m.visible).map(() => k)));
+  await page.getByLabel("Subsurface property").selectOption("wrsz_shear_rate");
+  await page.getByRole("switch", { name: "Depth slice" }).click();
+  await page.getByLabel("Slice elevation").fill("-5");
+  await expect.poll(shown).toEqual(["tectonic"]);
+  await page.getByLabel("Subsurface property").selectOption("load_volumetric");
+  await expect.poll(shown).toEqual(["load"]);
+  await page.getByLabel("Subsurface property").selectOption("vs");
+  await expect.poll(shown).toEqual([]);
+});
+
 test("(m) the sensor legend filters: geophones show the 2025 nodes, Past adds earlier deployments", async ({ page }) => {
   await page.waitForFunction(() => !!window.__rainier.sensors, null, { timeout: 30_000 });
   const on = () => page.evaluate(() => Array.from(window.__rainier.sensors.onAttr.array).filter(v => v > 0).length);
