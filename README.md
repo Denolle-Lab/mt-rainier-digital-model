@@ -43,6 +43,7 @@ geometry numbers are placeholders, marked `m1_placeholder` in `configs/`.
 | S22 alteration | `scripts/22_alteration_finn2001.py` | `alteration_finn2001.zarr`: alteration from the 1996 helicopter EM survey (`docs/alteration.md`) |
 | S23 paper | `scripts/23_paper.py` | `docs/paper/rainier3d_paper.html` and `.pdf` (ESSD class) from `docs/paper/rainier3d_paper.md` (`pixi run -e paper paper`; `.github/workflows/paper.yml`) |
 | S24 mass movements | `scripts/24_mass_movements.py` | `outputs/mass_movements/`: lahar and debris-flow outlines, landslide and seismic event points, faults, 1998 lahar zones; paper figure; viewer layers (`docs/mass_movements.md` lists every service call) |
+| S26 canopy-storage pipeline | `scripts/26_canopy_pipeline.py` | `data/raw/canopy_storage/`: GEDI L3 canopy height, GEDI L2B footprints and grids, Sentinel-2 LAI, from the vendored code of `third_party/canopy-storage_seismic` (MIT); read by S19 (`docs/canopy_pipeline.md`; `pixi run -e canopy canopy`) |
 
 `docs/eikonal_benchmark.md` compares the eikonal solvers (`scripts/bench_eikonal.py`).
 

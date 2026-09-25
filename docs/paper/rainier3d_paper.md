@@ -103,7 +103,7 @@ The database is compiled by code, not by hand, following five rules.
 
 1. **One registry.** `configs/sources.yaml` lists every data set and publication the model uses (78 entries). Each entry gives its DOI or service address, licence, the date and method of verification, and its role in the model. Every number in the configuration files names a registry key. A value chosen by the authors carries the key `m1_placeholder`, so the unsourced values can be listed and replaced. The bibliography of this paper is generated from the same registry (`pixi run bib`), with BibTeX keys equal to the registry keys.
 2. **Original archives, cached.** Each stage downloads what it needs from the original archive, clipped to the model box where the service allows it. Examples are a window of a cloud-optimised GeoTIFF, an OPeNDAP subset, a feature-service query or a staged file. Each download is cached under `data/raw/<source>/`, and reruns read the cache. The GNSS stage also writes a manifest with the URL, retrieval time, size and SHA-256 of each file.
-3. **A checksum for every cached file.** `scripts/00_data_manifest.py` records the size and SHA-256 of all cached files in the committed table `docs/data_manifest.csv` (2,065 files, 3.30 GB; [@tbl:raw]). `pixi run manifest -- --check` compares a rebuilt cache with it. Some services can return different bytes on a later request: ComCat can revise picks, and the USGS can re-stage NHDPlus. The check lists those files, so any difference between a rebuilt model and the published one can be traced to its input.
+3. **A checksum for every cached file.** `scripts/00_data_manifest.py` records the size and SHA-256 of all cached files in the committed table `docs/data_manifest.csv` (2,072 files, 4.44 GB; [@tbl:raw]). `pixi run manifest -- --check` compares a rebuilt cache with it. Some services can return different bytes on a later request: ComCat can revise picks, and the USGS can re-stage NHDPlus. The check lists those files, so any difference between a rebuilt model and the published one can be traced to its input.
 4. **One environment.** The software is pinned in `pixi.lock` for Linux and macOS (arm64). Two slim environments serve automation: `gnss` for the weekly strain refresh and `paper` for this report.
 5. **Invariants.** The test suite checks the built model against rules that must hold whatever the data:
     - no properties above the ground;
@@ -131,6 +131,7 @@ The database is compiled by code, not by hand, following five rules.
 | `allstadt2017` | S24 | Seismically recorded mass movements, western United States (`Events.csv`) | 1 | 0.03 |
 | `usgs_rainier_hazards` | S24 | Lahar hazard zones of 1998 (shapefiles) | 1 | 0.2 |
 | `dem_3dep_1m` | S24 | 3DEP 1 m windows around landslide polygons; 3DEP source footprints | 1,639 | 1,818 |
+| `canopy_storage` | S26 | GEDI L3 global 1 km grids and their crops to the box (vendored canopy-storage code) | 7 | 1,135 |
 
 : The raw input cache, from `docs/data_manifest.csv`. SOLUS100 soil thickness is read directly from its cloud-optimised GeoTIFFs and is not cached. {#tbl:raw}
 
@@ -153,7 +154,8 @@ pixi run all                       # S1-S8: surface, layers, geology, rock physi
 pixi run s2 -- --ma                # optional: the Ma et al. (2026) water table (~1 GB download)
 pixi run s22 && pixi run s3 && pixi run s4 && pixi run s5   # alteration from the EM survey, then rebuild
 pixi run s17 && pixi run s18       # GNSS positions, velocities, strain, edifice load
-pixi run s25                       # mass movements and faults: catalogue, figure, viewer layers (~1.8 GB of 1 m windows)
+pixi run s24                       # mass movements and faults: catalogue, figure, viewer layers (~1.8 GB of 1 m windows)
+pixi run -e canopy canopy          # canopy-storage pipeline: GEDI (Earthdata login), Sentinel-2 LAI (CDSE client)
 pixi run s9                        # uniform grids for ray tracing and location
 pixi run manifest -- --check       # compare the rebuilt cache with docs/data_manifest.csv
 pixi run test                      # unit tests and the invariants of the built model
@@ -235,6 +237,8 @@ Script S19 adds the vegetation products of the canopy-storage project (M. Köpfl
 ![Vegetation layers on the model grid, over a hillshade: (a) lidar canopy height and (b) vegetation cover, (c) Sentinel-2 leaf area index, (d) GEDI plant area index, (e) GEDI canopy height, (f) GEDI aboveground biomass. Straight edges in (a) and (b) are lidar tile boundaries.](figures/fig14_canopy.png){#fig:canopy width=100%}
 
 The two canopy heights differ by design. The lidar value is the mean of 10 m cells in each 100 m cell, including gaps, while the GEDI value is a 1 km mean of the tallest return per footprint. That is why the lidar median (14.6 m) is lower than the GEDI median (25.5 m) and the ETH median (30 m).
+
+The project's download and gridding code is part of this repository, unmodified and under its MIT licence (`third_party/canopy-storage_seismic`). Script S26 runs it inside the raw-data cache: it fetches the GEDI L3 grids and L2B footprints through NASA Earthdata and the Sentinel-2 leaf area index through the Copernicus Data Space, and S19 reads its products in place of the delivered files. The GEDI L3 canopy height it produces is identical to the delivered grid (33,701 cells). The L2B plant area index, the L4B biomass, the lidar layers and the soil map are still read from the delivered files: the vendored gridder writes the maximum plant area index rather than the mean, and the others were made outside that code. `docs/canopy_pipeline.md` lists each service call.
 
 # Subsurface model {#sec:subsurface}
 
