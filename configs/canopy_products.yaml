@@ -1,0 +1,67 @@
+# Canopy and soil products of the canopy-storage project (M. Koepfli, github.com/koepflma/canopy-storage_seismic,
+# private; code MIT). Files are read from `root` (default ~/Downloads, as delivered 2026-09-24). Each entry names
+# its source key in configs/sources.yaml. Provenance fields marked TODO come from that repository's own TODOs.
+root: ~/Downloads
+layers:
+  - name: canopy_height_lidar
+    file: "~/Downloads/MtRainier_gridded_products 2/LiDAR_QGIS/CHM_10m_meter_full.tif"
+    long_name: canopy height from airborne lidar (DSM - DTM), 10 m, averaged per cell
+    units: m
+    valid_range: [0, 110]
+    resampling: average
+    native_res_m: 10
+    source: canopy_lidar_chm
+  - name: vegetation_cover_lidar
+    file: "~/Downloads/MtRainier_gridded_products 2/LiDAR_QGIS/veg_cover_fraction_10m_meter_full.tif"
+    long_name: vegetation cover fraction from airborne lidar, 10 m, averaged per cell
+    units: "1"
+    valid_range: [0, 1]
+    resampling: average
+    native_res_m: 10
+    source: canopy_lidar_chm
+  - name: lai_sentinel2
+    file: ~/Downloads/MtRainier_gridded_products/lai_mosaic_pnw.tif
+    long_name: leaf area index, Sentinel-2 L2A SNAP biophysical processor, 2023-07-01 to 2023-08-15, 10 m
+    units: m2/m2
+    valid_range: [0, 10]
+    resampling: average
+    native_res_m: 10
+    source: sentinel2_lai_2023
+  - name: gedi_pai
+    file: ~/Downloads/MtRainier_gridded_products/GEDI_l2b_PAI_gridded/L2B_PAI_mean.tif
+    long_name: plant area index, GEDI L2B footprints (quality-filtered) gridded to 1 km
+    units: m2/m2
+    valid_range: [0, 12]
+    resampling: bilinear
+    native_res_m: 1000
+    source: gedi_l2b
+  - name: gedi_canopy_height
+    file: "~/Downloads/MtRainier_gridded_products 2/GEDI_l3_CH_cropped/L3_rh100_mean.tif"
+    long_name: canopy height (rh100 mean), GEDI L3 gridded, 1 km
+    units: m
+    valid_range: [0, 110]
+    resampling: bilinear
+    native_res_m: 1000
+    source: gedi_l3
+  - name: gedi_biomass
+    file: ~/Downloads/MtRainier_gridded_products/GEDI_l4b_AGD_cropped/L4B_MU.tif
+    long_name: aboveground biomass density, GEDI L4B gridded, 1 km
+    units: Mg/ha
+    valid_range: [0, 3000]
+    resampling: bilinear
+    native_res_m: 1000
+    source: gedi_l4b
+  - name: gedi_biomass_se
+    file: ~/Downloads/MtRainier_gridded_products/GEDI_l4b_AGD_cropped/L4B_SE.tif
+    long_name: standard error of aboveground biomass density, GEDI L4B, 1 km
+    units: Mg/ha
+    valid_range: [0, 3000]
+    resampling: bilinear
+    native_res_m: 1000
+    source: gedi_l4b
+images:
+  - name: soil_map
+    file: ~/Downloads/masked_soil.tif
+    label: Soil map (rendered image)
+    note: RGB rendering of a soil map, masked to the park; source and legend to be documented (TODO)
+    source: soil_map_image

@@ -351,3 +351,48 @@ johnson_1985:
   doi: 10.1017/CBO9781139171731
   verified: web-2026-09-24 (DOI resolved)
   role: stress from the edifice load (S18)
+
+canopy_lidar_chm:
+  title: Canopy height model and vegetation cover fraction, 10 m, from airborne lidar DSM/DTM mosaics (NAD83(HARN) Washington South ftUS), made in QGIS for the canopy-storage project (M. Koepfli)
+  url: https://github.com/koepflma/canopy-storage_seismic (private; non-seismic_code/CHM/README.md)
+  license: "unknown until the lidar source is documented (TODO: WA DNR Lidar Portal or PSLC?)"
+  verified: "no"
+  role: canopy_height_lidar, vegetation_cover_lidar surface layers (S19)
+  redistribute_derived: false   # lidar source undocumented; not published until it is
+
+sentinel2_lai_2023:
+  title: Sentinel-2 L2A leaf area index (ESA SNAP biophysical processor neural network, sentinel-hub custom script), 10 m mosaic, 2023-07-01 to 2023-08-15, via the Copernicus Data Space Ecosystem; canopy-storage project
+  url: https://github.com/koepflma/canopy-storage_seismic (non-seismic_code/Sentinel2/01_download_lai.py)
+  license: Copernicus open data (free, attribution "Contains modified Copernicus Sentinel data 2023"); access needs a CDSE account
+  verified: "no"
+  role: lai_sentinel2 surface layer (S19)
+
+gedi_l2b:
+  title: Dubayah et al., GEDI L2B Canopy Cover and Vertical Profile Metrics, version 2 (GEDI02_B), NASA LP DAAC; footprints quality-filtered and gridded to 1 km (EPSG:6933) by the canopy-storage project
+  doi: 10.5067/GEDI/GEDI02_B.002
+  url: https://cmr.earthdata.nasa.gov/search/concepts/C2142776747-LPCLOUD
+  license: NASA open data (no restriction; cite); access needs a NASA Earthdata login
+  verified: web-2026-09-24 (DOI resolved)
+  role: gedi_pai surface layer (S19)
+
+gedi_l3:
+  title: Dubayah et al., GEDI L3 Gridded Land Surface Metrics, version 2, ORNL DAAC (rh100 mean, 1 km, 2019-04-18 to 2025-07-09)
+  doi: 10.3334/ORNLDAAC/1952
+  url: https://cmr.earthdata.nasa.gov/search/concepts/C2153683336-ORNL_CLOUD
+  license: NASA open data (no restriction; cite); access needs a NASA Earthdata login
+  verified: web-2026-09-24 (DOI resolved)
+  role: gedi_canopy_height surface layer (S19)
+
+gedi_l4b:
+  title: Dubayah et al., GEDI L4B Gridded Aboveground Biomass Density, version 2.1, ORNL DAAC (1 km)
+  doi: 10.3334/ORNLDAAC/2299
+  license: NASA open data (no restriction; cite); access needs a NASA Earthdata login
+  verified: web-2026-09-24 (DOI resolved)
+  role: gedi_biomass surface layers (S19)
+
+soil_map_image:
+  title: Soil map rendering (RGB, EPSG:3857, 7.8 m), masked to Mount Rainier National Park; delivered 2026-09-24
+  license: "unknown (TODO: source and legend)"
+  verified: "no"
+  role: soil_map image layer in the viewer (display only)
+  redistribute_derived: false   # source and legend undocumented; not published until they are

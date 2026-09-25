@@ -44,12 +44,14 @@ const LINE_FRAG = `
 
 export class SensorPoints {
   constructor(rs, sites, das) {
+    // only sites on the terrain (the station markers' "onMap"): beyond the overview box a point has no ground
+    sites = sites.filter(s => rs.elevKm(s.x, s.z) != null);
     this.rs = rs; this.sites = sites; this.hover = null;
     const n = sites.length, pos = new Float32Array(n * 3), col = new Float32Array(n * 3);
     const temp = new Float32Array(n), past = new Float32Array(n), on = new Float32Array(n).fill(1);
     const c = new THREE.Color();
     sites.forEach((s, i) => {
-      const y = (rs.elevKm(s.x, s.z) ?? (s.elev ?? 0) / 1000) + 0.015;
+      const y = rs.elevKm(s.x, s.z) + 0.015;
       pos.set([s.x, y, s.z], i * 3);
       c.set(KIND_BY_KEY[s.kinds[0]]?.color ?? "#8b8980"); col.set([c.r, c.g, c.b], i * 3);
       temp[i] = s.temporary ? 1 : 0; past[i] = s.status === "operating" ? 0 : 1;
