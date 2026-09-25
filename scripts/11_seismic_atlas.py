@@ -13,6 +13,8 @@ The canopy-storage layers of S19 (data/processed/surface_canopy.zarr) and the so
 that store exists; their keys can also be given to --layers. The mass movements of S24
 (outputs/mass_movements/) are appended the same way: the flow deposits as layer "mass_flows", the event points
 as model/mass_events.json.
+The strain fields of S25 (data/processed/strain_3d.zarr) are added to the volume, with their orientation
+bars, when that store exists.
 """
 
 from __future__ import annotations
@@ -31,6 +33,7 @@ from rainier3d.export.atlas import (
     append_mass_movements,
     export_layers,
     export_sensors,
+    export_strain,
     export_volume,
 )
 from rainier3d.io.store import read_tree
@@ -99,6 +102,10 @@ def main():
         ", ".join(vol["vars"]),
         vol["uv_poly"]["max_error_cells"],
     )
+    strain_store = dom.path("processed") / "strain_3d.zarr"
+    if strain_store.exists():  # S24: strain fields in the volume and orientation bars on the depth slice
+        st = export_strain(xr.open_zarr(strain_store, consolidated=False), dom, atlas)
+        logging.info("strain: %d fields, bars on %d levels %s", len(st["vars"]), st["levels"], st["segments"])
     size = sum(p.stat().st_size for p in (atlas / "model").rglob("*") if p.is_file())
     logging.info(
         "wrote %d layers + streams to %s (%.1f MB)", len(meta["layers"]), atlas / "model", size / 1e6

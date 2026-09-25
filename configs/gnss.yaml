@@ -10,6 +10,7 @@ source_keys:
   regions: [comcat_uw, m1_placeholder]         # WRSZ band from PNSN seismicity; radii are choices
   events: [comcat_uw]
   load: [johnson_1985, m1_placeholder]         # Boussinesq solution; rho and Poisson ratio are placeholders
+  volume: [m1_placeholder]                      # depth extension of the GNSS strain rate: assumptions, see below
 
 # Data freeze: products are cut at this date so reruns read the same days; advance it deliberately.
 as_of: "2026-09-01"
@@ -63,3 +64,21 @@ load:
   poisson: 0.25
   load_cell_m: 500
   min_depth_m: 250
+
+# Strain in the model volume (S25): the grid of the 3D viewer volume, the depth extension of the GNSS strain rate,
+# and the orientation grids exported for comparison with shear-wave splitting.
+volume:
+  dx_m: 500
+  dz_m: 250
+  z_bot_m: -20000
+  # GNSS horizontal strain rate assumed uniform with depth down to this elevation (elastic upper crust), with
+  # plane stress for the vertical component; masked below
+  rate_z_bot_m: -20000
+  bars:
+    tectonic_spacing_m: 5000
+    load_spacing_m: 2000
+    load_radius_m: 20000       # load strain is exported within this distance of the summit
+    elevations_m: [1500, 1000, 0, -2000, -5000, -10000, -15000]
+  summit_events:               # shallow edifice (hydrothermal) seismicity drawn on the edifice figures
+    radius_km: 6
+    max_depth_km: 4

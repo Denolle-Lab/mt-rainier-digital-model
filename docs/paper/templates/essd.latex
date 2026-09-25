@@ -12,7 +12,7 @@ $unicode-map$
 % pandoc emits \pandocbounded for images
 \providecommand{\pandocbounded}[1]{#1}
 \makeatletter
-\def\fps@figure{htbp}
+\def\fps@figure{tbp}
 \@ifundefined{c@none}{\newcounter{none}}{} % uncaptioned longtables (pandoc)
 \makeatother
 $if(highlighting-macros)$
