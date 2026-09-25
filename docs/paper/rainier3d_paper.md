@@ -365,7 +365,7 @@ where LP is a horizontal Gaussian low-pass filter with half power at the cutoff 
 - **Regional correction (12).** A static depth profile $m(d)$ of the log-factor that multiplies the regional velocity, $V_{\mathrm{reg}} \to V_{\mathrm{reg}}\,e^{m(d)}$, one profile for Vp and one for Vs. Here $d$ is depth below the ground. Each profile is piecewise linear between knots at 0, 1, 2, 4, 7, 11, 16 and 25 km and constant below 25 km. The values at 0 and 1 km are fixed at zero, because the fused model takes the top kilometre from the geology model ([@sec:fusion]); the six deeper values are free.
 
 **Forward problem.** For a trial $\boldsymbol\theta$, the model is rebuilt from its inputs by the same code that builds the published model. At $\boldsymbol\theta = 0$ it returns the uncalibrated model cell for cell, which checks that the calibration fits the model that is delivered and not an approximation of it. The steps are:
-1. Vp and Vs of every rock-unit cell from [@eq:crack] with the scaled V₀, P* and Vs;
+1. Vp of every rock-unit cell from [@eq:crack] with the scaled V₀ and P*, and Vs from that Vp through the unit's Vp/Vs ratio, or the regression of @brocher_2005 where the unit has none, times the Vs multiplier;
 2. the regional Vp and Vs multiplied by $e^{m(d)}$;
 3. the fusion of [@eq:fusion], including the geology-only top 300 m and the taper to 1 km;
 4. P and S travel times from every station on the 500 m grid, with air above the ground, as described under Travel times;
@@ -373,7 +373,7 @@ where LP is a horizontal Gaussian low-pass filter with half power at the cutoff 
 
 **Objective.** With $t_{ij}$ the pick of phase at station $j$ for event $i$, $T_j$ the travel-time field, and $(\mathbf{x}_i, \tau_i)$ the hypocentre and origin time, the normalised residual is
 $$r_{ij} = \frac{t_{ij} - \tau_i - T_j(\mathbf{x}_i;\boldsymbol\theta)}{\sigma_{\mathrm{ph}}},$$ {#eq:residual}
-with $\sigma_P = 0.14$ s and $\sigma_S = 0.23$ s. The calibration minimises
+where $\sigma_{\mathrm{ph}}$ is the pick uncertainty of the pick's phase: $\sigma_P = 0.14$ s for P picks and $\sigma_S = 0.23$ s for S picks. The calibration minimises
 $$\Phi(\boldsymbol\theta) = \sum_{ij} w_{ij}\, r_{ij}^2 + \boldsymbol\theta_g^{\mathsf T} \mathbf C_g^{-1} \boldsymbol\theta_g + \lambda_s \lVert \mathbf D \mathbf m \rVert^2 + \lambda_d \lVert \mathbf m \rVert^2,$$ {#eq:objective}
 where the hypocentres minimise the first term for each $\boldsymbol\theta$. The weights $w_{ij}$ are the Huber weights of the relocation (threshold 1.5σ), so outlying picks count less. $\boldsymbol\theta_g$ holds the three rock-physics log-multipliers, with prior standard deviations of 0.3, 0.7 and 0.1 on the diagonal of $\mathbf C_g$ (factors of 1.35, 2 and 1.1). $\mathbf m$ holds the regional log-factors at all eight knots, with the two fixed at zero, and $\mathbf D$ takes second differences along depth. The smoothing weight $\lambda_s$ and the damping weight $\lambda_d = 0.01$ are relative: both are multiplied by the mean diagonal of the data term for the regional parameters.
 
