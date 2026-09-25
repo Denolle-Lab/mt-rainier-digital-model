@@ -1,39 +1,11 @@
-import { useEffect, useRef, useState } from "react";
 import { KIND_BY_KEY } from "../data/kinds.js";
 import Glyph from "./Glyph.jsx";
+import { usePointPick } from "./usePointPick.js";
 import "./ui.css";
 
 // Hover (or tap) card for the inventory points: name, instruments, network type, status and dates.
 export default function SensorTip({ scene, points }) {
-  const [hit, setHit] = useState(null), raf = useRef(0);
-  useEffect(() => {
-    const canvas = scene.renderer.domElement;
-    let down = null, timer = 0;
-    const at = (e, keep) => {
-      cancelAnimationFrame(raf.current);
-      raf.current = requestAnimationFrame(() => {
-        const s = points.pick(e.clientX, e.clientY);
-        scene.sensorHover = !!s;
-        setHit(s ? { s, x: e.clientX, y: e.clientY } : null);
-        if (s && keep) { clearTimeout(timer); timer = setTimeout(() => { scene.sensorHover = false; setHit(null); }, 5000); }
-      });
-    };
-    const move = e => { if (e.pointerType === "mouse") at(e, false); };
-    const pd = e => { if (e.pointerType !== "mouse") down = [e.clientX, e.clientY]; };
-    const pu = e => { if (e.pointerType !== "mouse" && down && Math.hypot(e.clientX - down[0], e.clientY - down[1]) < 8) at(e, true); };
-    canvas.addEventListener("pointermove", move); canvas.addEventListener("pointerdown", pd); canvas.addEventListener("pointerup", pu);
-    // the card belongs to a screen position: drop it as soon as the camera moves (flights, keys, wheel)
-    let last = scene.camera.position.clone();
-    const watch = setInterval(() => {
-      if (!scene.camera.position.equals(last)) { last = scene.camera.position.clone(); scene.sensorHover = false; setHit(null); }
-    }, 200);
-    return () => {
-      scene.sensorHover = false;   // an unmounted card must not keep the model readout disabled
-      clearInterval(watch);
-      cancelAnimationFrame(raf.current); clearTimeout(timer);
-      canvas.removeEventListener("pointermove", move); canvas.removeEventListener("pointerdown", pd); canvas.removeEventListener("pointerup", pu);
-    };
-  }, [scene, points]);
+  const hit = usePointPick(scene, points, "sensorHover");
   if (!hit) return null;
   const { s } = hit;
   const when = s.status === "operating" ? `operating since ${s.start ?? "?"}` : `${s.start ?? "?"} to ${s.end ?? "?"}`;

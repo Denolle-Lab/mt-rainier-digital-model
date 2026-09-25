@@ -1,4 +1,4 @@
-// Strain orientation bars (atlas/model/strain_bars.json, written by rainier3d S11 from S24): for each elevation level
+// Strain orientation bars (atlas/model/strain_bars.json, written by rainier3d S11 from S25): for each elevation level
 // (levels_km) and each set ("tectonic": GNSS axis of maximum shortening; "load": SHmax of the edifice load), a flat
 // list x0, z0, x1, z1, ... of segment ends in scene km. The viewer draws the set of the selected property at the
 // level nearest the depth slice.

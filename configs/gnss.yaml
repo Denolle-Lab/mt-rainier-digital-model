@@ -65,7 +65,7 @@ load:
   load_cell_m: 500
   min_depth_m: 250
 
-# Strain in the model volume (S24): the grid of the 3D viewer volume, the depth extension of the GNSS strain rate,
+# Strain in the model volume (S25): the grid of the 3D viewer volume, the depth extension of the GNSS strain rate,
 # and the orientation grids exported for comparison with shear-wave splitting.
 volume:
   dx_m: 500

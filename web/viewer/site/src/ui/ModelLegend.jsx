@@ -18,7 +18,7 @@ export default function ModelLegend({ layer }) {
           {legend.log && <div className="msrc">Log scale</div>}
         </>
       )}
-      <div className="msrc">{layer.note}{layer.note ? ". " : ""}{layer.kind === "image" ? "" : "Model grid, 100 m cells. "}
+      <div className="msrc">{layer.note}{layer.note ? ". " : ""}{layer.kind === "image" ? "" : `${layer.grid ?? "Model grid, 100 m cells."} `}
         {layer.sources.map((s, i) => <span key={s.key}>{i ? ", " : "Source: "}{s.link ? <a href={s.link} target="_blank" rel="noreferrer">{s.key}</a> : s.key}</span>)}
       </div>
     </div>

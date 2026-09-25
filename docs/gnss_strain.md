@@ -95,9 +95,9 @@ The grid (`data/processed/gnss/strain_grid.nc`, 5 km, adaptive smoothing) gives 
 - **Limitations.** Homogeneous half-space; flat reference plane; ν = 0.25 and ρ = 2,500 kg/m³ are placeholders; points within 250 m of the plane are left out.
 - **Scale comparison.** The secular geodetic strain rates correspond to stress rates of order 1 kPa/yr (µ ≈ 30 GPa × 3 × 10⁻⁸/yr), against a static load stress of 1–40 MPa.
 
-## Strain in the model volume (S24, `pixi run s24`)
+## Strain in the model volume (S25, `pixi run s25`)
 
-S24 puts two strain fields on the grid of the 3D viewer volume: 500 m × 250 m, from the surface to 20 km below
+S25 puts two strain fields on the grid of the 3D viewer volume: 500 m × 250 m, from the surface to 20 km below
 sea level, rock cells only. The results go to:
 - `data/processed/strain_3d.zarr` (the product `strain_3d`);
 - `outputs/gnss/strain_orientation.csv`;

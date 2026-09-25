@@ -8,9 +8,27 @@ dnr_gems_100k:
   url: https://gis.dnr.wa.gov/site1/rest/services/Public_Geology/100K_Surface_Geology_WA_GeMS/FeatureServer
   license: public (WA DNR)
   verified: web-2026-09-23
-  role: surface lithology (layer 11), description of map units (layer 13); orientations (layer 1) for M3
+  role: surface lithology (layer 11), description of map units (layer 13); orientations (layer 1) for M3; faults (layer 7) and lahar deposits (Qvl units) for S24
   bib_author: "{Washington Geological Survey}"   # author and year for the BibTeX entry (live service: year accessed)
   bib_year: 2026
+
+dnr_quaternary_faults:
+  title: Washington Geological Survey, Quaternary active faults of Washington (Earthquakes and Faults map service, layer 12)
+  url: https://gis.dnr.wa.gov/site1/rest/services/Public_Geology/Earthquakes_and_Faults/MapServer/12
+  license: not stated in the service metadata
+  verified: web-2026-09-25 (service queried; 4 features in the model box)
+  role: Quaternary faults and seismic zones (S24, report figure)
+  bib_author: "{Washington Geological Survey}"   # author and year for the BibTeX entry (live service: year accessed)
+  bib_year: 2026
+
+nshm23_fsd:
+  title: Hatem, Collett, Briggs, Gold, Angster, Powers, Field et al. 2021, Earthquake geology inputs for the U.S. National Seismic Hazard Model (NSHM) 2023 (western U.S.), ver. 3.0 (December 2023), USGS data release (fault sections database NSHM23_FSD_v3)
+  doi: 10.5066/P9AWINWZ
+  license: CC0-1.0
+  verified: web-2026-09-25 (DataCite; NSHM23_FSD_v3.geojson read; no fault section in the model box, nearest Olympia 17 km and Tacoma 28 km outside it)
+  role: 3D fault planes (dip, rake, depth range); none in the model box
+  bib_author: "Hatem, A. E. and Collett, C. and Briggs, R. and Gold, R. D. and Angster, S. J. and Powers, P. M. and Field, N. and others"
+  bib_year: 2021
 
 nps_gri_mora:
   title: NPS GRI Digital Geologic-GIS Map of Mount Rainier National Park (after Fiske et al. 1963)
@@ -425,8 +443,8 @@ wgs_landslide_inventory:
   title: Washington Geological Survey, Washington State Landslide Inventory Database, Digital Data Series 29, v1.5 (2026); includes the Landslide Compilation layer with the NPS mapping of Riedel et al.
   url: https://gis.dnr.wa.gov/site3/rest/services/Geology/Landslide_Inventory_Database/MapServer
   license: not stated in the service metadata
-  verified: web-2026-09-25 (service queried; 57 compilation polygons in lon -122.00 to -121.44, lat 46.70 to 47.00)
-  role: landslide polygons (mass-movement catalogue)
+  verified: web-2026-09-25 (service queried; 57 compilation polygons in lon -122.00 to -121.44, lat 46.70 to 47.00); S24 fetch 2026-09-25 (layers 1, 21, 131 over the model box)
+  role: landslide polygons (mass-movement catalogue, S24)
   bib_author: "{Washington Geological Survey}"   # author and year for the BibTeX entry (live service: year accessed)
   bib_year: 2026
 
@@ -453,8 +471,10 @@ hoblitt_1998:
 schilling_2008:
   title: Schilling, Doelger, Hoblitt, Walder, Driedger, Scott, Pringle & Vallance 2008, Digital data for volcano hazards from Mount Rainier, Washington, revised 1998, USGS Open-File Report 2007-1220
   doi: 10.3133/ofr20071220
-  verified: web-2026-09-25 (Crossref)
-  role: lahar inundation zones (shapefiles)
+  url: https://pubs.usgs.gov/of/2007/1220/data/rainier_98shapefiles.zip
+  license: USGS product, no access constraints (metadata.txt)
+  verified: web-2026-09-25 (Crossref); shapefiles downloaded by S24 2026-09-25; UTM 10N, NAD27 from metadata.txt (no .prj)
+  role: lahar inundation zones (S24, report figure; not a model layer)
 
 scott_1995:
   title: Scott, Vallance & Pringle 1995, Sedimentology, behavior, and hazards of debris flows at Mount Rainier, Washington, USGS Professional Paper 1547
@@ -525,8 +545,10 @@ esec_v3:
 allstadt_2017_esec:
   title: Allstadt, McVey & Malone 2017, Seismogenic landslides, debris flows, and outburst floods in the western United States and Canada from 1977 to 2017, USGS data release
   doi: 10.5066/F7251H3W
-  verified: web-2026-09-25 (DataCite)
-  role: seismogenic mass movements, PNSN region
+  url: https://www.sciencebase.gov/catalog/item/597913dde4b0ec1a488a4990
+  license: no use constraints (FGDC metadata, useconst "none")
+  verified: web-2026-09-25 (DataCite); Events.csv downloaded by S24 2026-09-25 (19 events in the model box)
+  role: seismogenic mass movements, PNSN region (S24 event points)
 
 kramer_2024:
   title: Kramer, Thelen, Iezzi, Moran & Pauk 2024, Recent expansion of the Cascades Volcano Observatory geophysical network at Mount Rainier for improved volcano and lahar monitoring, Seismological Research Letters

@@ -138,7 +138,7 @@ test("(l) the subsurface section follows the cut and the slice follows its slide
   expect(await page.evaluate(() => window.__rainier.volume.slice.position.y)).toBe(-5);
 });
 
-test("(n) strain properties draw their orientation bars on the depth slice", async ({ page }) => {
+test("(o) strain properties draw their orientation bars on the depth slice", async ({ page }) => {
   await page.waitForFunction(() => !!window.__rainier.volume, null, { timeout: 30_000 });
   test.skip(!(await page.evaluate(() => !!window.__rainier.volume.meta.bars)), "bundle without strain (S24)");
   await page.waitForFunction(() => !!window.__rainier.volume.bars, null, { timeout: 30_000 });
@@ -168,4 +168,30 @@ test("(m) the sensor legend filters: geophones show the 2025 nodes, Past adds ea
   await page.getByRole("button", { name: "Temporary", exact: true }).click();
   expect(await on()).toBe(0);                                     // all nodes are temporary
   expect(await page.evaluate(() => window.__rainier.sensors.fiber.visible)).toBe(false);
+});
+
+test("(n) mass movements: events sit on the ground, the legend filters them, Flow deposits drapes the flows", async ({ page }) => {
+  await page.waitForFunction(() => !!window.__rainier.mass, null, { timeout: 30_000 });
+  const on = () => page.evaluate(() => Array.from(window.__rainier.mass.onAttr.array).filter(v => v > 0).length);
+  expect(await on()).toBe(0);                                     // off by default
+  const { n, seismic, minOff, maxOff } = await page.evaluate(() => {
+    const m = window.__rainier.mass, r = window.__rainier;
+    const off = m.events.map((e, i) => m.yKm(i) - r.elevKm(e.x, e.z));
+    return { n: m.events.length, seismic: m.events.filter(e => e.located === "seismic").length,
+      minOff: Math.min(...off), maxOff: Math.max(...off) };
+  });
+  expect(n).toBeGreaterThan(400);                                 // events on the terrain box (the model box is larger)
+  expect(seismic).toBeGreaterThanOrEqual(19);                     // Allstadt et al. (2017) events in the box
+  expect(minOff).toBeGreaterThanOrEqual(0.015 - 1e-6);             // every point at least 15 m above the ground
+  expect(maxOff).toBeLessThan(0.3);                               // and on it: the highest ground within 60 m
+  await page.getByRole("button", { name: "Events", exact: true }).click();
+  expect(await on()).toBe(n);
+  await page.getByRole("button", { name: "Dated only", exact: true }).click();
+  const dated = await page.evaluate(() => window.__rainier.mass.events.filter(e => e.date).length);
+  expect(await on()).toBe(dated);
+  await page.locator(".mfilter .sf-kind", { hasText: "Snow or ice avalanche" }).click();
+  expect(await on()).toBe(2);                                     // the 2010 and 2014 seismic avalanches
+  await page.getByRole("button", { name: "Flow deposits", exact: true }).click();
+  await expect(page.getByLabel("Surface model layer")).toHaveValue("mass_flows");
+  await expect(page.locator(".model-panel")).toContainText("Osceola Mudflow");
 });

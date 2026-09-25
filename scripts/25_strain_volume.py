@@ -1,4 +1,4 @@
-"""S24: strain in the model volume -> data/processed/strain_3d.zarr, outputs/gnss/strain_orientation.csv,
+"""S25: strain in the model volume -> data/processed/strain_3d.zarr, outputs/gnss/strain_orientation.csv,
 outputs/gnss/strain_3d_summary.json and the paper figures fig16 (WRSZ), fig17 (edifice), fig18 (orientation).
 
 Two fields on the grid of the 3D viewer volume (500 m x 250 m, surface to 20 km below sea level), rock only:
@@ -14,7 +14,7 @@ Two fields on the grid of the 3D viewer volume (500 m x 250 m, surface to 20 km 
 The orientation table gives both shortening directions on regular grids at fixed elevations, for comparison
 with shear-wave splitting fast directions.
 
-Usage: pixi run s24   (after S5 and S18)
+Usage: pixi run s25   (after S5 and S18)
 """
 
 from __future__ import annotations
@@ -35,7 +35,7 @@ from rainier3d.geodesy import volume as V
 from rainier3d.io import store
 from rainier3d.io.store import read_tree
 
-log = logging.getLogger("s24")
+log = logging.getLogger("s25")
 
 
 def wrsz_events(events: dict, polygon_lonlat, tf) -> np.ndarray:

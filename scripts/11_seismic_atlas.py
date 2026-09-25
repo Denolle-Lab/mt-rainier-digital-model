@@ -10,8 +10,11 @@ Usage: pixi run s11 [-- --atlas web/viewer/site/public/atlas]
        pixi run s11 -- --layers alteration_surface,apparent_magnetization
 
 The canopy-storage layers of S19 (data/processed/surface_canopy.zarr) and the soil-map image are appended when
-that store exists; their keys can also be given to --layers. The strain fields of S24
-(data/processed/strain_3d.zarr) are added to the volume, with their orientation bars, when that store exists.
+that store exists; their keys can also be given to --layers. The mass movements of S24
+(outputs/mass_movements/) are appended the same way: the flow deposits as layer "mass_flows", the event points
+as model/mass_events.json.
+The strain fields of S25 (data/processed/strain_3d.zarr) are added to the volume, with their orientation
+bars, when that store exists.
 """
 
 from __future__ import annotations
@@ -27,6 +30,7 @@ import yaml
 from rainier3d.config.domain import REPO, load_domain
 from rainier3d.export.atlas import (
     append_canopy_layers,
+    append_mass_movements,
     export_layers,
     export_sensors,
     export_strain,
@@ -57,7 +61,7 @@ def main():
     }
     if a.layers:
         keys = [k.strip() for k in a.layers.split(",") if k.strip()]
-        model_keys = [k for k in keys if k not in canopy_keys]
+        model_keys = [k for k in keys if k not in canopy_keys and k != "mass_flows"]
         meta = merge_layers(tree, dom, manifest, atlas / "model", fl, model_keys) if model_keys else None
     else:
         meta = export_layers(tree, dom, manifest, atlas / "model", fl, imagery=fetch_s2_composite(dom))
@@ -77,6 +81,16 @@ def main():
         logging.info("canopy layers appended: %s", ", ".join(added))
     elif want:
         raise SystemExit(f"{canopy_store} is missing; run S19 first")
+    # S24 mass movements: flow deposits (a drape) and event points, appended when S24 has run
+    mm = dom.path("outputs") / "mass_movements"
+    have_mm = all((mm / f).exists() for f in ("flows.gpkg", "events.gpkg"))
+    if have_mm and (not a.layers or "mass_flows" in keys):
+        import geopandas as gpd
+
+        r = append_mass_movements(atlas, gpd.read_file(mm / "flows.gpkg"), gpd.read_file(mm / "events.gpkg"))
+        logging.info("mass movements appended: %d flow polygons, %d event points", r["flows"], r["events"])
+    elif a.layers and "mass_flows" in keys:
+        raise SystemExit(f"{mm} lacks flows.gpkg or events.gpkg; run S24 first")
     meta = json.loads((atlas / "model" / "layers.json").read_text())
     vol = export_volume(tree, dom, atlas)
     g = vol["grid"]

@@ -5,7 +5,7 @@
   gnss          outputs/gnss/ (velocities, strain series, summary), data/processed/gnss/strain_grid.nc and
                 the download record (data/raw/gnss/manifest.csv, data/processed/gnss/fetch.json)
   edifice_load  data/processed/edifice_load.zarr
-  strain_3d     data/processed/strain_3d.zarr (S24: GNSS strain rate and edifice-load strain in the volume)
+  strain_3d     data/processed/strain_3d.zarr (S25: GNSS strain rate and edifice-load strain in the volume)
 
 Each archive gets its SHA-256; the catalog shipped in the package (src/rainier3d/products.json) is updated
 with version, url, size and checksum. With --upload the archives become assets of GitHub release <tag>.
