@@ -14,12 +14,15 @@
       "cite": "Denolle, M. and Yao, D. (2026). rainier3d: a geology-driven 3D velocity model of Mount Rainier. https://github.com/Denolle-Lab/mt-rainier-digital-model"
     },
     "gnss": {
-      "version": null,
+      "version": "weekly",
+      "rolling": true,
+      "schedule": "weekly, Mondays 09:00 UTC (.github/workflows/gnss-weekly.yml); dated copies rainier3d_gnss_<as_of>.zip in the same release",
       "file": "rainier3d_gnss.zip",
-      "url": null,
+      "url": "https://github.com/Denolle-Lab/mt-rainier-digital-model/releases/download/gnss-latest/rainier3d_gnss.zip",
+      "sha256_url": "https://github.com/Denolle-Lab/mt-rainier-digital-model/releases/download/gnss-latest/rainier3d_gnss.zip.sha256",
       "sha256": null,
       "bytes": null,
-      "description": "GNSS station velocities (MIDAS, QC flags), strain-rate grid and daily regional strain series (S18)",
+      "description": "GNSS station velocities (MIDAS, QC flags), strain-rate grid, daily regional strain series and the download manifest (S17, S18), refreshed weekly",
       "license": "CC-BY-4.0; acknowledge PANGA/CWU and UNR/NGL",
       "excluded": [],
       "cite": "as model; GPS time series provided by the Pacific Northwest Geodetic Array, Central Washington University"

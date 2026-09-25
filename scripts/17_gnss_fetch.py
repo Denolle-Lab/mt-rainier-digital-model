@@ -5,14 +5,18 @@
 
 Every download is cached under data/raw/gnss/<archive>/ and listed with its SHA-256 in
 data/raw/gnss/manifest.csv; reruns read the cache (--refresh re-downloads). Series are cut at
-configs/gnss.yaml as_of. Writes daily.parquet (common table), sites.csv and steps.csv.
+configs/gnss.yaml as_of, or at --as-of (a date, or "today" for the weekly refresh in
+.github/workflows/gnss-weekly.yml). Writes daily.parquet (common table), sites.csv, steps.csv and fetch.json
+(the as_of date used, which S18 reads).
 
-Usage: pixi run s17 [-- --refresh]
+Usage: pixi run s17 [-- --refresh] [--as-of today]
 """
 
 from __future__ import annotations
 
 import argparse
+import datetime as dt
+import json
 import logging
 import time
 import zipfile
@@ -32,6 +36,9 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--refresh", action="store_true")
     ap.add_argument(
+        "--as-of", help='cut the series at this date (YYYY-MM-DD or "today"); default: configs/gnss.yaml'
+    )
+    ap.add_argument(
         "--unr-shared", type=int, default=20, help="shared PANGA/UNR sites fetched for frame checks"
     )
     a = ap.parse_args()
@@ -41,7 +48,10 @@ def main():
     out.mkdir(parents=True, exist_ok=True)
     man = raw / "manifest.csv"
     w, s, e, n = cfg["network_bbox"]
-    as_of, start = pd.Timestamp(cfg["as_of"]), pd.Timestamp(cfg["start"])
+    as_of = a.as_of or cfg["as_of"]
+    if as_of == "today":
+        as_of = dt.datetime.now(dt.UTC).date().isoformat()
+    as_of, start = pd.Timestamp(as_of), pd.Timestamp(cfg["start"])
 
     # PANGA: site coordinates and velocities, then every in-box site from the zip
     hv = A.fetch(A.PANGA_HVEL, raw / "panga" / "panga_nam20_hvel.xml", "panga", man, refresh=a.refresh)
@@ -120,6 +130,17 @@ def main():
         st[col] = [span[k].get((x, y)) for x, y in zip(st.site, arch, strict=True)]
     st.to_csv(out / "sites.csv", index=False)
     pd.DataFrame(steps).to_csv(out / "steps.csv", index=False)
+    (out / "fetch.json").write_text(
+        json.dumps(
+            {
+                "as_of": as_of.date().isoformat(),
+                "last_day": daily.date.max().date().isoformat(),
+                "run_utc": dt.datetime.now(dt.UTC).isoformat(timespec="seconds"),
+                "refresh": a.refresh,
+            },
+            indent=1,
+        )
+    )
     log.info(
         "wrote %s: %d site-days, %d series; manifest %s",
         out / "daily.parquet",

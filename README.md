@@ -65,6 +65,7 @@ pixi run python -m rainier3d export surface --layers elevation soil_thickness --
 pixi run python -m rainier3d sample --lon -121.76 --lat 46.85 --depth 5000
 ```
 
+The `gnss` product is refreshed every Monday by `.github/workflows/gnss-weekly.yml` (`docs/gnss_strain.md`).
 `--model data/processed/model.zarr` uses a local pipeline build instead of the download. The same calls are in
 `rainier3d.api` (`open_model`, `grid`, `export`, `export_surface`, `sample`). Downloads are cached in
 `$RAINIER3D_DATA` (default `~/.cache/rainier3d`). `scripts/20_publish_products.py --tag <tag> --upload` builds

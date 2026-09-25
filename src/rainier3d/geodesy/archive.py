@@ -51,20 +51,11 @@ def sha256(path: Path) -> str:
     return h.hexdigest()
 
 
-def fetch(
-    url: str, path: Path, archive: str, manifest: Path, timeout: int = 120, refresh: bool = False
-) -> Path:
-    """Download ``url`` to ``path`` once and record it in the manifest; later calls read the cache."""
-    if path.exists() and not refresh:
-        return path
-    path.parent.mkdir(parents=True, exist_ok=True)
-    part = path.with_name(path.name + ".part")
-    with requests.get(url, timeout=timeout, headers={"User-Agent": USER_AGENT}, stream=True) as r:
-        r.raise_for_status()
-        with open(part, "wb") as f:
-            for chunk in r.iter_content(1 << 20):
-                f.write(chunk)
-    part.replace(path)  # a failed download never leaves a partial file at the cached path
+def _manifest_path(path: Path, manifest: Path) -> str:
+    return Path(os.path.relpath(path.resolve(), manifest.parent.resolve())).as_posix()
+
+
+def _record(manifest: Path, archive: str, url: str, path: Path, retrieved: dt.datetime) -> None:
     new = not manifest.exists()
     manifest.parent.mkdir(parents=True, exist_ok=True)
     with open(manifest, "a", newline="") as f:
@@ -75,12 +66,40 @@ def fetch(
             [
                 archive,
                 url,
-                Path(os.path.relpath(path.resolve(), manifest.parent.resolve())).as_posix(),
-                dt.datetime.now(dt.UTC).isoformat(timespec="seconds"),
+                _manifest_path(path, manifest),
+                retrieved.isoformat(timespec="seconds"),
                 path.stat().st_size,
                 sha256(path),
             ]
         )
+
+
+def _recorded(path: Path, manifest: Path) -> bool:
+    if not manifest.exists():
+        return False
+    with open(manifest) as f:
+        return any((manifest.parent / r["path"]).resolve() == path.resolve() for r in csv.DictReader(f))
+
+
+def fetch(
+    url: str, path: Path, archive: str, manifest: Path, timeout: int = 120, refresh: bool = False
+) -> Path:
+    """Download ``url`` to ``path`` once and record it in the manifest; later calls read the cache. A cached
+    file missing from the manifest (e.g. a deleted manifest) is recorded again, dated by its mtime."""
+    if path.exists() and not refresh:
+        if not _recorded(path, manifest):
+            mtime = dt.datetime.fromtimestamp(path.stat().st_mtime, dt.UTC)
+            _record(manifest, archive, url, path, mtime)
+        return path
+    path.parent.mkdir(parents=True, exist_ok=True)
+    part = path.with_name(path.name + ".part")
+    with requests.get(url, timeout=timeout, headers={"User-Agent": USER_AGENT}, stream=True) as r:
+        r.raise_for_status()
+        with open(part, "wb") as f:
+            for chunk in r.iter_content(1 << 20):
+                f.write(chunk)
+    part.replace(path)  # a failed download never leaves a partial file at the cached path
+    _record(manifest, archive, url, path, dt.datetime.now(dt.UTC))
     log.info("fetched %s (%d bytes)", url, path.stat().st_size)
     return path
 

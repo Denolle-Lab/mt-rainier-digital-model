@@ -12,6 +12,41 @@
 - **Caching.** Every file is cached in `data/raw/gnss/`, and `manifest.csv` records its URL, retrieval time, size and SHA-256. Reruns read the cache; `--refresh` downloads again.
 - **Totals.** 1,050,643 site-days in 256 series.
 
+## Weekly refresh
+
+The numbers on this page are from the frozen run (`as_of` 2026-09-01 in `configs/gnss.yaml`). On top of it,
+`.github/workflows/gnss-weekly.yml` reruns the pipeline every Monday at 09:00 UTC:
+- `gnss-fetch --refresh --as-of today`: every archive file is downloaded again.
+- `gnss-strain --no-load`: velocities, QC, the strain grid and the regional series. The edifice load is skipped:
+  it needs the local model and does not depend on the GNSS data.
+- `gnss-publish --rolling`: the assets of the release `gnss-latest` are replaced.
+
+The job runs in the slim pixi environment `gnss`.
+
+The release holds three assets:
+
+| Asset | Contents |
+|---|---|
+| `rainier3d_gnss.zip` | the latest outputs, plus `manifest.csv` (URL, time and SHA-256 of every downloaded file) and `fetch.json` (the `as_of` date and the last day with data) |
+| `rainier3d_gnss.zip.sha256` | its checksum |
+| `rainier3d_gnss_<as_of>.zip` | a dated copy of each refresh |
+
+`rainier3d fetch gnss` downloads the latest refresh, and downloads again only when the published checksum changes. To pin a
+dated copy, pass its URL: `rainier3d.api.fetch("gnss", url=".../gnss-latest/rainier3d_gnss_2026-09-28.zip")`.
+
+On pull requests that touch the pipeline, the job runs the same steps without uploading.
+
+Test run, 25 September 2026 (local, `gnss` environment, empty cache):
+- S17 fetched 1,050,988 site-days in 256 series in 1 min 41 s; the last day with data was 2026-09-12.
+- S18 took 44 s.
+
+| Region | Dilatation, frozen run (nanostrain/yr) | Dilatation, test run (nanostrain/yr) |
+|---|---|---|
+| WRSZ | −16.6 ± 3.5 | −16.8 ± 3.5 |
+| Edifice (QC-passed) | −27.9 ± 12.4 | −29.3 ± 12.4 |
+
+The same 22 sites were flagged in both runs.
+
 ## Velocities and quality control (S18, `pixi run s18`)
 
 - **Velocities.** Station velocities come from MIDAS (Blewitt et al., 2016). Steps come from the PANGA fit headers and the UNR steps database.

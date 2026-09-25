@@ -50,7 +50,12 @@ def main(argv=None) -> int:
 
     if a.cmd == "list":
         for k, p in api.products().items():
-            state = f"{p['version']}, {p['bytes'] / 1e6:.0f} MB" if p.get("url") else "not published yet"
+            if not p.get("url"):
+                state = "not published yet"
+            elif p.get("rolling"):
+                state = f"{p['version']} (latest refresh)"
+            else:
+                state = f"{p['version']}, {p['bytes'] / 1e6:.0f} MB"
             print(f"{k:14s} {state:24s} {p['description']}\n{'':14s} licence: {p['license']}")
         return 0
     if a.cmd == "fetch":
