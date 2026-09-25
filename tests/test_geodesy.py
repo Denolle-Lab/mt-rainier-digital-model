@@ -108,3 +108,16 @@ def test_fetch_streams_and_manifest_is_relative(tmp_path, monkeypatch):
     assert A.verify_manifest(man) == []
     p.write_bytes(b"changed")
     assert A.verify_manifest(man) == [str(p.resolve())]
+
+
+def test_gnss_config_sections_have_registered_source_keys():
+    """configs/gnss.yaml names the provenance of every section, and every key is in configs/sources.yaml."""
+    import yaml
+
+    from rainier3d.config.domain import REPO
+
+    cfg = yaml.safe_load((REPO / "configs" / "gnss.yaml").read_text())
+    reg = yaml.safe_load((REPO / "configs" / "sources.yaml").read_text())
+    keys = cfg["source_keys"]
+    assert {"archives", "min_years", "qc", "strain", "regions", "events", "load"} <= set(keys)
+    assert [k for ks in keys.values() for k in ks if k not in reg] == []

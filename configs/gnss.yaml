@@ -1,5 +1,16 @@
 # GNSS pipeline (S17 fetch, S18 velocities and strain). Every number here is a choice to review.
 
+# Provenance of each section (keys in configs/sources.yaml). m1_placeholder marks author choices (thresholds,
+# scales, bulk properties) that are not yet taken from the literature.
+source_keys:
+  archives: [panga_gnss, unr_ngl_gnss]
+  min_years: [blewitt_2016_midas]
+  qc: [m1_placeholder]
+  strain: [shen_2015_strain, m1_placeholder]   # method from Shen et al. 2015; scales and thresholds are choices
+  regions: [comcat_uw, m1_placeholder]         # WRSZ band from PNSN seismicity; radii are choices
+  events: [comcat_uw]
+  load: [johnson_1985, m1_placeholder]         # Boussinesq solution; rho and Poisson ratio are placeholders
+
 # Data freeze: products are cut at this date so reruns read the same days; advance it deliberately.
 as_of: "2026-09-01"
 start: "2008-01-01"

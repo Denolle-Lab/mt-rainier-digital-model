@@ -58,15 +58,13 @@ def main():
     )
     series, steps, sites = [], [], []
     with zipfile.ZipFile(zpath) as zf:
-        names = {m.split("/")[-1].split(".")[0].upper() for m in zf.namelist() if m.endswith(".lat")}
+        members = {  # site -> its .lat member, indexed once
+            m.split("/")[-1].split(".")[0].upper(): m for m in zf.namelist() if m.endswith(".lat")
+        }
         for _, r in pv.iterrows():
-            if r.site not in names:
+            key = members.get(r.site)
+            if key is None:
                 continue
-            key = next(
-                m
-                for m in zf.namelist()
-                if m.endswith(".lat") and m.split("/")[-1].split(".")[0].upper() == r.site
-            )
             d, st = A.parse_panga_site(zf, key.split("/")[-1].split(".")[0], proc=key.split("/")[0])
             d["lon"], d["lat"] = r.lon, r.lat
             series.append(d)
@@ -86,6 +84,7 @@ def main():
     want = [x for x in hold.site if x not in have] + shared
     stp = A.parse_unr_steps(A.fetch(A.UNR_STEPS, raw / "unr" / "steps.txt", "unr", man, refresh=a.refresh))
     for site in want:
+        cached = (raw / "unr" / f"{site}.NA.tenv3").exists() and not a.refresh
         try:
             p = A.fetch(
                 A.UNR_TENV3_NA.format(site=site),
@@ -103,7 +102,8 @@ def main():
         sites.append(
             {"site": site, "lat": r.lat, "lon": r.lon, "archive": "unr" if site not in have else "unr-shared"}
         )
-        time.sleep(0.2)
+        if not cached:
+            time.sleep(0.2)  # be polite to the NGL server between downloads
     s1 = stp[stp.site.isin(want) & (stp.code == 1)]
     steps += [
         {"site": x.site, "decyear": x.decyear, "source": f"unr steps: {x.what}"} for x in s1.itertuples()
