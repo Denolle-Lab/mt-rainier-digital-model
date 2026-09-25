@@ -32,7 +32,8 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write   # release assets on main
+  contents: write   # the rebuilt paper and release assets on main
+  actions: write    # start the Pages deploy after committing the paper
 
 concurrency:
   group: paper-${{ github.ref }}
@@ -72,7 +73,13 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add docs/paper/rainier3d_paper.html docs/paper/rainier3d_paper.pdf
-          git diff --cached --quiet || { git commit -m "Paper: rebuild HTML and PDF (paper.yml)" && git push; }
+          if ! git diff --cached --quiet; then
+            git commit -m "Paper: rebuild HTML and PDF (paper.yml)" && git push
+            # pushes by the Actions token start no workflows, so deploy the site explicitly
+            gh workflow run viewer-pages.yml --ref main
+          fi
+        env:
+          GH_TOKEN: ${{ github.token }}
       - name: Publish to the release paper-latest (main only)
         if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
         env:

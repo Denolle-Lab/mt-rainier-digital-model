@@ -88,7 +88,8 @@ The data description paper (ESSD format) is `docs/paper/rainier3d_paper.md`. Its
 [`rainier3d_paper.pdf`](docs/paper/rainier3d_paper.pdf) (Copernicus manuscript class) and
 `rainier3d_paper.html` (one self-contained page). `pixi run -e paper paper` rebuilds both locally, as a preview. The committed copy is built on
 Linux by `.github/workflows/paper.yml`, which is byte-reproducible there: it commits the paper on main when its bytes
-change and attaches it to the release `paper-latest`. Figures that need the model are made by `pixi run s10`.
+change and attaches it to the release `paper-latest`. The site deploy
+(`.github/workflows/viewer-pages.yml`) publishes it at https://denolle-lab.github.io/mt-rainier-digital-model/paper/. Figures that need the model are made by `pixi run s10`.
 
 ## 3D viewer (web/viewer)
 
