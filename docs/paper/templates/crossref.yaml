@@ -1,4 +1,4 @@
-# pandoc-crossref settings for docs/report/rainier3d.md (scripts/23_report_build.py)
+# pandoc-crossref settings for docs/paper/rainier3d_paper.md (scripts/23_paper.py)
 figureTitle: "Figure"
 tableTitle: "Table"
 figPrefix: ["Fig.", "Figs."]

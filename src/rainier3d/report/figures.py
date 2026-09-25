@@ -1,4 +1,4 @@
-"""Figures for the model report (docs/report/figures/). Each function writes one PNG and returns its path.
+"""Figures for the model report (docs/paper/figures/). Each function writes one PNG and returns its path.
 
 Colour choices: velocities use Crameri's perceptually uniform ``roma`` (red slow, blue fast);
 density ``cividis``; event depth a single-hue sequential ramp; categorical classes use the

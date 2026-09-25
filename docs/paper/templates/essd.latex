@@ -1,5 +1,5 @@
-%% Pandoc template for Copernicus / ESSD (copernicus.cls, fetched by scripts/23_report_build.py).
-%% Source: docs/report/rainier3d.md. Non-ASCII characters are mapped for the class's 8-bit Times fonts below;
+%% Pandoc template for Copernicus / ESSD (copernicus.cls, fetched by scripts/23_paper.py).
+%% Source: docs/paper/rainier3d_paper.md. Non-ASCII characters are mapped for the class's 8-bit Times fonts below;
 %% the build fails on any character without a mapping.
 \documentclass[essd, manuscript]{copernicus}
 

@@ -1,15 +1,18 @@
-"""S23: build the report from docs/report/rainier3d.md -> outputs/report/ (HTML page and ESSD PDF).
+"""S23: build the paper, docs/paper/rainier3d_paper.md -> docs/paper/rainier3d_paper.{html,pdf} (committed).
 
-  rainier3d_report.html   one self-contained page (figures embedded, MathML equations, no scripts)
-  rainier3d_essd.tex/.pdf the same text in the Copernicus ESSD manuscript class (natbib + copernicus.bst)
+  rainier3d_paper.html     one self-contained page (figures embedded, MathML equations, no scripts)
+  rainier3d_paper.pdf      the same text in the Copernicus ESSD manuscript class (natbib + copernicus.bst)
 
-Figures are the committed PNGs of docs/report/figures/ (made by S10, S16 and S21 from the model) and
-docs/report/workflow.dot, rendered here with Graphviz. Citations [@key] resolve through docs/references.bib
+Intermediate files (LaTeX source, logs, the Copernicus package) stay in outputs/paper/. SOURCE_DATE_EPOCH is
+fixed, so the same text gives the same bytes on any machine and CI can tell when the committed paper is stale.
+
+Figures are the committed PNGs of docs/paper/figures/ (made by S10, S16 and S21 from the model) and
+docs/paper/workflow.dot, rendered here with Graphviz. Citations [@key] resolve through docs/references.bib
 (pixi run bib), whose keys are the configs/sources.yaml keys. The Copernicus LaTeX package is downloaded
 from Copernicus and checked against COPERNICUS_SHA256; it is not redistributed with this repository.
-No model data are needed, so .github/workflows/report.yml runs this on a clean checkout.
+No model data are needed, so .github/workflows/paper.yml runs this on a clean checkout.
 
-Usage: pixi run -e paper report [-- --html-only | --pdf-only]
+Usage: pixi run -e paper paper [-- --html-only | --pdf-only]
 """
 
 from __future__ import annotations
@@ -28,11 +31,11 @@ from pathlib import Path
 import yaml
 
 REPO = Path(__file__).resolve().parents[1]
-DOCS = REPO / "docs" / "report"
-SRC = DOCS / "rainier3d.md"
+DOCS = REPO / "docs" / "paper"
+SRC = DOCS / "rainier3d_paper.md"
 TPL = DOCS / "templates"
 BIB = REPO / "docs" / "references.bib"
-OUT = REPO / "outputs" / "report"
+OUT = REPO / "outputs" / "paper"
 COPERNICUS_URL = "https://publications.copernicus.org/Copernicus_LaTeX_Package.zip"
 COPERNICUS_SHA256 = "996038225515b56856769e7de478a7df5ef97e425e645147ea57dc72adfed4dd"  # package 7.16
 COPERNICUS_FILES = ("copernicus.cls", "copernicus.cfg", "copernicus.bst", "pdfscreen.sty", "pdfscreencop.sty")
@@ -140,7 +143,7 @@ def pandoc_common() -> list[str]:
 
 
 def html() -> Path:
-    out = OUT / "rainier3d_report.html"
+    out = OUT / "rainier3d_paper.html"
     run(
         [
             *pandoc_common(),
@@ -153,11 +156,10 @@ def html() -> Path:
 
 
 def pdf() -> Path:
-    tex = OUT / "rainier3d_essd.tex"
+    tex = OUT / "rainier3d_paper.tex"
     copernicus(OUT)
     shutil.copy(BIB, OUT / "references.bib")
-    umap = "\n".join(f"\\newunicodechar{{{c}}}{{{v}}}" for c, v in UNICODE.items() if c != " ")
-    umap += "\n\\newunicodechar{ }{~}"
+    umap = "\n".join(f"\\newunicodechar{{{c}}}{{{v}}}" for c, v in UNICODE.items())
     run(
         [
             *pandoc_common(),
@@ -178,6 +180,8 @@ def main():
     ap.add_argument("--pdf-only", action="store_true")
     a = ap.parse_args()
     OUT.mkdir(parents=True, exist_ok=True)
+    # fixed timestamp: the PDF bytes depend only on the text (its metadata dates read 1970, by design)
+    os.environ["SOURCE_DATE_EPOCH"] = "0"
     text = SRC.read_text()
     check_unicode(text + BIB.read_text())
     meta = yaml.safe_load(re.match(r"---\n(.*?)\n---\n", text, re.S).group(1))
@@ -188,6 +192,7 @@ def main():
         made.append(html())
     if not a.html_only:
         made.append(pdf())
+    made = [Path(shutil.copy(p, DOCS / p.name)) for p in made]  # the paper lives next to its source
     for p in made:
         log.info("wrote %s (%.1f MB)", p.relative_to(REPO), p.stat().st_size / 1e6)
     if os.environ.get("GITHUB_STEP_SUMMARY"):

@@ -29,19 +29,19 @@ geometry numbers are placeholders, marked `m1_placeholder` in `configs/`.
 | S7 export/viz | `scripts/07_export_viz.py` | `vtk/*.vti`, `*.vts`, sections, `rainier3d_view.png`/`.html` |
 | S8 sensor atlas | `scripts/08_atlas.py` | `web/atlas/data/`: sites, DAS fiber, PNSN events, overlay images; `data/processed/overlays/*.tif` |
 | S9 ray-tracing grids | `scripts/09_export_grids.py` | `outputs/grids/`: uniform netCDF, NonLinLoc P/S grids, EMC netCDF |
-| S10 report figures | `scripts/10_report.py` | `docs/report/figures/*.png` from the built model (committed) |
+| S10 paper figures | `scripts/10_report.py` | `docs/paper/figures/*.png` from the built model (committed) |
 | S11 seismic atlas layers | `scripts/11_seismic_atlas.py` | `<rainier-seismic-atlas>/site/public/atlas/model/`: surface layers, imagery, streams for the 3D viewer |
-| S12 Vs-only calibration | `scripts/12_calibrate_vs.py` | `configs/vs_calibration.yaml`: depth factor on the regional Vs with catalogue hypocentres fixed (the alternative parameterisation compared in the report) |
+| S12 Vs-only calibration | `scripts/12_calibrate_vs.py` | `configs/vs_calibration.yaml`: depth factor on the regional Vs with catalogue hypocentres fixed (the alternative parameterisation compared in the paper) |
 | S13 joint calibration | `scripts/13_joint_calibration.py` | `configs/velocity_calibration.yaml`: geology multipliers and regional bias fitted to PNSN P and S picks with 3D relocation (`docs/joint_calibration.md`) |
 | S14 relocation | `scripts/14_relocate.py` | `outputs/relocation/<model>/`: every PNSN event relocated in a given model, with topography |
 | S15 bibliography | `scripts/15_bibliography.py` | `docs/references.bib`, `docs/citations.csv` from `configs/sources.yaml` (`pixi run bib`) |
-| S16 relocation figures | `scripts/16_relocation_figures.py` | calibration figures in `docs/joint_calibration/` and `docs/report/figures/` |
+| S16 relocation figures | `scripts/16_relocation_figures.py` | calibration figures in `docs/joint_calibration/` and `docs/paper/figures/` |
 | S17, S18 GNSS | `scripts/17_gnss_fetch.py`, `scripts/18_gnss_strain.py` | GNSS velocities, strain rate, daily strain, edifice-load stress (`docs/gnss_strain.md`); refreshed weekly by `.github/workflows/gnss-weekly.yml` |
 | S19 vegetation layers | `scripts/19_canopy_layers.py` | `surface_canopy.zarr`: lidar canopy, Sentinel-2 LAI, GEDI (`configs/canopy_products.yaml`) |
 | S20 products | `scripts/20_publish_products.py` | release archives and `src/rainier3d/products.json` |
 | S21 iMUSH check | `scripts/21_compare_imush.py` | `outputs/model_comparison/`: comparison with Ulberg et al. (2020) |
 | S22 alteration | `scripts/22_alteration_finn2001.py` | `alteration_finn2001.zarr`: alteration from the 1996 helicopter EM survey (`docs/alteration.md`) |
-| S23 report | `scripts/23_report_build.py` | `outputs/report/`: HTML page and ESSD PDF from `docs/report/rainier3d.md` (`pixi run -e paper report`; `.github/workflows/report.yml`) |
+| S23 paper | `scripts/23_paper.py` | `docs/paper/rainier3d_paper.html` and `.pdf` (ESSD class) from `docs/paper/rainier3d_paper.md` (`pixi run -e paper paper`; `.github/workflows/paper.yml`) |
 
 `docs/eikonal_benchmark.md` compares the eikonal solvers (`scripts/bench_eikonal.py`).
 
@@ -82,12 +82,13 @@ The `gnss` product is refreshed every Monday by `.github/workflows/gnss-weekly.y
 `$RAINIER3D_DATA` (default `~/.cache/rainier3d`). `scripts/20_publish_products.py --tag <tag> --upload` builds
 and uploads a release.
 
-## Report
+## Paper
 
-The data description (ESSD format) is written in `docs/report/rainier3d.md`. `pixi run -e paper report` builds it
-into a self-contained HTML page and the ESSD manuscript PDF under `outputs/report/`. The workflow
-`.github/workflows/report.yml` rebuilds both on every change and attaches them to the release `report-latest`. Figures
-that need the model are made by `pixi run s10` and committed.
+The data description paper (ESSD format) is `docs/paper/rainier3d_paper.md`. Its builds are committed next to it:
+[`rainier3d_paper.pdf`](docs/paper/rainier3d_paper.pdf) (Copernicus manuscript class) and
+`rainier3d_paper.html` (one self-contained page). `pixi run -e paper paper` rebuilds both; the build is
+byte-reproducible. `.github/workflows/paper.yml` rebuilds them on every change, commits them on main when they
+change, and attaches them to the release `paper-latest`. Figures that need the model are made by `pixi run s10`.
 
 ## 3D viewer (web/viewer)
 

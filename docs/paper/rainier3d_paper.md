@@ -14,7 +14,7 @@ essd-affiliations:
   - {id: "2", name: "Computer Science and Art, University of Washington, Seattle, WA, USA"}
 repository: "https://github.com/Denolle-Lab/mt-rainier-digital-model"
 viewer: "https://denolle-lab.github.io/mt-rainier-digital-model/"
-footer: "rainier3d · M. Denolle and D. Yao · Gaia Hazlab, University of Washington · Built from docs/report/rainier3d.md by scripts/23_report_build.py."
+footer: "rainier3d · M. Denolle and D. Yao · Gaia Hazlab, University of Washington · Built from docs/paper/rainier3d_paper.md by scripts/23_paper.py."
 link-citations: true
 numberSections: true
 abstract: |

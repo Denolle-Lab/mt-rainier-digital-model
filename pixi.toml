@@ -105,7 +105,7 @@ gnss-publish = { cmd = "python scripts/20_publish_products.py --only gnss", env 
 gnss = { features = ["gnss"], no-default-feature = true }
 paper = { features = ["paper"], no-default-feature = true }
 
-# Report build (scripts/23_report_build.py, .github/workflows/report.yml): Pandoc Markdown -> self-contained HTML
+# Report build (scripts/23_paper.py, .github/workflows/paper.yml): Pandoc Markdown -> self-contained HTML
 # and ESSD LaTeX -> PDF. No model data needed; figures are committed.
 [feature.paper.dependencies]
 python = ">=3.12,<3.14"
@@ -116,4 +116,4 @@ tectonic = ">=0.15"
 graphviz = "*"
 
 [feature.paper.tasks]
-report = "python scripts/23_report_build.py"
+paper = "python scripts/23_paper.py"

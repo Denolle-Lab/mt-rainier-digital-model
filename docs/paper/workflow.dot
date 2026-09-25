@@ -1,4 +1,4 @@
-// rainier3d workflow. scripts/23_report_build.py renders it to docs/report/figures/fig0_workflow.{svg,pdf}.
+// rainier3d workflow. scripts/23_paper.py renders it to docs/paper/figures/fig0_workflow.{svg,pdf}.
 // Top: original archives; middle: model chain; right: calibration loop; bottom: checks and products.
 digraph rainier3d {
   graph [rankdir=TB, fontname="Helvetica", fontsize=12, nodesep=0.22, ranksep=0.34, pad=0.1, newrank=true];

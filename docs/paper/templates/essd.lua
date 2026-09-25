@@ -1,4 +1,4 @@
--- LaTeX only: turn the ESSD statement sections and the appendix of docs/report/rainier3d.md into the commands of
+-- LaTeX only: turn the ESSD statement sections and the appendix of docs/paper/rainier3d_paper.md into the commands of
 -- copernicus.cls. A level-1 heading with one of the classes below becomes that command, wrapping the blocks up to
 -- the next level-1 heading; {.appendix} emits \appendix before its heading. Other formats are left unchanged.
 local statements = {

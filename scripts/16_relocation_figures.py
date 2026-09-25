@@ -22,7 +22,7 @@ from rainier3d.config.domain import REPO, load_domain
 from rainier3d.io.store import read_tree
 
 OUT = REPO / "docs" / "joint_calibration"
-REPORT_FIG = REPO / "docs" / "report" / "figures"  # copies under the report's figure numbers
+REPORT_FIG = REPO / "docs" / "paper" / "figures"  # copies under the report's figure numbers
 # S14 run name -> (label, model snapshot or None for the 1D model)
 MODELS = {
     "pnsn1d": ("PNSN 1D", None),

@@ -1,8 +1,8 @@
-"""S10: report figures from the built model -> docs/report/figures/ (committed).
+"""S10: paper figures from the built model -> docs/paper/figures/ (committed).
 
 The figures need the model and outputs (S1-S9 and S17-S19 must have run). The calibration and validation
 figures (fig10-fig13) are written by S16 and S21, and the alteration maps by S22. The text is
-docs/report/rainier3d.md; S23 (pixi run -e paper report) builds the HTML page and the ESSD PDF from it
+docs/paper/rainier3d_paper.md; S23 (pixi run -e paper paper) builds the HTML page and the ESSD PDF from it
 without model data.
 """
 
@@ -19,7 +19,7 @@ from rainier3d.report import figures as F
 from rainier3d.sensors.inventory import das_channels
 from rainier3d.validate.pnsn import pnsn_1d
 
-DOCS = REPO / "docs" / "report"
+DOCS = REPO / "docs" / "paper"
 FIG = DOCS / "figures"
 DAS = "~/Downloads/Paradise2NisquallyEntrace_Channels.csv"
 
