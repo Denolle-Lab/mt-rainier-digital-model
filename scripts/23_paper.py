@@ -4,7 +4,7 @@
   rainier3d_paper.pdf      the same text in the Copernicus ESSD manuscript class (natbib + copernicus.bst)
 
 Intermediate files (LaTeX source, logs, the Copernicus package) stay in outputs/paper/. SOURCE_DATE_EPOCH is
-fixed, so the same text gives the same bytes on any machine and CI can tell when the committed paper is stale.
+fixed, so the same text gives the same bytes on the same platform; the committed copy is the Linux CI build.
 
 Figures are the committed PNGs of docs/paper/figures/ (made by S10, S16 and S21 from the model) and
 docs/paper/workflow.dot, rendered here with Graphviz. Citations [@key] resolve through docs/references.bib

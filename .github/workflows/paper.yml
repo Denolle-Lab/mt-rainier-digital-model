@@ -2,7 +2,8 @@ name: Build the paper (HTML and ESSD PDF)
 
 # Builds docs/paper/rainier3d_paper.md into docs/paper/rainier3d_paper.html and .pdf with scripts/23_paper.py (pixi
 # environment "paper": pandoc, pandoc-crossref, tectonic, graphviz). No model data are needed: figures are committed
-# by S10, S16, S21 and S22. The build is byte-reproducible (fixed SOURCE_DATE_EPOCH).
+# by S10, S16, S21 and S22. The build is byte-reproducible on the same platform (fixed
+# SOURCE_DATE_EPOCH); the committed copy is the one built here on Linux, so local builds are previews.
 # Pull requests build, attach the files as an artifact and report whether the committed paper is up to date. Pushes
 # to main commit a rebuilt paper when its bytes changed and replace the assets of the rolling release paper-latest.
 
@@ -54,9 +55,9 @@ jobs:
       - name: Is the committed paper up to date?
         run: |
           if git diff --quiet -- docs/paper/rainier3d_paper.html docs/paper/rainier3d_paper.pdf; then
-            echo "The committed paper matches this build." >> "$GITHUB_STEP_SUMMARY"
+            echo "The committed paper matches this build." | tee -a "$GITHUB_STEP_SUMMARY"
           else
-            echo "The committed paper differs from this build (run pixi run -e paper paper and commit)." >> "$GITHUB_STEP_SUMMARY"
+            echo "The committed paper differs from this build; main commits the Linux build after merge." | tee -a "$GITHUB_STEP_SUMMARY"
           fi
       - uses: actions/upload-artifact@v4
         with:

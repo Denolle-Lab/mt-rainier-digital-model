@@ -86,9 +86,9 @@ and uploads a release.
 
 The data description paper (ESSD format) is `docs/paper/rainier3d_paper.md`. Its builds are committed next to it:
 [`rainier3d_paper.pdf`](docs/paper/rainier3d_paper.pdf) (Copernicus manuscript class) and
-`rainier3d_paper.html` (one self-contained page). `pixi run -e paper paper` rebuilds both; the build is
-byte-reproducible. `.github/workflows/paper.yml` rebuilds them on every change, commits them on main when they
-change, and attaches them to the release `paper-latest`. Figures that need the model are made by `pixi run s10`.
+`rainier3d_paper.html` (one self-contained page). `pixi run -e paper paper` rebuilds both locally, as a preview. The committed copy is built on
+Linux by `.github/workflows/paper.yml`, which is byte-reproducible there: it commits the paper on main when its bytes
+change and attaches it to the release `paper-latest`. Figures that need the model are made by `pixi run s10`.
 
 ## 3D viewer (web/viewer)
 
