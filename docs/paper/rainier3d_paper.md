@@ -131,7 +131,7 @@ The database is compiled by code, not by hand, following five rules.
 | `allstadt2017` | S24 | Seismically recorded mass movements, western United States (`Events.csv`) | 1 | 0.03 |
 | `usgs_rainier_hazards` | S24 | Lahar hazard zones of 1998 (shapefiles) | 1 | 0.2 |
 | `dem_3dep_1m` | S24 | 3DEP 1 m windows around landslide polygons; 3DEP source footprints | 1,639 | 1,818 |
-| `canopy_storage` | S26 | GEDI L3 global 1 km grids and their crops to the box (vendored canopy-storage code) | 7 | 1,135 |
+| `canopy_storage` | S28 | GEDI L3 global 1 km grids and their crops to the box (vendored canopy-storage code) | 7 | 1,135 |
 
 : The raw input cache, from `docs/data_manifest.csv`. SOLUS100 soil thickness is read directly from its cloud-optimised GeoTIFFs and is not cached. {#tbl:raw}
 
@@ -238,7 +238,7 @@ Script S19 adds the vegetation products of the canopy-storage project (M. Köpfl
 
 The two canopy heights differ by design. The lidar value is the mean of 10 m cells in each 100 m cell, including gaps, while the GEDI value is a 1 km mean of the tallest return per footprint. That is why the lidar median (14.6 m) is lower than the GEDI median (25.5 m) and the ETH median (30 m).
 
-The project's download and gridding code is part of this repository, unmodified and under its MIT licence (`third_party/canopy-storage_seismic`). Script S26 runs it inside the raw-data cache: it fetches the GEDI L3 grids and L2B footprints through NASA Earthdata and the Sentinel-2 leaf area index through the Copernicus Data Space, and S19 reads its products in place of the delivered files. The GEDI L3 canopy height it produces is identical to the delivered grid (33,701 cells). The L2B plant area index, the L4B biomass, the lidar layers and the soil map are still read from the delivered files: the vendored gridder writes the maximum plant area index rather than the mean, and the others were made outside that code. `docs/canopy_pipeline.md` lists each service call.
+The project's download and gridding code is part of this repository, unmodified and under its MIT licence (`third_party/canopy-storage_seismic`). Script S28 runs it inside the raw-data cache: it fetches the GEDI L3 grids and L2B footprints through NASA Earthdata and the Sentinel-2 leaf area index through the Copernicus Data Space, and S19 reads its products in place of the delivered files. The GEDI L3 canopy height it produces is identical to the delivered grid (33,701 cells). The L2B plant area index, the L4B biomass, the lidar layers and the soil map are still read from the delivered files: the vendored gridder writes the maximum plant area index rather than the mean, and the others were made outside that code. `docs/canopy_pipeline.md` lists each service call.
 
 # Subsurface model {#sec:subsurface}
 

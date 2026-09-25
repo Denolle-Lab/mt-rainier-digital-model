@@ -2,7 +2,7 @@
 # private; code MIT). Files are read from `root` (default ~/Downloads, as delivered 2026-09-24). Each entry names
 # its source key in configs/sources.yaml. Provenance fields marked TODO come from that repository's own TODOs.
 # `pipeline_file` (relative to data/raw/canopy_storage/output_non-seismic_code/) is the product of the vendored
-# pipeline (S26, third_party/canopy-storage_seismic); S19 reads it when it exists and `file` otherwise.
+# pipeline (S28, third_party/canopy-storage_seismic); S19 reads it when it exists and `file` otherwise.
 root: ~/Downloads
 layers:
   - name: canopy_height_lidar
@@ -32,7 +32,7 @@ layers:
     source: sentinel2_lai_2023
   - name: gedi_pai
     file: ~/Downloads/MtRainier_gridded_products/GEDI_l2b_PAI_gridded/L2B_PAI_mean.tif
-    # no pipeline_file: S26 grids the footprints to L2B_PAI_max/count/ntracks, not the mean used here
+    # no pipeline_file: S28 grids the footprints to L2B_PAI_max/count/ntracks, not the mean used here
     long_name: plant area index, GEDI L2B footprints (quality-filtered) gridded to 1 km
     units: m2/m2
     valid_range: [0, 12]

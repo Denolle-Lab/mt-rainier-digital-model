@@ -17,12 +17,12 @@ from rasterio.enums import Resampling
 from rainier3d.config.domain import REPO, Domain
 from rainier3d.surface.layers import _da, warp
 
-# where S26 (the vendored canopy-storage pipeline) writes its products
+# where S28 (the vendored canopy-storage pipeline) writes its products
 PIPELINE_OUT = REPO / "data" / "raw" / "canopy_storage" / "output_non-seismic_code"
 
 
 def source_path(spec: dict, root: Path) -> Path:
-    """The file of a layer or image spec: the S26 pipeline product (``pipeline_file``) when it exists,
+    """The file of a layer or image spec: the S28 pipeline product (``pipeline_file``) when it exists,
     else the delivered file, with ~/Downloads replaced by the configured root."""
     if spec.get("pipeline_file"):
         rel = Path(spec["pipeline_file"])

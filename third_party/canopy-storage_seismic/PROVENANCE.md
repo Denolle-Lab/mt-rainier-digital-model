@@ -12,7 +12,7 @@
 
 ## How this repository runs it
 
-`scripts/26_canopy_pipeline.py` (S26, `pixi run -e canopy canopy`) copies `non-seismic_code/` to
+`scripts/28_canopy_pipeline.py` (S28, `pixi run -e canopy canopy`) copies `non-seismic_code/` to
 `data/raw/canopy_storage/non-seismic_code/` and runs each script from its own folder, as upstream expects. The
 scripts' relative paths (`../../output_non-seismic_code/...`) then resolve to
 `data/raw/canopy_storage/output_non-seismic_code/`, inside the raw-data cache. The call order, services and

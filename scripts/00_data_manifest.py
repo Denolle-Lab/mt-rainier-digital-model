@@ -36,7 +36,7 @@ def scan() -> list[dict]:
     for p in sorted(RAW.rglob("*")):
         if p.is_file() and p.name not in SKIP and not p.name.endswith(".part"):
             rel = p.relative_to(RAW).as_posix()
-            if rel.startswith("canopy_storage/non-seismic_code/"):  # S26: working copy of vendored code
+            if rel.startswith("canopy_storage/non-seismic_code/"):  # S28: working copy of vendored code
                 continue
             rows.append(
                 {"source": rel.split("/")[0], "path": rel, "bytes": p.stat().st_size, "sha256": sha256(p)}

@@ -1,4 +1,4 @@
-"""S26: run the vendored canopy-storage pipeline (third_party/canopy-storage_seismic/non-seismic_code).
+"""S28: run the vendored canopy-storage pipeline (third_party/canopy-storage_seismic/non-seismic_code).
 
 The upstream scripts are run unmodified, each from its own folder, in a working copy under
 data/raw/canopy_storage/non-seismic_code/; their relative output paths land in

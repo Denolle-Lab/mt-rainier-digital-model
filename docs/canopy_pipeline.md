@@ -1,6 +1,6 @@
-# Canopy-storage pipeline (S26)
+# Canopy-storage pipeline (S28)
 
-`pixi run -e canopy canopy` (`scripts/26_canopy_pipeline.py`) runs the gridded-product scripts of Manuela
+`pixi run -e canopy canopy` (`scripts/28_canopy_pipeline.py`) runs the gridded-product scripts of Manuela
 Köpfli's canopy-storage project, vendored unmodified in `third_party/canopy-storage_seismic/non-seismic_code/`
 (MIT; commit and changes in `third_party/canopy-storage_seismic/PROVENANCE.md`). S19 then reads the products
 from `data/raw/canopy_storage/output_non-seismic_code/` (`pipeline_file` in `configs/canopy_products.yaml`)
@@ -8,7 +8,7 @@ and falls back to the delivered files for the layers the pipeline does not make.
 
 ## How the scripts are run
 
-The upstream scripts use paths relative to their own folder (`../../output_non-seismic_code/...`). S26 copies
+The upstream scripts use paths relative to their own folder (`../../output_non-seismic_code/...`). S28 copies
 `non-seismic_code/` to `data/raw/canopy_storage/non-seismic_code/` and runs each script from its folder, so
 every download and product stays in the raw-data cache. A step whose product exists is skipped (`--force`
 reruns it). A step without its credentials is skipped with a warning. Figures (`GEDI/03_*`) and station
@@ -29,7 +29,7 @@ model domain.
 
 ## Which S19 layers come from here
 
-| S19 layer | From S26 | Otherwise |
+| S19 layer | From S28 | Otherwise |
 |---|---|---|
 | `gedi_canopy_height` | `GEDI/gedi_l3/cropped/L3_rh100_mean.tif` | delivered file |
 | `lai_sentinel2` | `Sentinel2/lai_mosaic_pnw.tif` | delivered file |

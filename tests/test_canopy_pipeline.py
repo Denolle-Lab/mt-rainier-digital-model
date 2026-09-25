@@ -1,4 +1,4 @@
-"""S26: the vendored canopy-storage code is unmodified; S19 prefers the pipeline product when it exists."""
+"""S28: the vendored canopy-storage code is unmodified; S19 prefers the pipeline product when it exists."""
 
 import hashlib
 import importlib.util
@@ -23,11 +23,11 @@ def test_vendored_code_is_unmodified_and_licensed():
 
 
 def test_every_runner_step_points_at_a_vendored_script():
-    spec = importlib.util.spec_from_file_location("s26", REPO / "scripts" / "26_canopy_pipeline.py")
-    s26 = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(s26)
-    for folder, script, _, _ in s26.STEPS.values():
-        assert (s26.VENDOR / folder / script).is_file()
+    spec = importlib.util.spec_from_file_location("s28", REPO / "scripts" / "28_canopy_pipeline.py")
+    s28 = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(s28)
+    for folder, script, _, _ in s28.STEPS.values():
+        assert (s28.VENDOR / folder / script).is_file()
 
 
 def test_source_path_prefers_the_pipeline_product(tmp_path, monkeypatch):

@@ -121,7 +121,7 @@ graphviz = "*"
 [feature.paper.tasks]
 paper = "python scripts/23_paper.py"
 
-# Vendored canopy-storage pipeline (third_party/canopy-storage_seismic, MIT; scripts/26_canopy_pipeline.py): only
+# Vendored canopy-storage pipeline (third_party/canopy-storage_seismic, MIT; scripts/28_canopy_pipeline.py): only
 # what its gridded-product scripts import. Credentials: NASA Earthdata (~/.netrc) and Sentinel Hub (SH_CLIENT_ID,
 # SH_CLIENT_SECRET); see docs/canopy_pipeline.md.
 [feature.canopy.dependencies]
@@ -138,4 +138,4 @@ sentinelhub = "*"
 python-dotenv = "*"
 
 [feature.canopy.tasks]
-canopy = "python scripts/26_canopy_pipeline.py"
+canopy = "python scripts/28_canopy_pipeline.py"

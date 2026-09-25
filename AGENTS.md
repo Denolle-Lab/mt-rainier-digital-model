@@ -22,5 +22,5 @@ Conventions for anyone (human or agent) changing this repo.
   is built with `pixi run viewer-data` + `pixi run s11` and deployed from the release asset named in
   `web/viewer/DATA_RELEASE`. Keep the MIT `LICENSE` and `THIRD_PARTY_NOTICES.md` in that directory.
 - **Vendored code (`third_party/`):** kept byte-identical to the upstream commit named in its `PROVENANCE.md`,
-  with the upstream `LICENSE` files. Adapt it from the runner script (e.g. `scripts/26_canopy_pipeline.py`),
+  with the upstream `LICENSE` files. Adapt it from the runner script (e.g. `scripts/28_canopy_pipeline.py`),
   not by editing the vendored files.
