@@ -42,4 +42,26 @@ describe("LayerPanel", () => {
     fireEvent.keyDown(window, { key: "t" });
     expect(onStations).toHaveBeenCalledWith(false);
   });
+  it("a panel with some parts shows and answers only those", () => {
+    const layers = { state: { cloud: true, shells: true, dots: false }, set: vi.fn() };
+    const scene = { setSeeThrough: vi.fn(), setCut: vi.fn() };
+    render(<LayerPanel layers={layers} scene={scene} onStations={vi.fn()} parts={["ground"]} />);
+    expect(screen.queryByRole("switch", { name: /Dots/ })).toBeNull();
+    expect(screen.queryByRole("switch", { name: /Stations/ })).toBeNull();
+    fireEvent.keyDown(window, { key: "g" });
+    expect(layers.set).not.toHaveBeenCalled();
+    fireEvent.keyDown(window, { key: "x" });
+    expect(scene.setCut).toHaveBeenCalledWith({ on: true, angle: 90, offset: 0 });
+  });
+  it("adds one keydown listener and keeps it across re-renders", () => {
+    const add = vi.spyOn(window, "addEventListener"), remove = vi.spyOn(window, "removeEventListener");
+    const { layers } = setup();
+    const n = add.mock.calls.filter(([t]) => t === "keydown").length;
+    fireEvent.click(screen.getByRole("switch", { name: /Dots/ }));            // a state change re-renders
+    fireEvent.keyDown(window, { key: "g" });                                   // and the kept listener still sees it
+    expect(layers.set).toHaveBeenCalledWith("cloud", false);
+    expect(add.mock.calls.filter(([t]) => t === "keydown").length).toBe(n);
+    expect(remove.mock.calls.filter(([t]) => t === "keydown").length).toBe(0);
+    add.mockRestore(); remove.mockRestore();
+  });
 });

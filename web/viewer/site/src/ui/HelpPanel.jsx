@@ -11,8 +11,8 @@ const ROWS = {
   Touch: [["Move", "drag with one finger"], ["Rotate and tilt", "twist or drag with two fingers"], ["Zoom", "pinch"]],
 };
 
-// Help, in the dock: how to move the map, the keyboard shortcuts, and the network counts that used to sit in the title.
-export default function HelpPanel({ bundle }) {
+// Help, in the dock: how to move the map, the keyboard shortcuts, the network counts, and the data attributions.
+export default function HelpPanel({ bundle, children }) {
   const touch = typeof matchMedia === "function" && matchMedia("(pointer: coarse)").matches;
   const { counts, sites } = bundle.stations;
   const kinds = new Set(sites.flatMap(s => s.kinds)).size;
@@ -27,7 +27,7 @@ export default function HelpPanel({ bundle }) {
       ))}
       <div className="hc-note">
         The buttons at the bottom rotate, tilt and zoom, and <b>N</b> turns north up.{touch ? "" : <> Arrow keys glide; <kbd>G</kbd> <kbd>S</kbd> <kbd>D</kbd> toggle the earthquake layers, <kbd>X</kbd> the cut, <kbd>T</kbd> stations, <kbd>W</kbd> streams.</>}
-        {" "}To look under the ground, tilt below the horizon, use <b>From below</b> in Go to, or open the <b>Surface model</b> panel
+        {" "}To look under the ground, tilt below the horizon, use <b>From below</b> in Go to, or open the <b>Models</b> panel
         and turn on <b>Section on the cut</b> or <b>Depth slice</b>.
       </div>
       <div className="stats">
@@ -35,6 +35,7 @@ export default function HelpPanel({ bundle }) {
         <div><b className="mono" data-testid="n-sites">{counts.sitesOnMap}</b><span>Sites on map</span></div>
         <div><b className="mono" data-testid="n-kinds">{kinds}</b><span>Instrument kinds</span></div>
       </div>
+      {children}
     </section>
   );
 }

@@ -98,6 +98,10 @@ input[type=range]:disabled { opacity: 0.35; }
 .mread { position: fixed; pointer-events: none; background: rgba(18, 18, 17, 0.95); border: 1px solid var(--hairline-strong); border-radius: 5px; padding: 7px 10px; z-index: 9; }
 .model-panel { padding: 10px 12px 12px; display: flex; flex-direction: column; gap: 10px; transition: left 220ms ease; }
 .model-panel .layers { border-top: 0; padding-top: 0; }
+.quakes-panel, .mass-panel { padding: 10px 12px 12px; display: flex; flex-direction: column; gap: 10px; }
+.quakes-panel .layers, .mass-panel .mfilter { border-top: 0; padding-top: 0; margin-top: 0; }
+.quakes-panel .row { color: var(--text-secondary); font-size: 12px; line-height: 18px; }
+.quakes-panel .qsrc { color: var(--text-muted); font-size: 11px; line-height: 1.45; }
 .mlegend { border-top: 1px solid var(--hairline); padding-top: 8px; }
 .mlegend .mclasses { display: grid; grid-template-columns: 1fr 1fr; column-gap: 10px; max-height: none; }
 .mlegend .row { display: flex; align-items: center; gap: 7px; color: var(--text-secondary); font-size: 11.5px; }
@@ -110,11 +114,12 @@ input[type=range]:disabled { opacity: 0.35; }
   .header h1 { font-size: 14px; }
   .header p, .header .stats, .header .detail { display: none; }
   .header .search { margin-top: 6px; }
-  .controls, .legend, .goto, .model-panel { display: none; left: 8px; right: 8px; top: auto; width: auto;
+  .controls, .legend, .goto, .model-panel, .quakes-panel, .mass-panel { display: none; left: 8px; right: 8px; top: auto; width: auto;
     bottom: calc(var(--dock-h) + 16px + env(safe-area-inset-bottom)); max-height: 52vh; overflow-y: auto;
     -webkit-overflow-scrolling: touch; }
-  [data-sheet="layers"] .controls, [data-sheet="legend"] .legend, [data-sheet="goto"] .goto,
-  [data-sheet="model"] .model-panel { display: flex; flex-direction: column; }
+  [data-sheet="view"] .controls, [data-sheet="sensors"] .legend, [data-sheet="goto"] .goto,
+  [data-sheet="model"] .model-panel, [data-sheet="quakes"] .quakes-panel,
+  [data-sheet="mass"] .mass-panel { display: flex; flex-direction: column; }
   [data-sheet="goto"] .goto { display: block; }
   .hint, .tog kbd { display: none; }
   .station-panel { top: auto; left: 0; right: 0; bottom: 0; width: auto; max-height: 72vh; border-radius: 12px 12px 0 0;
@@ -123,7 +128,7 @@ input[type=range]:disabled { opacity: 0.35; }
   .dock { display: flex; position: fixed; z-index: 7; left: 8px; right: 8px; bottom: calc(8px + env(safe-area-inset-bottom));
     height: var(--dock-h); gap: 4px; padding: 5px; background: rgba(26, 26, 25, 0.92); backdrop-filter: blur(10px);
     border: 1px solid var(--hairline); border-radius: 8px; }
-  .dock button { flex: 1; background: transparent; border: 0; border-radius: 5px; color: var(--text-secondary); font-size: 13px; }
+  .dock button { flex: 1; background: transparent; border: 0; border-radius: 5px; color: var(--text-secondary); font-size: 12px; padding: 0 2px; }
   .dock button[aria-pressed="true"] { background: var(--text-primary); color: var(--surface-0); }
   .seg button { padding: 8px 12px; }             /* 40px+ touch targets */
   .tog { padding: 9px 0; }

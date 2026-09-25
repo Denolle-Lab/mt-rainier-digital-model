@@ -29,6 +29,7 @@ import QuakeLegend from "./ui/QuakeLegend.jsx";
 import RelocatedPanel from "./ui/RelocatedPanel.jsx";
 import { RelocatedQuakes } from "./scene/quakes/relocated.js";
 import { DEFAULT_RELOCATED, loadRelocated } from "./data/relocated.js";
+import Attribution from "./ui/Attribution.jsx";
 import Legend from "./ui/Legend.jsx";
 import StationPanel from "./ui/StationPanel.jsx";
 import Tooltip from "./ui/Tooltip.jsx";
@@ -132,30 +133,39 @@ function Atlas({ bundle, onError }) {
         <>
           <Header bundle={bundle} detail={detail} onPick={s => openSite(s, scene)} />
           <HudDock open={dock} onToggle={toggleDock} items={[
-            { key: "layers", label: "Layers", icon: "layers", node: (
+            // View: camera and ground. Then one panel per theme: earthquakes (every catalogue), mass movements,
+            // ground sensors, and the structural models (surface layers and the model below ground).
+            { key: "view", label: "View", icon: "view", node: (
               <Controls scene={scene}>
-                {scene.layers && <LayerPanel layers={scene.layers} scene={scene} onStations={on => layerRef.current?.setVisible(on)} />}
+                <LayerPanel layers={scene.layers} scene={scene} parts={["ground"]} />
               </Controls>) },
-            ...(bundle.model ? [{ key: "model", label: "Surface model", icon: "model", node: (
+            ...(bundle.quakes || reloc ? [{ key: "quakes", label: "Earthquakes", icon: "quakes", node: (
+              <div className="panel quakes-panel">
+                {scene.layers && <LayerPanel layers={scene.layers} scene={scene} parts={["quakes"]} />}
+                {bundle.quakes && <QuakeLegend meta={bundle.quakes.meta} drawn={scene.layers?.drawn} />}
+                {reloc && <RelocatedPanel points={reloc} />}
+              </div>) }] : []),
+            ...(massLegend ? [{ key: "mass", label: "Mass movements", icon: "mass", node: (
+              <div className="panel mass-panel"><MassFilter {...massLegend} /></div>) }] : []),
+            { key: "sensors", label: "Sensors", icon: "sensors", node: (
+              <Legend bundle={bundle} sensors={sensorLegend}>
+                <LayerPanel layers={scene.layers} scene={scene} parts={["stations"]} onStations={on => layerRef.current?.setVisible(on)} />
+              </Legend>) },
+            ...(bundle.model ? [{ key: "model", label: "Models", icon: "model", node: (
               <div className="panel model-panel">
                 <ModelLayers model={bundle.model} scene={scene} active={modelKey} onActive={setModelKey} />
                 <ModelLegend layer={modelLayer} />
                 {volume && <SubsurfacePanel volume={volume} scene={scene} />}
-                {reloc && <RelocatedPanel points={reloc} />}
               </div>) }] : []),
-            { key: "legend", label: "Legend", icon: "legend", node: (
-              <Legend bundle={bundle} sensors={sensorLegend} mass={!!mass}>
-                {bundle.quakes && <QuakeLegend meta={bundle.quakes.meta} drawn={scene.layers?.drawn} />}
-                {massLegend && <MassFilter {...massLegend} />}
-              </Legend>) },
-            { key: "help", label: "Help", icon: "help", node: <HelpPanel bundle={bundle} /> },
+            { key: "help", label: "Help", icon: "help", node: (
+              <HelpPanel bundle={bundle}><Attribution bundle={bundle} sensors={!!sensorLegend} mass={!!mass} reloc={!!reloc} /></HelpPanel>) },
           ]} />
           <GoTo majors={bundle.majors} active={active} onPlace={k => { setActive(k); scene.flyTo(k); }} onSite={s => openSite(s, scene)} />
           {modelLayer?.values && <ModelReadout scene={scene} model={bundle.model} layer={modelLayer} box={bundle.overviewBox} />}
           <Tooltip hover={hover} notes={sens?.notes} />
           {sens && <SensorTip scene={scene} points={sens.points} />}
           {mass && <MassTip scene={scene} points={mass.points} doc={mass.doc} />}
-          <MobileDock sheet={sheet} onSheet={setSheet} hasModel={!!bundle.model} />
+          <MobileDock sheet={sheet} onSheet={setSheet} has={{ model: !!bundle.model, quakes: !!(bundle.quakes || reloc), mass: !!massLegend }} />
           <NavPad scene={scene} onHelp={openHelp} />
           <HelpHint onHelp={openHelp} hidden={helpOpened} />
           {site && <StationPanel site={site} bundle={bundle} notes={sens?.notes} onFly={s => scene.flyToSite(s)}
