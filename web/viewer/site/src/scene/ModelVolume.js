@@ -50,8 +50,10 @@ export class ModelVolume {
     this.slice.rotation.x = -Math.PI / 2;
     for (const m of [this.section, this.slice]) { m.visible = false; m.frustumCulled = false; m.renderOrder = 3; rs.scene.add(m); }
     this.want = { section: false, slice: false, sliceKm: -2 };
-    this.bars = null;   // { levels_km, meshes: { tectonic: [LineSegments per level], load: [...] } }
-    if (meta.bars) fetch(base + meta.bars).then(r => (r.ok ? r.json() : null)).then(j => j && this._buildBars(j)).catch(() => {});
+    this.bars = null;   // { levels: [km], meshes: { tectonic: [LineSegments per level], load: [...] }, mat }
+    this.disposed = false; this.abort = new AbortController();
+    if (meta.bars) fetch(base + meta.bars, { signal: this.abort.signal }).then(r => (r.ok ? r.json() : null))
+      .then(j => { if (j && !this.disposed) this._buildBars(j); }).catch(() => {});   // ignored once disposed
   }
 
   _buildBars(j) {
@@ -128,6 +130,7 @@ export class ModelVolume {
   }
 
   dispose() {
+    this.disposed = true; this.abort.abort();
     for (const m of [this.section, this.slice]) { this.rs.scene.remove(m); m.geometry.dispose(); m.material.dispose(); }
     if (this.bars) {
       for (const list of Object.values(this.bars.meshes)) for (const m of list) { this.rs.scene.remove(m); m.geometry.dispose(); }

@@ -701,7 +701,8 @@ def export_strain(strain: xr.Dataset, dom, atlas: Path, spacing_cells=(10, 4), l
         lon, lat = inv.transform(x, y)
         return (np.asarray(lon) - fr["lon0"]) * fr["kx"], (fr["lat0"] - np.asarray(lat)) * fr["kz"]
 
-    levels = np.arange(np.floor(strain.z.max() / 1000), -20, -1.0)
+    top, bottom = float(strain.z.max()) / 1000, float(strain.z.min()) / 1000  # the grid as exported
+    levels = np.arange(np.floor(top), np.ceil(bottom) - 0.5, -1.0)
     sets = {"tectonic": [], "load": []}
     for zk in levels:
         lev = strain.sel(z=zk * 1000, method="nearest")
