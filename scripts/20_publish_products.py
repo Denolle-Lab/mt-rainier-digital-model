@@ -6,6 +6,12 @@
                 the download record (data/raw/gnss/manifest.csv, data/processed/gnss/fetch.json)
   edifice_load  data/processed/edifice_load.zarr
   strain_3d     data/processed/strain_3d.zarr (S25: GNSS strain rate and edifice-load strain in the volume)
+  grids         outputs/grids/ (S9): uniform 500 m netCDF, EMC-style netCDF, NonLinLoc P and S grids
+  alteration    outputs/grids/rainier3d_alteration_finn2001.nc (S22)
+  mass_movements outputs/mass_movements/ (S24): events, flow deposits, faults, lahar zones, summary
+
+A versioned release (no --rolling) also carries a dated snapshot of each rolling product (gnss), recorded in
+the catalog as snapshot_url / snapshot_sha256, and a SHA256SUMS file for all its assets.
 
 Each archive gets its SHA-256; the catalog shipped in the package (src/rainier3d/products.json) is updated
 with version, url, size and checksum. With --upload the archives become assets of GitHub release <tag>.
@@ -37,6 +43,7 @@ from rainier3d.io import store
 
 REPOSITORY = "Denolle-Lab/mt-rainier-digital-model"
 CATALOG = REPO / "src" / "rainier3d" / "products.json"
+PRODUCTS = ["model", "gnss", "edifice_load", "strain_3d", "grids", "alteration", "mass_movements"]
 
 
 def restricted_keys() -> set[str]:
@@ -95,6 +102,20 @@ def package_gnss(dom, tmp: Path, out: Path):
     return zip_dir(g, out / "rainier3d_gnss.zip", "gnss"), []
 
 
+def package_files(name: str, files, out: Path) -> Path:
+    """Zip existing files (and NonLinLoc buffer/header pairs in folders) under one folder name."""
+    stage = out / "staging" / name
+    shutil.rmtree(stage, ignore_errors=True)
+    stage.mkdir(parents=True)
+    for f in files:
+        f = Path(f)
+        if f.is_dir():
+            shutil.copytree(f, stage / f.name)
+        elif f.exists():
+            shutil.copy(f, stage / f.name)
+    return zip_dir(stage, out / f"rainier3d_{name}.zip", name)
+
+
 def gh(*args, check=True):
     return subprocess.run(["gh", *args, "--repo", REPOSITORY], check=check, capture_output=True, text=True)
 
@@ -116,9 +137,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--tag", required=True, help="release tag, e.g. products-v1")
     ap.add_argument("--upload", action="store_true")
-    ap.add_argument(
-        "--only", nargs="+", choices=["model", "gnss", "edifice_load", "strain_3d"], help="default: all"
-    )
+    ap.add_argument("--only", nargs="+", choices=PRODUCTS, help="default: all")
     ap.add_argument("--rolling", action="store_true", help="replace the assets of an existing release")
     a = ap.parse_args()
     dom = load_domain()
@@ -130,7 +149,7 @@ def main():
     catalog = json.loads(CATALOG.read_text())
     built = {}
 
-    only = set(a.only or ["model", "gnss", "edifice_load", "strain_3d"])
+    only = set(a.only or PRODUCTS)
 
     # model: drop variables built from sources that may not be redistributed
     if "model" in only:
@@ -147,9 +166,40 @@ def main():
             [],
         )
 
+    grids = dom.path("outputs") / "grids"
+    if "grids" in only:
+        built["grids"] = (
+            package_files(
+                "grids",
+                [grids / "rainier3d_fused_500m.nc", grids / "rainier3d_emc.nc", grids / "nll"],
+                out,
+            ),
+            [],
+        )
+    if "alteration" in only and (grids / "rainier3d_alteration_finn2001.nc").exists():
+        built["alteration"] = (
+            package_files("alteration_finn2001", [grids / "rainier3d_alteration_finn2001.nc"], out),
+            [],
+        )
+    mm = dom.path("outputs") / "mass_movements"
+    if "mass_movements" in only and mm.exists():
+        built["mass_movements"] = (package_files("mass_movements", sorted(mm.iterdir()), out), [])
+
+    snapshots = []
     for key, (path, dropped) in built.items():
         e = catalog["products"][key]
         if e.get("rolling"):
+            if not a.rolling:  # a versioned release freezes a dated copy of the rolling product
+                as_of = json.loads((dom.path("processed") / "gnss" / "fetch.json").read_text())["as_of"]
+                snap = path.with_name(f"{path.stem}_{as_of}{path.suffix}")
+                shutil.copy(path, snap)
+                snapshots.append(snap)
+                e |= {
+                    "snapshot_version": a.tag,
+                    "snapshot_as_of": as_of,
+                    "snapshot_url": f"https://github.com/{REPOSITORY}/releases/download/{a.tag}/{snap.name}",
+                    "snapshot_sha256": sha256(snap),
+                }
             continue  # the catalog points at the rolling release; its checksum is in <file>.sha256
         e |= {
             "version": a.tag,
@@ -179,8 +229,13 @@ def main():
             upload_rolling(a.tag, files)
             logging.info("uploaded %d files to release %s", len(files), a.tag)
         return
+    assets = [p for k, (p, _) in built.items() if not catalog["products"][k].get("rolling")] + snapshots
+    sums = out / "SHA256SUMS"
+    sums.write_text("".join(f"{sha256(p)}  {p.name}\n" for p in assets))
+    for p in assets:
+        logging.info("asset %s (%.1f MB)", p.name, p.stat().st_size / 1e6)
     if a.upload:
-        files = [str(p) for p, _ in built.values()]
+        files = [str(p) for p in [*assets, sums]]
         subprocess.run(
             [
                 "gh",
@@ -193,8 +248,10 @@ def main():
                 "--title",
                 f"rainier3d derived products ({a.tag})",
                 "--notes",
-                "Derived products for `rainier3d fetch` / `rainier3d export`. Checksums are in "
-                "src/rainier3d/products.json. Licence and attribution: docs/data_policy.md.",
+                "Derived products of rainier3d, downloadable with `rainier3d fetch <product>` or "
+                "`rainier3d.api.fetch`. Checksums: SHA256SUMS and src/rainier3d/products.json. How to use "
+                "each product: docs/products.md. Licence and attribution: docs/data_policy.md (CC-BY 4.0 for "
+                "the derived products).",
             ],
             check=True,
         )

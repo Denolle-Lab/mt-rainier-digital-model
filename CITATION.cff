@@ -1,0 +1,36 @@
+cff-version: 1.2.0
+message: "If you use rainier3d or its derived products, please cite them as below, and cite the sources of the layers you use (docs/data_policy.md). Zenodo DOIs: docs/doi.md."
+title: "rainier3d: a reproducible digital model of the subsurface and surface of Mount Rainier, Washington"
+type: software
+version: "1.0.0"
+date-released: "2026-09-25"
+license: BSD-3-Clause
+repository-code: "https://github.com/Denolle-Lab/mt-rainier-digital-model"
+url: "https://denolle-lab.github.io/mt-rainier-digital-model/paper/"
+authors:
+  - family-names: Denolle
+    given-names: Marine
+    email: mdenolle@uw.edu
+    affiliation: "Department of Earth and Space Sciences, University of Washington"
+  - family-names: Yao
+    given-names: Derek
+    affiliation: "Computer Science and Art, University of Washington"
+  - family-names: Hemmett
+    given-names: Michael
+    affiliation: "Department of Earth and Space Sciences, University of Washington"
+  - family-names: Köpfli
+    given-names: Manuela
+    affiliation: "Department of Earth and Space Sciences, University of Washington"
+  - family-names: Han
+    given-names: Sangwoo
+    affiliation: "Department of Earth and Space Sciences, University of Washington"
+  - family-names: Kidiwela
+    given-names: Maleen
+    affiliation: "Department of Earth and Space Sciences, University of Washington"
+keywords:
+  - Mount Rainier
+  - seismic velocity model
+  - digital model
+  - hydrothermal alteration
+  - geodetic strain
+  - reproducible data compilation

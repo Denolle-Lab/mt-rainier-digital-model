@@ -233,6 +233,50 @@ def write_specfem_xyz(ds: xr.Dataset, path: Path) -> Path:
     return path
 
 
+def write_pylith_simplegrid(ds: xr.Dataset, path: Path, crs: str = "EPSG:32610") -> list[Path]:
+    """PyLith / spatialdata SimpleGridDB (ASCII) with the elastic properties PyLith's isotropic linear elastic
+    material reads: density (kg/m**3), vs and vp (m/s), on the uniform grid in UTM 10N metres with z the
+    elevation (m, up). Air cells carry the rock values below them, so any point of a mesh that follows the
+    topography finds rock properties. Also writes <stem>.cfg, a PyLith parameter snippet that uses the file.
+    Only the model box is covered; a larger PyLith domain needs a regional database outside it."""
+    ds = ds.sortby(["x", "y", "z"])  # spatialdata searches increasing coordinates
+    x, y, z = ds.x.values, ds.y.values, ds.z.values
+    rho, vs, vp = (ds[v].transpose("z", "y", "x").values for v in ("rho", "vs", "vp"))
+    path.parent.mkdir(parents=True, exist_ok=True)
+    Y, X = (a.ravel() for a in np.meshgrid(y, x, indexing="ij"))
+    with open(path, "w") as f:
+        f.write(
+            "// rainier3d fused model: elastic properties for PyLith (spatialdata SimpleGridDB)\n"
+            "// rainier3d.export.grids.write_pylith_simplegrid; coordinates in metres, z = elevation\n"
+            "#SPATIAL_GRID.ascii 1\n"
+            "SimpleGridDB {\n"
+            f"  num-x = {x.size}\n  num-y = {y.size}\n  num-z = {z.size}\n"
+            "  num-values = 3\n  value-names = density vs vp\n  value-units = kg/m**3 m/s m/s\n"
+            "  space-dim = 3\n"
+            f"  cs-data = geographic {{\n    crs-string = {crs}\n    space-dim = 3\n  }}\n"
+            "}\n"
+        )
+        for name, c in (("x", x), ("y", y), ("z", z)):
+            f.write(f"// {name} coordinates (m)\n" + " ".join(f"{v:.1f}" for v in c) + "\n")
+        f.write("// x y z density vs vp, x fastest, then y, then z (all increasing)\n")
+        for k in range(z.size):
+            np.savetxt(
+                f,
+                np.c_[X, Y, np.full(X.size, z[k]), rho[k].ravel(), vs[k].ravel(), vp[k].ravel()],
+                fmt="%.1f %.1f %.1f %.2f %.2f %.2f",
+            )
+    cfg = path.with_suffix(".cfg")
+    cfg.write_text(
+        "# PyLith parameters for the rainier3d elastic properties (replace 'crust' with the material name)\n"
+        "[pylithapp.problem.materials.crust]\n"
+        "db_auxiliary_field = spatialdata.spatialdb.SimpleGridDB\n"
+        "db_auxiliary_field.description = rainier3d fused model (density, vs, vp)\n"
+        f"db_auxiliary_field.filename = {path.name}\n"
+        "db_auxiliary_field.query_type = linear\n"
+    )
+    return [path, cfg]
+
+
 def write_csv(ds: xr.Dataset, path: Path, variables=("vp", "vs", "rho", "qp", "qs")) -> Path:
     """Plain CSV: x, y (UTM 10N m), z (elevation m), air flag and the variables; one row per node."""
     df = ds[[v for v in (*variables, "air") if v in ds]].to_dataframe().reset_index()

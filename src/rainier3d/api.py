@@ -25,7 +25,7 @@ from urllib.parse import urlparse
 import numpy as np
 import xarray as xr
 
-FORMATS = ("netcdf", "nll", "emc", "specfem", "csv")
+FORMATS = ("netcdf", "nll", "emc", "specfem", "csv", "pylith")
 CRS = "EPSG:32610"
 
 
@@ -147,7 +147,8 @@ def grid(
 
 def export(g: xr.Dataset, fmt: str, out: str | Path, tree: xr.DataTree | None = None) -> list[Path]:
     """Write a uniform grid for another code: netcdf (CF), nll (NonLinLoc P/S; dx must equal dz), emc
-    (lon/lat/depth netCDF3; needs ``tree``), specfem (SPECFEM3D tomography_model.xyz) or csv."""
+    (lon/lat/depth netCDF3; needs ``tree``), specfem (SPECFEM3D tomography_model.xyz), pylith (spatialdata
+    SimpleGridDB with density, vs, vp, and a .cfg snippet) or csv."""
     from types import SimpleNamespace
 
     from rainier3d.export import grids
@@ -159,6 +160,8 @@ def export(g: xr.Dataset, fmt: str, out: str | Path, tree: xr.DataTree | None = 
         return grids.write_nll(g, out)
     if fmt == "specfem":
         return [grids.write_specfem_xyz(g, out)]
+    if fmt == "pylith":
+        return grids.write_pylith_simplegrid(g, out, crs=CRS)
     if fmt == "csv":
         return [grids.write_csv(g, out)]
     if fmt == "emc":

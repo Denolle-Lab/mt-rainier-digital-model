@@ -3,15 +3,72 @@
   "note": "Derived products of rainier3d, freely redistributable with attribution. Filled by scripts/20_publish_products.py.",
   "products": {
     "model": {
-      "version": null,
+      "version": "products-v1.0.0",
       "file": "rainier3d_model.zarr.zip",
-      "url": null,
-      "sha256": null,
-      "bytes": null,
+      "url": "https://github.com/Denolle-Lab/mt-rainier-digital-model/releases/download/products-v1.0.0/rainier3d_model.zarr.zip",
+      "sha256": "43591a7b8d5749ecf938f2e310350a6db0f72e532a1860fb5724d3cfcc78c4e9",
+      "bytes": 110082833,
       "description": "Fused 3D model: levels L1-L3 (Vp, Vs, rho, Qp, Qs, units, alteration, geology and regional inputs) and the surface layers, UTM 10N + NAVD88 (xarray DataTree, zarr v3)",
       "license": "CC-BY-4.0 (derived product); see docs/data_policy.md for each input",
+      "excluded": [
+        "surface/water_table_depth"
+      ],
+      "cite": "Denolle, M., Yao, D., Hemmett, M., K\u00f6pfli, M., Han, S., and Kidiwela, M. (2026). rainier3d: a reproducible digital model of the subsurface and surface of Mount Rainier, Washington. https://github.com/Denolle-Lab/mt-rainier-digital-model"
+    },
+    "grids": {
+      "version": "products-v1.0.0",
+      "url": "https://github.com/Denolle-Lab/mt-rainier-digital-model/releases/download/products-v1.0.0/rainier3d_grids.zip",
+      "sha256": "ff357f8f0a7d180e65a472ecd19ff730cdc8bac8143caf83bf8a2aca434095f3",
+      "bytes": 54817119,
       "excluded": [],
-      "cite": "Denolle, M., Yao, D., Hemmett, M., Köpfli, M., Han, S., and Kidiwela, M. (2026). rainier3d: a geology-driven 3D velocity model of Mount Rainier. https://github.com/Denolle-Lab/mt-rainier-digital-model"
+      "file": "rainier3d_grids.zip",
+      "description": "Uniform grids of the fused model for other codes (S9): CF netCDF at 500 m (vp, vs, rho, qp, qs, alteration, air, surface_elevation; UTM 10N, elevation up), EMC-style netCDF (lon, lat, depth), NonLinLoc P and S slowness grids",
+      "license": "CC-BY-4.0",
+      "cite": "as model"
+    },
+    "strain_3d": {
+      "version": "products-v1.0.0",
+      "file": "rainier3d_strain_3d.zarr.zip",
+      "url": "https://github.com/Denolle-Lab/mt-rainier-digital-model/releases/download/products-v1.0.0/rainier3d_strain_3d.zarr.zip",
+      "sha256": "c352d703040f1a3e88ffe46d05ccb7b054319cdcf0040a0923dbfc9d3cadd03a",
+      "bytes": 72288761,
+      "description": "Strain in the model volume (S25), 500 m x 250 m grid: GNSS strain rate carried down (areal, volumetric, maximum shear, shortening azimuth, right-lateral shear on WRSZ-parallel planes) and the static strain of the edifice load (full tensor, volumetric, SHmax azimuth)",
+      "license": "CC-BY-4.0",
+      "excluded": [],
+      "cite": "as model"
+    },
+    "edifice_load": {
+      "version": "products-v1.0.0",
+      "file": "rainier3d_edifice_load.zarr.zip",
+      "url": "https://github.com/Denolle-Lab/mt-rainier-digital-model/releases/download/products-v1.0.0/rainier3d_edifice_load.zarr.zip",
+      "sha256": "89ea762c406dd5f16a72d9dc5ab0ea54ec548ff13155c2d6a6679aa737901e56",
+      "bytes": 115271867,
+      "description": "Stress from the weight of the edifice (Boussinesq half-space) on the model levels L1-L3 (S18)",
+      "license": "CC-BY-4.0",
+      "excluded": [],
+      "cite": "as model"
+    },
+    "alteration": {
+      "version": "products-v1.0.0",
+      "url": "https://github.com/Denolle-Lab/mt-rainier-digital-model/releases/download/products-v1.0.0/rainier3d_alteration_finn2001.zip",
+      "sha256": "104272b66a418b46e055110c729bcb973e161849a69c135c7c86de8aee3caa10",
+      "bytes": 1383626,
+      "excluded": [],
+      "file": "rainier3d_alteration_finn2001.zip",
+      "description": "Hydrothermal alteration of the edifice from the 1996 helicopter EM survey (S22): 3D intensity in the top 200 m, bedrock elevation, per-frequency resistivity and depth of investigation, apparent magnetisation (CF netCDF, UTM 10N)",
+      "license": "CC-BY-4.0 (derived from USGS OFR 2000-27, public domain)",
+      "cite": "as model; Rystrom et al. (2000), Finn et al. (2001)"
+    },
+    "mass_movements": {
+      "version": "products-v1.0.0",
+      "url": "https://github.com/Denolle-Lab/mt-rainier-digital-model/releases/download/products-v1.0.0/rainier3d_mass_movements.zip",
+      "sha256": "0414b38653a06a68308375eadb36532af6ab773393348e4ea4b95559360e3d87",
+      "bytes": 1828031,
+      "excluded": [],
+      "file": "rainier3d_mass_movements.zip",
+      "description": "Mass-movement catalogue of the model box (S24): events (landslides, lahars, debris flows, seismically recorded mass movements), flow deposits, faults, 1998 lahar hazard zones and a summary (GeoPackage and CSV)",
+      "license": "CC-BY-4.0 for the compilation; the Washington landslide inventory states no licence (see docs/data_policy.md)",
+      "cite": "as model; the sources listed in docs/mass_movements.md"
     },
     "gnss": {
       "version": "weekly",
@@ -25,29 +82,11 @@
       "description": "GNSS station velocities (MIDAS, QC flags), strain-rate grid, daily regional strain series and the download manifest (S17, S18), refreshed weekly",
       "license": "CC-BY-4.0; acknowledge PANGA/CWU and UNR/NGL",
       "excluded": [],
-      "cite": "as model; GPS time series provided by the Pacific Northwest Geodetic Array, Central Washington University"
-    },
-    "edifice_load": {
-      "version": null,
-      "file": "rainier3d_edifice_load.zarr.zip",
-      "url": null,
-      "sha256": null,
-      "bytes": null,
-      "description": "Stress from the weight of the edifice (Boussinesq half-space) on the model levels L1-L3 (S18)",
-      "license": "CC-BY-4.0",
-      "excluded": [],
-      "cite": "as model"
-    },
-    "strain_3d": {
-      "version": null,
-      "file": "rainier3d_strain_3d.zarr.zip",
-      "url": null,
-      "sha256": null,
-      "bytes": null,
-      "description": "Strain in the model volume (S25), 500 m x 250 m grid: GNSS strain rate carried down (areal, volumetric, maximum shear, shortening azimuth, right-lateral shear on WRSZ-parallel planes) and the static strain of the edifice load (full tensor, volumetric, SHmax azimuth)",
-      "license": "CC-BY-4.0",
-      "excluded": [],
-      "cite": "as model"
+      "cite": "as model; GPS time series provided by the Pacific Northwest Geodetic Array, Central Washington University",
+      "snapshot_version": "products-v1.0.0",
+      "snapshot_as_of": "2026-09-01",
+      "snapshot_url": "https://github.com/Denolle-Lab/mt-rainier-digital-model/releases/download/products-v1.0.0/rainier3d_gnss_2026-09-01.zip",
+      "snapshot_sha256": "f9048c1b66fb77d436f0fe19b6e4728246eea74e925deb99a51ad70957323069"
     }
   }
 }
