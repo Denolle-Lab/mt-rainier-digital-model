@@ -6,14 +6,20 @@ const cam = page => page.evaluate(() => {
   return { target: r.controls.target.toArray(), dist: sph.length(), az: Math.atan2(sph.x, sph.z), flight: !!r.flight };
 });
 const settle = page => page.waitForFunction(() => !window.__rainier.flight, null, { timeout: 10_000 });
+// open a panel from the top-right dock (a no-op when it is already open)
+const dock = async (page, name) => {
+  const b = page.getByRole("button", { name, exact: true });
+  if ((await b.getAttribute("aria-expanded")) !== "true") await b.click();
+};
 
-// the first-visit help card would cover the scene; mark it seen (test (j) checks the card itself)
+// mark the first-visit hint seen (test (j) checks the hint itself)
 test.beforeEach(async ({ page }, info) => {
   if (!info.title.startsWith("(j)")) await page.addInitScript(() => { try { localStorage.setItem("rainier-viewer-help-seen", "1"); } catch { /* ignore */ } });
   await page.goto("./"); await ready(page);
 });
 
 test("(a) loads the map with stations and counts", async ({ page }) => {
+  await dock(page, "Help");
   await expect(page.getByTestId("n-stations")).toHaveText("52");
   const visible = await page.locator(".station").evaluateAll(els => els.filter(e => +getComputedStyle(e).opacity > 0.5).length);
   expect(visible).toBeGreaterThanOrEqual(25);   // the block view sits low; ridges hide some stations
@@ -49,10 +55,11 @@ test("(c) arrow keys glide, drag moves, Ctrl-drag rotates", async ({ page }) => 
 test("(d) the summit reaches 1 m detail", async ({ page }) => {
   await page.getByRole("button", { name: "Summit crater" }).click();
   await page.waitForFunction(() => window.__rainier.frame.finest === 3, null, { timeout: 30_000 });
-  await expect(page.locator(".header .detail")).toContainText("1 m");
+  await expect(page.locator(".header .detail-tag")).toContainText("1 m");
 });
 
 test("(e) 2D flattens the terrain", async ({ page }) => {
+  await dock(page, "Layers");
   await page.getByRole("button", { name: "2D" }).click();
   await page.waitForFunction(() => window.__rainier.U.flat.value > 0.99, null, { timeout: 5_000 });
 });
@@ -100,20 +107,38 @@ test("(h) the cut hides stations on the removed side", async ({ page }) => {
 
 test("(i) 2D hides the block frame, 3D brings it back", async ({ page }) => {
   await expect(page.locator(".tick").first()).toBeVisible();
+  await dock(page, "Layers");
   await page.getByRole("button", { name: "2D" }).click();
   await expect(page.locator(".tick").first()).toBeHidden();
   await page.getByRole("button", { name: "3D" }).click();
   await expect(page.locator(".tick").first()).toBeVisible();
 });
 
-test("(j) the help card shows on a first visit and does not come back", async ({ page }) => {
-  await expect(page.getByRole("dialog", { name: "How to move" })).toBeVisible();
-  await page.getByRole("button", { name: "Got it" }).click();
-  await expect(page.getByRole("dialog", { name: "How to move" })).toHaveCount(0);
+test("(j) a first visit gets a one-line hint, not a card over the map; ? opens Help, and the hint does not come back", async ({ page }) => {
+  await expect(page.getByRole("status")).toContainText("Drag to move");
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  await page.getByRole("button", { name: "More help" }).click();
+  await expect(page.getByRole("button", { name: "Help", exact: true })).toHaveAttribute("aria-expanded", "true");
+  await expect(page.locator(".helppanel")).toBeVisible();
+  await expect(page.getByRole("status")).toHaveCount(0);
   await page.reload(); await ready(page);
-  await expect(page.getByRole("dialog", { name: "How to move" })).toHaveCount(0);
-  await page.getByRole("button", { name: "How to move" }).click();   // the ? button reopens it
-  await expect(page.getByRole("dialog", { name: "How to move" })).toBeVisible();
+  await expect(page.getByRole("status")).toHaveCount(0);
+  await page.getByRole("button", { name: "How to move" }).click();   // the nav pad's ? opens Help too
+  await expect(page.locator(".helppanel")).toBeVisible();
+});
+
+test("(o) the map opens clear: every dock panel starts closed, stays open until its button is clicked again, and the dock moves aside for a station", async ({ page }) => {
+  for (const cls of [".controls", ".legend", ".model-panel", ".helppanel"]) await expect(page.locator(cls)).toBeHidden();
+  await expect(page.locator(".goto")).toBeVisible();
+  await dock(page, "Layers"); await dock(page, "Legend");
+  await expect(page.locator(".controls")).toBeVisible(); await expect(page.locator(".legend")).toBeVisible();
+  await page.getByRole("button", { name: "Layers", exact: true }).click();
+  await expect(page.locator(".controls")).toBeHidden(); await expect(page.locator(".legend")).toBeVisible();
+  const right = () => page.locator(".hud-dock").evaluate(e => innerWidth - e.getBoundingClientRect().right);
+  expect(await right()).toBeLessThan(20);
+  await page.getByRole("button", { name: "RCM", exact: true }).click();
+  await expect(page.locator("#panel")).toBeVisible();
+  await expect.poll(right).toBeGreaterThan(440);
 });
 
 test("(k) the navigation pad rotates about the target and turns north up", async ({ page }) => {
@@ -128,6 +153,7 @@ test("(k) the navigation pad rotates about the target and turns north up", async
 
 test("(l) the subsurface section follows the cut and the slice follows its slider", async ({ page }) => {
   await page.waitForFunction(() => !!window.__rainier.volume, null, { timeout: 30_000 });
+  await dock(page, "Surface model"); await dock(page, "Layers");
   await page.getByLabel("Subsurface property").selectOption("vs");
   await page.getByRole("switch", { name: "Section on the cut" }).click();
   await page.waitForFunction(() => window.__rainier.volume.section.visible, null, { timeout: 20_000 });
@@ -145,6 +171,7 @@ test("(m) the sensor legend filters: geophones show the 2025 nodes, Past adds ea
   const nodes2025 = await page.evaluate(() => window.__rainier.sensors.sites.filter(s =>
     s.kinds.includes("geophone") && s.status === "operating" && s.source.startsWith("2025")).length);
   expect(nodes2025).toBeGreaterThan(150);
+  await dock(page, "Legend");
   await page.locator(".sf-kind", { hasText: "Geophone" }).click();
   expect(await on()).toBe(nodes2025);                             // operating geophones = the 2025 nodes
   await page.getByRole("button", { name: "Past", exact: true }).click();
@@ -168,6 +195,7 @@ test("(n) mass movements: events sit on the ground, the legend filters them, Flo
   expect(seismic).toBeGreaterThanOrEqual(19);                     // Allstadt et al. (2017) events in the box
   expect(minOff).toBeGreaterThanOrEqual(0.015 - 1e-6);             // every point at least 15 m above the ground
   expect(maxOff).toBeLessThan(0.3);                               // and on it: the highest ground within 60 m
+  await dock(page, "Legend"); await dock(page, "Surface model");
   await page.getByRole("button", { name: "Events", exact: true }).click();
   expect(await on()).toBe(n);
   await page.getByRole("button", { name: "Dated only", exact: true }).click();

@@ -8,14 +8,16 @@
 kbd { font-family: var(--font-mono); font-size: 10px; color: var(--text-secondary); border: 1px solid var(--hairline-strong); border-radius: 3px; padding: 0 4px; margin: 0 1px; }
 input[type=range] { width: 110px; accent-color: var(--text-primary); }
 input[type=range]:disabled { opacity: 0.35; }
-.header { top: 16px; left: var(--left-inset); width: 320px; padding: 14px 16px 12px; transition: left 220ms ease; }
+.header { top: 16px; left: var(--left-inset); width: 320px; padding: 10px 12px; transition: left 220ms ease; }
+.header .title-row { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+.header .detail-tag { color: var(--text-muted); font-size: 11px; white-space: nowrap; }
 .header h1 { margin: 0; font-size: 15px; font-weight: 600; letter-spacing: 0.01em; }
 .header p { margin: 4px 0 0; color: var(--text-secondary); font-size: 12px; line-height: 1.45; }
 .header .stats { display: flex; gap: 22px; margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--hairline); }
 .header .stats div { display: flex; flex-direction: column; gap: 2px; }
 .header .stats b { font-size: 16px; font-weight: 500; }
 .header .stats span { color: var(--text-muted); font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; }
-.search { position: relative; margin-top: 10px; }
+.search { position: relative; margin-top: 8px; }
 .search input { width: 100%; background: var(--surface-2); border: 1px solid var(--hairline-strong); border-radius: 4px; color: var(--text-primary); padding: 6px 8px; font: inherit; }
 .search ul { position: absolute; left: 0; right: 0; top: calc(100% + 4px); margin: 0; padding: 4px; list-style: none; background: var(--surface-1); border: 1px solid var(--hairline-strong); border-radius: 4px; z-index: 8; }
 .search li { display: flex; justify-content: space-between; gap: 8px; padding: 6px 8px; border-radius: 3px; cursor: pointer; }
@@ -94,12 +96,11 @@ input[type=range]:disabled { opacity: 0.35; }
 .mlegend a { color: var(--text-secondary); }
 .mlegend .msrc { display: block; color: var(--text-muted); font-size: 11px; line-height: 1.45; margin-top: 4px; }
 .mread { position: fixed; pointer-events: none; background: rgba(18, 18, 17, 0.95); border: 1px solid var(--hairline-strong); border-radius: 5px; padding: 7px 10px; z-index: 9; }
-.model-panel { left: var(--left-inset); top: 252px; width: 320px; max-height: calc(100vh - 252px - 250px); overflow-y: auto; padding: 10px 12px 12px; display: flex; flex-direction: column; gap: 10px; transition: left 220ms ease; }
+.model-panel { padding: 10px 12px 12px; display: flex; flex-direction: column; gap: 10px; transition: left 220ms ease; }
 .model-panel .layers { border-top: 0; padding-top: 0; }
 .mlegend { border-top: 1px solid var(--hairline); padding-top: 8px; }
 .mlegend .mclasses { display: grid; grid-template-columns: 1fr 1fr; column-gap: 10px; max-height: none; }
 .mlegend .row { display: flex; align-items: center; gap: 7px; color: var(--text-secondary); font-size: 11.5px; }
-@media (max-height: 760px) { .model-panel { top: auto; bottom: 16px; left: calc(var(--left-inset) + 336px); max-height: 60vh; } }
 
 /* Phone layout: compact title bar, a tab dock at the bottom, and one panel at a time as a bottom sheet. */
 .dock { display: none; }
@@ -135,13 +136,10 @@ input[type=range]:disabled { opacity: 0.35; }
   font-size: 16px; cursor: pointer; }
 .navpad button:hover { background: var(--surface-2); color: var(--text-primary); }
 .navpad .help { border-left: 1px solid var(--hairline); border-radius: 0 4px 4px 0; font-weight: 600; }
-.helpcard-wrap { position: fixed; inset: 0; z-index: 20; display: grid; place-items: center; background: rgba(0, 0, 0, 0.35); }
-.helpcard { position: relative; width: min(440px, calc(100vw - 32px)); padding: 16px 18px; display: flex; flex-direction: column; gap: 12px; }
 .hc-set { display: flex; flex-direction: column; gap: 4px; }
-.hc-row { display: grid; grid-template-columns: 120px 1fr; gap: 10px; font-size: 12.5px; color: var(--text-secondary); line-height: 1.45; }
+.hc-row { display: grid; grid-template-columns: 104px 1fr; gap: 10px; font-size: 12.5px; color: var(--text-secondary); line-height: 1.45; }
 .hc-row b { color: var(--text-primary); font-weight: 500; }
 .hc-note { font-size: 12px; color: var(--text-secondary); line-height: 1.55; border-top: 1px solid var(--hairline); padding-top: 10px; }
-.helpcard .fly { align-self: flex-end; }
 @media (max-width: 700px) {
   .navpad { bottom: calc(52px + 24px + env(safe-area-inset-bottom)); }
   .navpad button { width: 40px; height: 40px; }
@@ -165,3 +163,41 @@ input[type=range]:disabled { opacity: 0.35; }
 .sp-stnote { margin: 8px 0 0; color: var(--text-secondary); font-size: 11.5px; line-height: 1.5; border-left: 2px solid #9085e9; padding-left: 8px; }
 .mfilter { border-top: 1px solid var(--hairline); padding-top: 10px; margin-top: 4px; }
 .m-dot { width: 10px; height: 10px; border-radius: 50%; box-shadow: 0 0 0 1.5px #121211; justify-self: center; }
+
+/* Map HUD dock (desktop), as in the Cascadia atlas: icon buttons top-right, their panels stacked beneath. */
+.helppanel { padding: 12px 14px; display: flex; flex-direction: column; gap: 10px; }
+.helppanel .hc-dev { color: var(--text-muted); font-size: 11px; }
+.helppanel .stats { display: flex; gap: 18px; border-top: 1px solid var(--hairline); padding-top: 10px; }
+.helppanel .stats div { display: flex; flex-direction: column; gap: 2px; }
+.helppanel .stats b { font-size: 15px; font-weight: 500; }
+.helppanel .stats span { color: var(--text-muted); font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.06em; }
+.helphint { left: 50%; transform: translateX(-50%); bottom: 72px; display: flex; align-items: center; gap: 8px; padding: 5px 6px 5px 12px;
+  color: var(--text-secondary); font-size: 12px; white-space: nowrap; }
+.helphint .more { width: 22px; height: 22px; border-radius: 50%; border: 1px solid var(--hairline-strong); background: transparent;
+  color: var(--text-primary); font-weight: 600; cursor: pointer; }
+.helphint .icon { font-size: 16px; }
+@media (min-width: 701px) {
+  .hud-dock { position: fixed; top: 16px; right: var(--right-inset); z-index: 6; display: flex; flex-direction: column; align-items: flex-end;
+    gap: 8px; transition: right 220ms ease; }
+  .dock-bar { display: flex; gap: 6px; }
+  .dock-bar .dock-btn { position: static; width: 32px; height: 32px; padding: 0; display: grid; place-items: center; cursor: pointer; color: var(--text-secondary); }
+  .dock-bar .dock-btn:hover, .dock-bar .dock-btn[aria-expanded="true"] { color: var(--text-primary); border-color: var(--hairline-strong); }
+  .dock-bar .dock-btn[aria-expanded="true"] { background: var(--surface-2); }
+  .dock-pops { display: flex; flex-direction: column; gap: 8px; width: 272px; max-height: calc(100vh - 72px); overflow-y: auto;
+    overscroll-behavior: contain; scrollbar-width: thin; }
+  .dock-pop { display: none; }
+  .dock-pop.open { display: block; animation: dock-in 120ms ease-out; }
+  .dock-pops .panel { position: static; width: auto; max-height: none; min-height: 0; top: auto; right: auto; bottom: auto; left: auto; }
+  .dock-pops .model-panel { overflow: visible; }
+}
+@keyframes dock-in { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .dock-pop.open { animation: none; } }
+@media (max-width: 700px) {
+  .dock-bar { display: none; }
+  .dock-pop { display: contents; }   /* the panels are the phone's bottom sheets, positioned by the rules above */
+  .helppanel { display: none; position: fixed; left: 8px; right: 8px; top: auto; bottom: calc(var(--dock-h) + 16px + env(safe-area-inset-bottom));
+    max-height: 52vh; overflow-y: auto; }
+  [data-sheet="help"] .helppanel { display: flex; }
+  .helphint { bottom: calc(52px + 76px + env(safe-area-inset-bottom)); max-width: calc(100vw - 16px); white-space: normal; }
+  html[data-sheet]:not([data-sheet=""]) .helphint { display: none; }   /* an open sheet takes the space, as with the nav pad */
+}

@@ -2,7 +2,8 @@ import { useEffect } from "react";
 import "./ui.css";
 
 // Phone layout (max-width 700px): the desktop panels become bottom sheets, one open at a time, chosen here.
-// The open sheet is written to <html data-sheet>, which the phone CSS in ui.css reads.
+// The open sheet is written to <html data-sheet>, which the phone CSS in ui.css reads. Help has no tab: the nav pad's
+// ? button opens it as a sheet (App sets sheet "help").
 export const SHEETS = [["layers", "Layers"], ["model", "Model"], ["legend", "Legend"], ["goto", "Go to"]];
 
 export default function MobileDock({ sheet, onSheet, hasModel }) {

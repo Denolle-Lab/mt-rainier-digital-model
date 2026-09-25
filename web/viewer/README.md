@@ -18,6 +18,11 @@ Nothing underground is ever drawn above the ground surface, so solid ground hide
 **Navigation:** drag to move · Ctrl/⌘-drag or right-drag to rotate · scroll to zoom · arrow keys to glide ·
 Go to places and major stations · click a station for its instruments and data links.
 
+**Layout:** the map comes first. The title bar (with search) and Go to stay on screen; everything else opens from the
+dock of icon buttons at the top right: **Layers** (view, style, earthquake layers, ground), **Surface model**, **Legend**
+(the sensor filter, earthquakes, mass movements) and **Help**. A panel stays open until its button is clicked again,
+open panels stack, and closing one keeps its settings. On a phone the same panels are bottom sheets.
+
 ## Layout
 
 ```text

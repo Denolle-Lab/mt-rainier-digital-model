@@ -23,7 +23,8 @@ import MassFilter from "./ui/MassFilter.jsx";
 import MassTip from "./ui/MassTip.jsx";
 import { DEFAULT_FILTER, classifyMarker, extraSites, kindCounts, loadSensors, passes } from "./data/sensors.js";
 import { ModelVolume, loadVolumeMeta } from "./scene/ModelVolume.js";
-import HelpCard, { helpSeen } from "./ui/HelpCard.jsx";
+import HelpPanel, { HelpHint, markHelpSeen } from "./ui/HelpPanel.jsx";
+import HudDock from "./ui/HudDock.jsx";
 import QuakeLegend from "./ui/QuakeLegend.jsx";
 import Legend from "./ui/Legend.jsx";
 import StationPanel from "./ui/StationPanel.jsx";
@@ -46,7 +47,7 @@ export function detailText(frame, summit) {
 function Atlas({ bundle, onError }) {
   const canvasRef = useRef(null), overlayRef = useRef(null), layerRef = useRef(null);
   const [scene, setScene] = useState(null), [siteId, setSiteId] = useState(null), [hover, setHover] = useState(null);
-  const [detail, setDetail] = useState("loading…"), [active, setActive] = useState("home"), [modelKey, setModelKey] = useState(null), [sheet, setSheet] = useState(null), [help, setHelp] = useState(() => !helpSeen()), [volume, setVolume] = useState(null), [sens, setSens] = useState(null), [sfilter, setSfilter] = useState(DEFAULT_FILTER);
+  const [detail, setDetail] = useState("loading…"), [active, setActive] = useState("home"), [modelKey, setModelKey] = useState(null), [sheet, setSheet] = useState(null), [dock, setDock] = useState(() => new Set()), [helpOpened, setHelpOpened] = useState(false), [volume, setVolume] = useState(null), [sens, setSens] = useState(null), [sfilter, setSfilter] = useState(DEFAULT_FILTER);
   const [mass, setMass] = useState(null), [mfilter, setMfilter] = useState(DEFAULT_MASS_FILTER);
 
   const openSite = useCallback((site, sc) => {
@@ -95,6 +96,9 @@ function Atlas({ bundle, onError }) {
   }, [siteId]);
 
   const site = siteId ? bundle.siteById[siteId] : null;
+  const toggleDock = key => setDock(o => { const n = new Set(o); if (!n.delete(key)) n.add(key); return n; });
+  // ? (the nav pad or the first-visit hint) opens Help: in the dock on a desktop, as a bottom sheet on a phone
+  const openHelp = () => { setDock(o => new Set(o).add("help")); setSheet("help"); markHelpSeen(); setHelpOpened(true); };
   const applyFilter = f => {
     setSfilter(f); sens?.points.setFilter(f);
     layerRef.current?.setFilter(x => passes(classifyMarker(x), f));
@@ -118,28 +122,32 @@ function Atlas({ bundle, onError }) {
       {scene && (
         <>
           <Header bundle={bundle} detail={detail} onPick={s => openSite(s, scene)} />
-          <Controls scene={scene}>
-            {scene.layers && <LayerPanel layers={scene.layers} scene={scene} onStations={on => layerRef.current?.setVisible(on)} />}
-          </Controls>
+          <HudDock open={dock} onToggle={toggleDock} items={[
+            { key: "layers", label: "Layers", icon: "layers", node: (
+              <Controls scene={scene}>
+                {scene.layers && <LayerPanel layers={scene.layers} scene={scene} onStations={on => layerRef.current?.setVisible(on)} />}
+              </Controls>) },
+            ...(bundle.model ? [{ key: "model", label: "Surface model", icon: "model", node: (
+              <div className="panel model-panel">
+                <ModelLayers model={bundle.model} scene={scene} active={modelKey} onActive={setModelKey} />
+                <ModelLegend layer={modelLayer} />
+                {volume && <SubsurfacePanel volume={volume} scene={scene} />}
+              </div>) }] : []),
+            { key: "legend", label: "Legend", icon: "legend", node: (
+              <Legend bundle={bundle} sensors={sensorLegend} mass={!!mass}>
+                {bundle.quakes && <QuakeLegend meta={bundle.quakes.meta} drawn={scene.layers?.drawn} />}
+                {massLegend && <MassFilter {...massLegend} />}
+              </Legend>) },
+            { key: "help", label: "Help", icon: "help", node: <HelpPanel bundle={bundle} /> },
+          ]} />
           <GoTo majors={bundle.majors} active={active} onPlace={k => { setActive(k); scene.flyTo(k); }} onSite={s => openSite(s, scene)} />
-          <Legend bundle={bundle} sensors={sensorLegend} mass={!!mass}>
-            {bundle.quakes && <QuakeLegend meta={bundle.quakes.meta} drawn={scene.layers?.drawn} />}
-            {massLegend && <MassFilter {...massLegend} />}
-          </Legend>
-          {bundle.model && (
-            <div className="panel model-panel">
-              <ModelLayers model={bundle.model} scene={scene} active={modelKey} onActive={setModelKey} />
-              <ModelLegend layer={modelLayer} />
-              {volume && <SubsurfacePanel volume={volume} scene={scene} />}
-            </div>
-          )}
           {modelLayer?.values && <ModelReadout scene={scene} model={bundle.model} layer={modelLayer} box={bundle.overviewBox} />}
           <Tooltip hover={hover} notes={sens?.notes} />
           {sens && <SensorTip scene={scene} points={sens.points} />}
           {mass && <MassTip scene={scene} points={mass.points} doc={mass.doc} />}
           <MobileDock sheet={sheet} onSheet={setSheet} hasModel={!!bundle.model} />
-          <NavPad scene={scene} onHelp={() => setHelp(true)} />
-          {help && <HelpCard onClose={() => setHelp(false)} />}
+          <NavPad scene={scene} onHelp={openHelp} />
+          <HelpHint onHelp={openHelp} hidden={helpOpened} />
           {site && <StationPanel site={site} bundle={bundle} notes={sens?.notes} onFly={s => scene.flyToSite(s)}
             onClose={() => { setSiteId(null); layerRef.current?.setSelected(null); }} />}
         </>

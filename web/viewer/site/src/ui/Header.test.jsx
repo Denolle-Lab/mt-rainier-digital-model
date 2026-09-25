@@ -7,12 +7,12 @@ import Header from "./Header.jsx";
 
 describe("Header", () => {
   const b = bundleFixture();
-  it("shows the bundle's counts", () => {
+  it("is a slim title bar: title, summit detail and search, with the counts moved to Help", () => {
     render(<Header bundle={b} detail="1 m" onPick={() => {}} />);
-    expect(screen.getByTestId("n-stations")).toHaveTextContent("7");
-    expect(screen.getByTestId("n-sites")).toHaveTextContent("3");
-    expect(screen.getByTestId("n-kinds")).toHaveTextContent("6");   // kinds present in the network
-    expect(screen.getByText("1 m")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Mount Rainier Seismic Atlas" })).toBeInTheDocument();
+    expect(screen.getByTitle("Summit terrain detail")).toHaveTextContent("1 m");
+    expect(screen.getByRole("searchbox")).toBeInTheDocument();
+    expect(screen.queryByTestId("n-stations")).toBeNull();
   });
   it("arrow keys in the search box move the list, not the camera", () => {
     const onPick = vi.fn();
