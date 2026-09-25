@@ -2,7 +2,8 @@
 
 Figures are regenerated from the current model and outputs (S1-S9 must have run); the text lives in
 docs/report/subsurface_model.md; references come from docs/report/references_resolved.json.
-Use --figures-only / --html-only to redo one half.
+Use --figures-only / --html-only to redo one half. Figures 10-13 (calibration and validation) are
+written by S16 and S21.
 """
 
 from __future__ import annotations
@@ -53,11 +54,6 @@ def figures(dom):
         F.fig_pnsn(out / "pnsn_residuals.csv", out / "pnsn_stations.csv", FIG / "fig7_pnsn.png"),
         F.fig_glaciers(out / "glacier_thickness_check.csv", FIG / "fig2_glaciers.png"),
         F.fig_surface_layers(tree, dom, FIG / "fig8_surface_layers.png"),
-        F.fig_vs_calibration(
-            REPO / "configs" / "vs_calibration.yaml",
-            out / "vs_calibration" / "sp_pairs.csv",
-            FIG / "fig9_vs_calibration.png",
-        ),
     ]
     for p in made:
         logging.info("figure %s", p.relative_to(REPO))

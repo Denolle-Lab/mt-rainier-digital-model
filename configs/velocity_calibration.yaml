@@ -1,0 +1,203 @@
+version: 2
+description: 'S13: geology multipliers (S4, rock units) and a static bias of the regional
+  model (S5, before fusion), fitted to PNSN P and S arrivals with 3D relocation.'
+geology:
+  ln_v0: 0.27039
+  ln_pstar: -0.09938
+  ln_vs: -0.02421
+  factor_v0: 1.3105
+  factor_pstar: 0.9054
+  factor_vs: 0.9761
+  sd_ln_v0: 0.0176
+  sd_ln_pstar: 0.0978
+  sd_ln_vs: 0.0118
+  prior_sd:
+    ln_v0: 0.3
+    ln_pstar: 0.7
+    ln_vs: 0.1
+  units:
+  - rainier_andesite
+  - young_volcanics
+  - miocene_intrusive
+  - miocene_volcanics
+  - ohanapecosh
+  - eocene_volcanics
+  - eocene_sedimentary
+  - miocene_sedimentary
+  - pre_tertiary
+  - middle_crust
+  - magma_mush
+regional_bias:
+  knots_m:
+  - 0.0
+  - 1000.0
+  - 2000.0
+  - 4000.0
+  - 7000.0
+  - 11000.0
+  - 16000.0
+  - 25000.0
+  vp:
+    log_factor:
+    - 0.0
+    - 0.0
+    - 0.022
+    - 0.00469
+    - -0.03267
+    - -0.02579
+    - -0.02157
+    - -0.02711
+    factor:
+    - 1.0
+    - 1.0
+    - 1.0222
+    - 1.0047
+    - 0.9679
+    - 0.9745
+    - 0.9787
+    - 0.9732
+  vs:
+    log_factor:
+    - 0.0
+    - 0.0
+    - 0.0475
+    - 0.08228
+    - 0.05831
+    - -0.01042
+    - -0.04876
+    - -0.07798
+    factor:
+    - 1.0
+    - 1.0
+    - 1.0486
+    - 1.0858
+    - 1.06
+    - 0.9896
+    - 0.9524
+    - 0.925
+  sd_log_factor:
+    free_knots_m:
+    - 2000.0
+    - 4000.0
+    - 7000.0
+    - 11000.0
+    - 16000.0
+    - 25000.0
+    vp:
+    - 0.0061
+    - 0.0048
+    - 0.0043
+    - 0.0044
+    - 0.0083
+    - 0.0159
+    vs:
+    - 0.0057
+    - 0.0044
+    - 0.0034
+    - 0.0035
+    - 0.0056
+    - 0.0132
+vpvs_floor: 1.6
+vpvs_floor_source: christensen_1996
+source_keys:
+- comcat_uw
+- pavlis_booker_1980
+- kissling_1994
+- lomax_2000
+- thurber_1983
+- white_2020
+- huber_1964
+data:
+  picks: PNSN analyst P and S picks (ComCat), configs/validation_events.csv
+  n_events: 88
+  n_p: 1823
+  n_s: 1280
+  n_stations: 50
+  pick_sigma_s:
+    P: 0.14
+    S: 0.23
+method:
+  forward: S4 + S5 in memory (properties.assign, fusion.build) on the S6 grid (dx
+    500 m); pykonal PointSourceSolver by reciprocity; air above DEM + 1 cell(s) at
+    343.0 m/s
+  location: L1 grid search below the DEM, then Huber Gauss-Newton with a ground penalty
+  derivatives: 'geology: finite differences (h = 0.05) through S4 + S5; regional bias:
+    rays'
+  separation: Pavlis & Booker (1980), per event
+  lam_s_rel: 0.1
+  lam_d_rel: 0.01
+  iterations_fitting_half: 4
+  iterations_all: 2
+  geology_derivatives: recomputed every fitting-half iteration, reused in the all-events
+    run
+  split: events alternating in origin-time order
+held_out:
+  before:
+    P:
+      n: 948
+      rms_s: 0.12045750701751244
+      median_abs_s: 0.07179655756342984
+      rejected: 1
+    S:
+      n: 654
+      rms_s: 0.3170281950023959
+      median_abs_s: 0.19515426678873826
+      rejected: 1
+  after:
+    P:
+      n: 949
+      rms_s: 0.09256952251847761
+      median_abs_s: 0.05028744029463139
+      rejected: 0
+    S:
+      n: 655
+      rms_s: 0.1876967591794825
+      median_abs_s: 0.11825332731716642
+      rejected: 0
+all_events:
+  before:
+    P:
+      n: 1819
+      rms_s: 0.12228073461937404
+      median_abs_s: 0.07239480590652914
+      rejected: 4
+    S:
+      n: 1278
+      rms_s: 0.315699954521335
+      median_abs_s: 0.1926048841434298
+      rejected: 2
+  after:
+    P:
+      n: 1821
+      rms_s: 0.09453626735063195
+      median_abs_s: 0.05333855163999557
+      rejected: 2
+    S:
+      n: 1280
+      rms_s: 0.18974190015561854
+      median_abs_s: 0.11958869960597651
+      rejected: 0
+vpvs_1_10km:
+  before:
+    median: 1.840774290979774
+    p05: 1.761595684332828
+  after:
+    median: 1.7287767901048938
+    p05: 1.6625491934936163
+above_ground_gt_50m: 3
+fd_check_regional:
+  parameter: regional Vs bias at 4000 m
+  n_picks: 1280
+  slope_ray_on_fd: 0.8038274150950911
+  corr: 0.9600295405696023
+lam_scan:
+- lam_s: 0.01
+  held_out_linear_nrms: 0.719713253242763
+- lam_s: 0.1
+  held_out_linear_nrms: 0.7188894094574133
+- lam_s: 1.0
+  held_out_linear_nrms: 0.7328481253106098
+- lam_s: 10.0
+  held_out_linear_nrms: 0.7779670948675129
+runtime_min: 26.3
+date: '2026-09-24'
