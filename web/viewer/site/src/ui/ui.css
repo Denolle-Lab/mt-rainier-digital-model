@@ -162,7 +162,6 @@ input[type=range]:disabled { opacity: 0.35; }
 .stip { width: 320px; }
 .sp-stnote { margin: 8px 0 0; color: var(--text-secondary); font-size: 11.5px; line-height: 1.5; border-left: 2px solid #9085e9; padding-left: 8px; }
 .mfilter { border-top: 1px solid var(--hairline); padding-top: 10px; margin-top: 4px; }
-.m-dot { width: 10px; height: 10px; border-radius: 50%; box-shadow: 0 0 0 1.5px #121211; justify-self: center; }
 
 /* Map HUD dock (desktop), as in the Cascadia atlas: icon buttons top-right, their panels stacked beneath. */
 .helppanel { padding: 12px 14px; display: flex; flex-direction: column; gap: 10px; }

@@ -37,6 +37,17 @@
       "license": "CC-BY-4.0",
       "excluded": [],
       "cite": "as model"
+    },
+    "strain_3d": {
+      "version": null,
+      "file": "rainier3d_strain_3d.zarr.zip",
+      "url": null,
+      "sha256": null,
+      "bytes": null,
+      "description": "Strain in the model volume (S25), 500 m x 250 m grid: GNSS strain rate carried down (areal, volumetric, maximum shear, shortening azimuth, right-lateral shear on WRSZ-parallel planes) and the static strain of the edifice load (full tensor, volumetric, SHmax azimuth)",
+      "license": "CC-BY-4.0",
+      "excluded": [],
+      "cite": "as model"
     }
   }
 }

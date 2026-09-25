@@ -153,7 +153,7 @@ pixi run all                       # S1-S8: surface, layers, geology, rock physi
 pixi run s2 -- --ma                # optional: the Ma et al. (2026) water table (~1 GB download)
 pixi run s22 && pixi run s3 && pixi run s4 && pixi run s5   # alteration from the EM survey, then rebuild
 pixi run s17 && pixi run s18       # GNSS positions, velocities, strain, edifice load
-pixi run s24                       # mass movements and faults: catalogue, figure, viewer layers (~1.8 GB of 1 m windows)
+pixi run s25                       # mass movements and faults: catalogue, figure, viewer layers (~1.8 GB of 1 m windows)
 pixi run s9                        # uniform grids for ray tracing and location
 pixi run manifest -- --check       # compare the rebuilt cache with docs/data_manifest.csv
 pixi run test                      # unit tests and the invariants of the built model
@@ -358,19 +358,40 @@ where LP is a horizontal Gaussian low-pass filter with half power at the cutoff 
 - **Topography.** Cells more than one cell above the ground carry the speed of sound in air, so rays follow the rock and cannot cut across valleys. The one-cell skin keeps every station in rock.
 - **Cross-check.** For station OBSR, NonLinLoc's Grid2Time P times on the exported grids agree with the pykonal times to 12 ms on average (RMS 31 ms, 85 events).
 
-**Relocation in every trial model.** A velocity model is scored with hypocentres located in that model, not with catalogue hypocentres located in a 1D model with station corrections. Each event is relocated in each trial model in two steps, in the manner of NonLinLoc [@lomax_2000]:
-1. a grid search over the nodes at or below the ground, within 15 km of the catalogue epicentre;
-2. Gauss–Newton refinement with a Huber loss [@huber_1964] and a penalty on hypocentres more than 50 m above the ground.
+**What is estimated.** Fifteen parameters $\boldsymbol\theta$ scale the two models that are fused, and the hypocentres and origin times of the 88 events are re-estimated in every model tried. The travel-time data therefore constrain the velocity parameters only through the part of the misfit that relocation cannot absorb. This avoids the circularity of scoring a model with catalogue hypocentres that were located in a 1D model with station corrections.
 
-**Parameters.** Fifteen parameters are fitted:
-- **Geology (3).** Multipliers on V₀, P* and Vs of all rock units, applied in S4. Their prior standard deviations in natural log are 0.3, 0.7 and 0.1.
-- **Regional correction (12).** Log-factors on the regional Vp and Vs at 2, 4, 7, 11, 16 and 25 km below the ground, applied in S5 before fusion. They are zero at 0 and 1 km, so the top kilometre belongs to the geology model.
+**Parameters.**
+- **Rock physics (3).** Log-multipliers on three quantities shared by all rock units: the zero-pressure velocity V₀ and the crack-closure pressure P* of [@eq:crack], and Vs. The Vs multiplier acts at fixed Vp, so it is a change of Vp/Vs. Ice and unconsolidated deposits are not scaled.
+- **Regional correction (12).** A static depth profile $m(d)$ of the log-factor that multiplies the regional velocity, $V_{\mathrm{reg}} \to V_{\mathrm{reg}}\,e^{m(d)}$, one profile for Vp and one for Vs. Here $d$ is depth below the ground. Each profile is piecewise linear between knots at 0, 1, 2, 4, 7, 11, 16 and 25 km and constant below 25 km. The values at 0 and 1 km are fixed at zero, because the fused model takes the top kilometre from the geology model ([@sec:fusion]); the six deeper values are free.
 
-**Inversion.** Each trial model is built by running S4 and S5 in memory. With zero calibration, this reproduces the uncalibrated model exactly.
-- **Derivatives.** For the geology parameters they are finite differences through S4, S5 and the eikonal solver. For the regional correction they are ray integrals [@thurber_1983].
-- **Parameter separation.** The partials of each event's hypocentre and origin time are projected out of the velocity update [@pavlis_booker_1980], and relocation and update alternate as in the minimum one-dimensional model of @kissling_1994.
-- **Validation split.** Events alternate between a fitting half and a held-out half in origin-time order. The smoothing weight of the regional correction (0.1) is chosen on the held-out half. Held-out events are relocated in every iterate.
-- **Iterations.** Four iterations on the fitting half are followed by two on all events ([@tbl:iterations]).
+**Forward problem.** For a trial $\boldsymbol\theta$, the model is rebuilt from its inputs by the same code that builds the published model. At $\boldsymbol\theta = 0$ it returns the uncalibrated model cell for cell, which checks that the calibration fits the model that is delivered and not an approximation of it. The steps are:
+1. Vp of every rock-unit cell from [@eq:crack] with the scaled V₀ and P*, and Vs from that Vp through the unit's Vp/Vs ratio, or the regression of @brocher_2005 where the unit has none, times the Vs multiplier;
+2. the regional Vp and Vs multiplied by $e^{m(d)}$;
+3. the fusion of [@eq:fusion], including the geology-only top 300 m and the taper to 1 km;
+4. P and S travel times from every station on the 500 m grid, with air above the ground, as described under Travel times;
+5. every event relocated in that model (see Relocation below).
+
+**Objective.** With $t_{ij}$ the pick of phase at station $j$ for event $i$, $T_j$ the travel-time field, and $(\mathbf{x}_i, \tau_i)$ the hypocentre and origin time, the normalised residual is
+$$r_{ij} = \frac{t_{ij} - \tau_i - T_j(\mathbf{x}_i;\boldsymbol\theta)}{\sigma_{\mathrm{ph}}},$$ {#eq:residual}
+where $\sigma_{\mathrm{ph}}$ is the pick uncertainty of the pick's phase: $\sigma_P = 0.14$ s for P picks and $\sigma_S = 0.23$ s for S picks. The calibration minimises
+$$\Phi(\boldsymbol\theta) = \sum_{ij} w_{ij}\, r_{ij}^2 + \boldsymbol\theta_g^{\mathsf T} \mathbf C_g^{-1} \boldsymbol\theta_g + \lambda_s \lVert \mathbf D \mathbf m \rVert^2 + \lambda_d \lVert \mathbf m \rVert^2,$$ {#eq:objective}
+where the hypocentres minimise the first term for each $\boldsymbol\theta$. The weights $w_{ij}$ are the Huber weights of the relocation (threshold 1.5σ), so outlying picks count less. $\boldsymbol\theta_g$ holds the three rock-physics log-multipliers, with prior standard deviations of 0.3, 0.7 and 0.1 on the diagonal of $\mathbf C_g$ (factors of 1.35, 2 and 1.1). $\mathbf m$ holds the regional log-factors at all eight knots, with the two fixed at zero, and $\mathbf D$ takes second differences along depth. The smoothing weight $\lambda_s$ and the damping weight $\lambda_d = 0.01$ are relative: both are multiplied by the mean diagonal of the data term for the regional parameters.
+
+**Update.** Each iteration linearises the residuals about the current model and hypocentres, $\mathbf r(\boldsymbol\theta + \delta\boldsymbol\theta) \approx \mathbf r - \mathbf G\,\delta\boldsymbol\theta$, with $\mathbf G = \partial \mathbf T / \partial \boldsymbol\theta$ scaled like the residuals.
+- **Separating hypocentres from velocity.** For each event, the columns $\mathbf H_i$ of partials with respect to $(\mathbf x_i, \tau_i)$ are formed at its current location. The event's rows of $\mathbf G$ and $\mathbf r$ are projected onto the orthogonal complement of $\mathbf H_i$, through a QR factorisation of $\mathbf H_i$ [@pavlis_booker_1980]. What remains is the part of the misfit that no shift of that hypocentre can remove. Events with five or fewer usable picks keep at most one degree of freedom after the projection and are left out of the update.
+- **Step.** With the projected $\tilde{\mathbf G}$, $\tilde{\mathbf r}$ and the regularisation matrix $\mathbf L$ of [@eq:objective],
+$$\boldsymbol\theta \leftarrow \boldsymbol\theta + \left(\tilde{\mathbf G}^{\mathsf T}\tilde{\mathbf G} + \mathbf L\right)^{-1}\left(\tilde{\mathbf G}^{\mathsf T}\tilde{\mathbf r} - \mathbf L\,\boldsymbol\theta\right).$$ {#eq:gn}
+- **Relocation.** Every event is then relocated in the updated model before the next linearisation, so velocity and hypocentres are updated in alternation, as in the minimum one-dimensional model of @kissling_1994. Relocation is a grid search over nodes at or below the ground, within 15 km of the catalogue epicentre, on the sum of |r| with the median origin time, followed by Huber Gauss–Newton [@huber_1964] on interpolated travel times with a penalty on hypocentres more than 50 m above the ground. It follows the grid-search-then-refine design of NonLinLoc [@lomax_2000].
+
+**Derivatives.**
+- **Rock physics.** A rock-physics multiplier changes every rock-unit cell, and its effect passes through the fusion filters, so its column of $\mathbf G$ is a one-sided finite difference ($h = 0.05$ in log) through the whole forward problem, with the hypocentres held fixed. That costs one full rebuild and eikonal solution per parameter, and it is recomputed at every iteration on the fitting half.
+- **Regional correction.** For knot $k$ the derivative is the ray integral
+$$\frac{\partial T}{\partial m_k} = -\int_{\mathrm{ray}} \beta(d)\, \phi_k(d)\, s\, \mathrm d\ell,$$ {#eq:raykernel}
+where $s$ is slowness, $\phi_k$ the linear interpolation weight of knot $k$ at depth $d$, and $\beta(d)$ the share of the regional model in the fused model: 0 above 300 m, rising linearly to 1 at 1 km. Rays are traced down the gradient of each station's travel-time field [@thurber_1983]. The integral assumes that a depth-only factor on the regional model passes through the fusion unchanged. The low-pass filter of [@eq:fusion] passes a factor that varies slowly across the box, but the clamping of fused values between the two input models is not linear, and is the likely cause of the difference below. Against a finite difference through the full forward problem, for the Vs knot at 4 km over all 1280 S picks, the ray derivatives correlate at 0.96 with a slope of 0.80: they underestimate the sensitivity by about 20%. The residuals are always evaluated with the full forward problem, so this error does not bias the data fit. At convergence it acts, to first order, like regularising the regional correction about 20% more weakly than $\lambda_s$ and $\lambda_d$ state.
+
+**Validation and choice of smoothing.** Events alternate between a fitting half and a held-out half in origin-time order, and held-out events are relocated in every iterate, so their misfit is an independent score. At the first iteration, $\lambda_s$ is chosen from 0.01, 0.1, 1 and 10 by the normalised RMS of the held-out separated residuals predicted by the linearised step: 0.720, 0.719, 0.733 and 0.778. The adopted value is 0.1.
+
+**Iterations and uncertainties.** Four iterations on the fitting half are followed by two on all events, which reuse the last rock-physics derivatives ([@tbl:iterations]); the run takes about 26 min on a 10-core laptop. Posterior standard deviations are the square roots of the diagonal of $(\tilde{\mathbf G}^{\mathsf T}\tilde{\mathbf G} + \mathbf L)^{-1}$ at the last iteration, multiplied by the mean reduced χ² of the two phases (0.46 for P, 0.68 for S). They are linearised. They do not include the error of the ray derivatives, or the trade-off with hypocentres beyond what the projection removes.
 
 | Iteration | P, fitting (s) | P, held out (s) | S, fitting (s) | S, held out (s) | ln V₀ | ln P* | ln Vs |
 |---|---|---|---|---|---|---|---|
@@ -467,7 +488,7 @@ The fit is resolved as follows ([@tbl:multipliers], [@tbl:bias], [@fig:calibrati
 - **Seismicity.** Summit earthquakes form a column from the edifice to about 3 km below sea level. WRSZ earthquakes concentrate 4–12 km below sea level, 12–18 km west of the summit.
 - **Magma body.** The slow body at 7–10 km below sea level is largely removed by the fusion, because neither regional model holds a slow body there at the wavelengths they resolve. Whether a body of the size imaged by @moran_1999 and @pang_2025 belongs in the model is a question for data that resolve it.
 
-![Fused model along A–A′ (west–east through the summit): (a) Vp, (b) Vs, (c) density, (d) model units. Light blue at the surface is glacier ice. White dots are PNSN earthquakes within 2 km of the section. The dashed line is sea level.](figures/fig4_section_AA.png){#fig:sectionA width=100%}
+![Fused model along A–A′ (west–east through the summit): (a) Vp, (b) Vs, (c) density, (d) model units. Light blue at the surface is glacier ice. White dots are PNSN earthquakes within 2 km of the section. The dashed line is sea level.](figures/fig4_section_AA.png){#fig:sectionA width=92%}
 
 ![Fused model along B–B′ (south–north through the summit): (a) Vs, (b) Vp/Vs, (c) model units. The step in Vp/Vs near 9 km below the ground marks the change from the Cascadia model to CRESCENT with Brocher's Vp.](figures/fig5_section_BB.png){#fig:sectionB width=100%}
 
@@ -540,6 +561,69 @@ The weight of the edifice is a static load on the crust beneath it.
 The load stress decays from tens of megapascals beneath the summit to a few megapascals at the depth of the magma body ([@tbl:load], [@fig:strain]b). That is three to four orders of magnitude above the tectonic stress rate implied by the geodetic strain rates (about 1 kPa yr⁻¹ for a shear modulus of 30 GPa and 3 × 10⁻⁸ yr⁻¹). The load stress therefore sets the orientation of stresses in the upper crust beneath the edifice. The model is a homogeneous half-space with a flat reference plane, and its Poisson's ratio (0.25) and density (2500 kg m⁻³) are author choices.
 
 ![(a) Secular dilatation rate from the GNSS velocities, with the velocities of quality-controlled sites relative to the network median (arrows) and flagged sites (red crosses). The solid box is the model domain and the dashed polygon the WRSZ region. (b) Compressive mean stress from the edifice load along a west–east section through the summit, with contours of maximum shear (MPa).](figures/fig15_strain.png){#fig:strain width=100%}
+
+## Strain in the model volume {#sec:strain3d}
+
+Script S25 puts two strain fields on the 500 m × 250 m grid of the three-dimensional viewer, from the surface
+to 20 km below sea level. Both are written with the axes of maximum shortening, so that they can be compared
+with the fast directions of shear-wave splitting.
+
+**Tectonic strain rate at depth.** GNSS constrains the horizontal strain rate at the surface only. The
+horizontal tensor of [@tbl:strain] is carried down unchanged through the elastic upper crust. The vertical
+component follows from plane stress, $\dot\varepsilon_{zz} = -\nu/(1-\nu)\,(\dot\varepsilon_{xx}+\dot\varepsilon_{yy})$,
+with $\nu = 0.25$. Both steps are assumptions, not observations. The tensor is then resolved on vertical
+planes parallel to the WRSZ. The zone's strike, N174°E, is the long axis of its 1294 epicentres (elongation
+3.1).
+
+At 5 km below sea level inside the WRSZ polygon:
+
+| Quantity | Value |
+|---|---|
+| Axis of maximum shortening | N48°E |
+| Maximum shear strain rate | 10.4 nanostrain yr⁻¹ |
+| Right-lateral shear strain rate on WRSZ-parallel planes | 10.0 nanostrain yr⁻¹ |
+| Normal strain rate across the zone | −12.9 nanostrain yr⁻¹ (contraction) |
+
+: Tectonic strain rate in the WRSZ (S25). {#tbl:wrsz}
+
+The planes of maximum shear strike N3.5°E and N93.5°E. The WRSZ lies 9° from the first, so the geodetic
+field loads it almost optimally for right-lateral slip ([@tbl:wrsz], [@fig:strainwrsz]).
+
+![Tectonic strain rate from GNSS, the same at every depth under the stated assumptions: (a) maximum horizontal shear strain rate with the axes of maximum shortening (bars, length scaled with the shear rate); (b) right-lateral shear strain rate on vertical planes parallel to the WRSZ. The dashed polygon is the WRSZ region, grey dots its epicentres, and the blue line the strike fitted to them.](figures/fig16_strain_wrsz.png){#fig:strainwrsz width=100%}
+
+**Static strain of the edifice load.**
+- **Method.** The Boussinesq stress of [@sec:strain] is converted to strain with the local stiffness of the
+  velocity model, $\mu = \rho V_S^2$ and $\lambda = \rho V_P^2 - 2\mu$.
+- **Cone interior.** Inside the cone above the half-space, that is higher than 1539 m, the stress is taken as
+  the laterally confined overburden, $\sigma_{zz} = -\rho g d$ and $\sigma_h = \nu/(1-\nu)\,\sigma_{zz}$.
+  This approximation defines the volumetric strain but no horizontal stress direction.
+
+Beneath the summit ([@tbl:edificestrain]), the volumetric strain is compressive throughout. It is largest at the
+base of the cone and decays below. Neither the load nor the geodetic field produces dilatation in the edifice
+above sea level, where the shallow swarms of the summit occur ([@fig:strainedifice]). The GNSS areal strain rate
+there is −15 nanostrain yr⁻¹. Dilatation in that volume would need a source these models do not contain, such
+as the pressurisation of the hydrothermal system.
+
+| Elevation (m) | 2500 | 1500 | 1000 | 500 | 0 | −2000 | −5000 | −11,500 |
+|---|---|---|---|---|---|---|---|---|
+| Volumetric strain (microstrain) | −563 | −831 | −668 | −518 | −413 | −208 | −73 | −24 |
+
+: Volumetric strain of the edifice load beneath the summit (S25). Above 1539 m the stress is the confined overburden. {#tbl:edificestrain}
+
+![Static strain of the edifice load. (a) Volumetric strain at 1125 m above sea level, with the direction of the most compressive horizontal stress (SHmax, bars) and the summit earthquakes shallower than 4 km (dots). (b, c) West–east and south–north sections through the summit, with the in-plane axis of maximum compression; inside the cone, the confined overburden makes it vertical.](figures/fig17_strain_edifice.png){#fig:strainedifice width=82%}
+
+SHmax of the load is tangential around the summit at and above sea level and radial from 5 km below sea level
+down ([@fig:strainorient]). The horizontal shear strain of the load reaches 1–30 microstrain within 20 km of the
+summit, which is 10³–10⁴ years of accumulation at the geodetic rates.
+
+The two fields are published on regular grids at fixed elevations (`strain_orientation.csv`):
+- the geodetic shortening axes, every 5 km;
+- the SHmax of the load, every 2 km within 20 km of the summit.
+
+These grids are for comparison with the fast directions of shear-wave splitting, which aligned cracks orient
+parallel to the most compressive horizontal stress.
+
+![Axes of maximum horizontal shortening at six elevations: GNSS (grey, the same at every depth) and SHmax of the edifice load (coloured by its horizontal shear strain).](figures/fig18_strain_orientation.png){#fig:strainorient width=100%}
 
 # Geohydrology {#sec:hydro}
 
@@ -617,7 +701,7 @@ The inventory records a failure depth for every lidar-protocol deposit (453 depo
 
 : The mass-movement catalogue in the model box (S24, `outputs/mass_movements/summary.csv`, run of 2026-09-25). Seismic events are from @allstadt_2017_esec; mapped and recent events from @wgs_landslide_inventory. Of the 1,650 events, 377 are dated; 351 of these are landslides of the January 2009 storm in the compilation. {#tbl:mass-counts}
 
-![Mass movements and faults. (a) Lahar deposits and mapped debris flows, the case 1 lahar inundation zone of 1998 (dashed), and faults of the 1:100,000 map (thin) and of the Quaternary fault layer (thick). (b) Event points by class: landslides at their crown (dots) and seismically recorded events (stars).](figures/fig16_mass_movements.png){#fig:mass width=100%}
+![Mass movements and faults. (a) Lahar deposits and mapped debris flows, the case 1 lahar inundation zone of 1998 (dashed), and faults of the 1:100,000 map (thin) and of the Quaternary fault layer (thick). (b) Events by class, drawn as downward chevrons as in the viewer: landslides at their crown (small) and seismically recorded events (large, white rim).](figures/fig16_mass_movements.png){#fig:mass width=100%}
 
 **Other machine-readable sources.** The U.S. Landslide Inventory [@usgs_landslide_inventory_v3; @mirus_2020] compiles the same state data nationally, and the compilation layer includes the park-wide mapping of 448 mass movements over 37 km² by @riedel_dorsch_2016. PNSN classifies surface events in its own catalogue, but these classes are not in ComCat: within 25 km of the summit, ComCat lists 14,288 events and none of them is a surface event. The curated PNSN dataset of @ni2023 and the classifiers of @kharita_2026 give labelled waveforms for training detectors.
 
@@ -651,6 +735,7 @@ The derived products are published as release assets of the code repository, und
 | `model` | `model.zarr`: surface node and levels L1–L3 with Vp, Vs, density, Qp, Qs, units, alteration, and the geology and regional inputs; variables from sources that forbid redistribution are removed | with each model release |
 | `gnss` | station velocities with quality flags, strain-rate grid, daily regional strain series, the download manifest and the cut-off date | weekly (rolling release `gnss-latest`, with dated copies) |
 | `edifice_load` | stress from the edifice load on L1–L3 | with each model release |
+| `strain_3d` | strain in the volume ([@sec:strain3d]): GNSS strain rate carried down and edifice-load strain, with their orientations | with each model release |
 
 : Downloadable products. {#tbl:products}
 
@@ -688,15 +773,44 @@ Resampled grids are interpolated linearly within each level. Cells above the gro
 
 : Export formats of `rainier3d export`. {#tbl:formats}
 
-## Locating earthquakes in the three-dimensional model
+## Locating earthquakes in the three-dimensional model {#sec:relocation}
 
-Of the 15,660 PNSN earthquakes since 1980 in the box, 500 have ComCat hypocentres at or above the ground surface, mostly shallow edifice events. Those events were located in one-dimensional models that know neither the topography nor the slow edifice. Locating them in the three-dimensional model, with the search restricted to rock, removes the problem at its source. With NonLinLoc [@lomax_2000]:
+Of the 15,660 PNSN earthquakes since 1980 in the box, 500 have ComCat hypocentres at or above the ground surface, mostly shallow edifice events. Those events were located in one-dimensional models that know neither the topography nor the slow edifice. Script S26 relocates the catalogue with NonLinLoc [@lomax_2000] twice: once in the PNSN 1D model and once in rainier3d. Both runs use the same picks, stations, grid geometry and settings, so the difference between the two catalogues isolates the velocity model. ComCat is kept as a third reference. The settings are:
 
-- **Grid spacing.** Use equal horizontal and vertical spacing: 250 m near the edifice or 500 m for the WRSZ.
-- **Keep hypocentres in rock.** Mask the search volume below a topography grid with `LOCTOPO_SURFACE`, and leave the exported velocities unchanged; air cells carry the rock velocity below them, so travel times are unbiased. Slow air above a rock skin is an alternative, but the skin must be at least two cells thick. With a one-cell 500 m skin, Grid2Time's finite-difference start box reaches the slow air around summit stations and delays P times at station OBSR by 0.41 s on average.
-- **Stations.** Give stations in the same UTM kilometre frame, with depth = −elevation/1000 (`GTSRCE <sta> XYZ <x_km> <y_km> <−elev_km> 0.0`).
-- **Travel times and location.** Compute times with `GTMODE GRID3D ANGLES_NO`, and locate with the equal-differential-time likelihood and oct-tree search. Model errors should grow with travel time (`LOCGAU2 0.02 0.05 0.5`).
-- **Depths.** NonLinLoc reports depths below sea level. Depth below the ground follows from `surface_elevation` in the netCDF export.
+- **Grids.** Equal spacing in all directions (500 m here; 250 m is practical near the edifice). The 1D model is written on the same grid as the 3D model.
+- **Keep hypocentres in rock.** The search volume is masked below the ground with `LOCTOPO_SURFACE`, reading an ASCII GMT grid of the DEM in kilometres on the UTM frame. With `TRANS NONE`, NonLinLoc compares −z with that grid. The exported velocities are left unchanged, and air cells carry the rock velocity below them, so travel times are unbiased. Slow air above a rock skin is an alternative, but the skin must be at least two cells thick: with a one-cell 500 m skin, Grid2Time's finite-difference start box reaches the slow air around summit stations and delays P times at station OBSR by 0.41 s on average.
+- **Stations.** In the UTM kilometre frame, with depth = −elevation/1000 (`GTSRCE <sta> XYZ <x_km> <y_km> <−elev_km> 0.0`).
+- **Travel times and location.** `GTMODE GRID3D ANGLES_NO`; the equal-differential-time likelihood and oct-tree search. Gaussian pick errors are 0.14 s for P and 0.23 s for S, as in the calibration, and model errors grow with travel time (`LOCGAU2 0.02 0.05 0.5`).
+- **Quality.** Grade A: gap < 180°, at least eight phases and depth standard deviation < 2 km. Grade B: gap < 250° and at least six phases. Grade C: the rest.
+
+**The 2023–2025 catalogue.** We applied S26 to the 371 PNSN earthquakes of magnitude 1 or larger in the box from 2023 to 2025. They carry 20,425 analyst picks (12,546 P and 7,879 S) at 45 stations inside the box, and 370 have at least six picks. NonLinLoc locates 347 events in the 1D model and 353 in rainier3d. The others are rejected because their most likely location lies on the edge of the search volume ([@tbl:relocation]):
+
+- in rainier3d, 12 rejected events lie at its base, at 18.7 km below sea level, the deepest level searched;
+- the remaining rejections, in either model, are epicentres at the edge of the box, beyond which there are few stations.
+
+| | ComCat | NonLinLoc, PNSN 1D | NonLinLoc, rainier3d |
+|---|---|---|---|
+| Located (of 370) | – | 347 | 353 |
+| Rejected: base of the volume / side | – | 3 / 20 | 12 / 5 |
+| Median RMS, grade A and B (s) | – | 0.119 | 0.109 |
+| Median depth sd; largest horizontal uncertainty (km) | – | 0.61; 0.61 | 0.68; 0.57 |
+| Above the ground | 1 | 4, pinned at the mask | 0 |
+| Summit (165 events): median elevation; 5–95% range (km) | −0.31; −1.29 to 2.18 | −0.28; −0.90 to 0.77 | −0.91; −1.82 to 0.65 |
+| WRSZ (129 events): median elevation; 5–95% range (km) | −8.8; −14.7 to −3.7 | −9.6; −16.0 to −3.4 | −9.5; −15.2 to −4.5 |
+
+: Relocation of the 2023–2025 PNSN catalogue, magnitude ≥ 1 (S26, `outputs/catalog/summary.json` and `catalog_relocated.csv`). Rows below "Located" are for the 340 grade A and B events located in both models. Summit events lie within 3 km of the summit and WRSZ events 8–25 km west of it, both by ComCat epicentre. {#tbl:relocation}
+
+**What changes.** The residuals fall by 8% in rainier3d (median RMS 0.109 against 0.119 s). The events move a median 0.6 km horizontally and 0.44 km deeper than in the 1D model (10th–90th percentile −0.55 to +1.46 km).
+
+- **Summit.** The largest change is under the summit. The 1D model gathers the events near sea level, over 1.7 km (5–95%). rainier3d places them 0.76 km deeper (median) and spreads them over 2.5 km. In the 1D model, four events rise until they meet the topography mask: ComCat places them 2.8–7.1 km below sea level, and rainier3d 1.2–9.9 km below it.
+- **WRSZ.** The median depth changes little (−0.16 km), and the depth range narrows from 12.6 to 10.7 km.
+- **Edges.** Epicentres near the northwestern and southeastern edges of the box shift outward in both models, where the station coverage ends.
+
+In this period ComCat places one event above the ground. The problem of the 500 above-ground events therefore lies in the older part of the catalogue, which S26 can relocate once its picks are cached ([@sec:limits]).
+
+![The 2023–2025 PNSN catalogue (magnitude ≥ 1; the 344 events graded A or B in rainier3d) as located by ComCat, by NonLinLoc in the PNSN 1D model and by NonLinLoc in rainier3d. Top: epicentres over elevation contours. Bottom: west–east sections within 5 km of the summit, with the ground profile, and the number of events above the ground.](figures/fig19_relocated_catalogs.png){#fig:relocated width=100%}
+
+![(a) Depth change of each event between rainier3d and the 1D model (filled) and between rainier3d and ComCat (outline). (b) Epicentre shifts from the 1D to the 3D location.](figures/fig20_relocated_shifts.png){#fig:relshift width=100%}
 
 ## The three-dimensional viewer
 
@@ -707,7 +821,7 @@ The viewer runs in a web browser, including on phones. It is a React and three.j
 - the PNSN seismicity;
 - the mass movements of [@sec:mass]: the flow deposits as a draped layer and the events as points on the ground, filtered by class and date from the legend.
 
-Below the ground it shows Vs, Vp, Vp/Vs, density, units and alteration, on a vertical section along the terrain cut and on a horizontal depth slice. Its map data are built by scripts S8, S11 and S24 and published as a release asset named in `web/viewer/DATA_RELEASE`.
+Below the ground it shows Vs, Vp, Vp/Vs, density, units, alteration and the strain fields of [@sec:strain3d], on a vertical section along the terrain cut and on a horizontal depth slice. For the strain fields, the depth slice also carries their orientation bars. A panel under the subsurface controls shows the relocated catalogue of [@sec:relocation], as located by ComCat, in the 1D model and in rainier3d, with optional lines from each 1D location to its 3D location. Its map data are built by scripts S8, S11, S24, S25 and S26 and published as a release asset named in `web/viewer/DATA_RELEASE`.
 
 # Limitations {#sec:limits}
 
@@ -723,7 +837,7 @@ Below the ground it shows Vs, Vp, Vp/Vs, density, units and alteration, on a ver
 - **Regional model below 9.9 km.** The regional model there is CRESCENT Vs with Brocher's Vp; the deep level of the Cascadia model (10.8–59.4 km) is not used.
 - **Resolution.** L1 is 250 m × 50 m, so thin deposits fall below the cell size.
 - **Glaciers.** IceBoost exceeds the 1981 radar thicknesses on Emmons and Winthrop glaciers; its total should be compared with the lidar-based ice volume of @sisson2011.
-- **Geodesy.** The GNSS network does not resolve strain on the edifice. The edifice-load model is a homogeneous half-space.
+- **Geodesy.** The GNSS network does not resolve strain on the edifice. The geodetic strain rate at depth rests on two assumptions (depth-invariant horizontal rate, plane stress). The edifice-load stress is a homogeneous half-space, with a confined-overburden approximation inside the cone.
 - **Hydrology.** The model has no hydrological state ([@sec:hydro]).
 
 # Conclusions {#sec:conclusions}

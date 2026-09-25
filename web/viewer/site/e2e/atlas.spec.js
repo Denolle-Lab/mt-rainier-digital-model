@@ -127,7 +127,7 @@ test("(j) a first visit gets a one-line hint, not a card over the map; ? opens H
   await expect(page.locator(".helppanel")).toBeVisible();
 });
 
-test("(o) the map opens clear: every dock panel starts closed, stays open until its button is clicked again, and the dock moves aside for a station", async ({ page }) => {
+test("(q) the map opens clear: every dock panel starts closed, stays open until its button is clicked again, and the dock moves aside for a station", async ({ page }) => {
   for (const cls of [".controls", ".legend", ".model-panel", ".helppanel"]) await expect(page.locator(cls)).toBeHidden();
   await expect(page.locator(".goto")).toBeVisible();
   await dock(page, "Layers"); await dock(page, "Legend");
@@ -162,6 +162,23 @@ test("(l) the subsurface section follows the cut and the slice follows its slide
   await page.getByRole("switch", { name: "Depth slice" }).click();
   await page.getByLabel("Slice elevation").fill("-5");
   expect(await page.evaluate(() => window.__rainier.volume.slice.position.y)).toBe(-5);
+});
+
+test("(o) strain properties draw their orientation bars on the depth slice", async ({ page }) => {
+  await page.waitForFunction(() => !!window.__rainier.volume, null, { timeout: 30_000 });
+  test.skip(!(await page.evaluate(() => !!window.__rainier.volume.meta.bars)), "bundle without strain (S24)");
+  await page.waitForFunction(() => !!window.__rainier.volume.bars, null, { timeout: 30_000 });
+  const shown = () => page.evaluate(() => Object.entries(window.__rainier.volume.bars.meshes)
+    .flatMap(([k, list]) => list.filter(m => m.visible).map(() => k)));
+  await dock(page, "Surface model");
+  await page.getByLabel("Subsurface property").selectOption("wrsz_shear_rate");
+  await page.getByRole("switch", { name: "Depth slice" }).click();
+  await page.getByLabel("Slice elevation").fill("-5");
+  await expect.poll(shown).toEqual(["tectonic"]);
+  await page.getByLabel("Subsurface property").selectOption("load_volumetric");
+  await expect.poll(shown).toEqual(["load"]);
+  await page.getByLabel("Subsurface property").selectOption("vs");
+  await expect.poll(shown).toEqual([]);
 });
 
 test("(m) the sensor legend filters: geophones show the 2025 nodes, Past adds earlier deployments", async ({ page }) => {
@@ -206,4 +223,22 @@ test("(n) mass movements: events sit on the ground, the legend filters them, Flo
   await page.getByRole("button", { name: "Flow deposits", exact: true }).click();
   await expect(page.getByLabel("Surface model layer")).toHaveValue("mass_flows");
   await expect(page.locator(".model-panel")).toContainText("Osceola Mudflow");
+});
+
+test("(p) relocated catalogue: switch catalogues, 3D keeps every event below the ground", async ({ page }) => {
+  await page.waitForFunction(() => !!window.__rainier.reloc, null, { timeout: 30_000 });
+  const r = () => page.evaluate(() => ({ on: window.__rainier.reloc.points.visible, shown: window.__rainier.reloc.shown,
+    above: window.__rainier.reloc.above }));
+  expect((await r()).on).toBe(false);                             // off by default
+  await dock(page, "Surface model");
+  await page.getByRole("switch", { name: "Relocated earthquakes" }).click();
+  const d3 = await r();
+  expect(d3.on).toBe(true);
+  expect(d3.shown).toBeGreaterThan(300);                          // grade A and B events of 2023-2025
+  expect(d3.above).toBe(0);                                       // the 3D locations respect the topography mask
+  await page.getByRole("button", { name: /PNSN 1D/ }).click();
+  expect((await r()).shown).toBe(d3.shown);                       // the same events, located in the 1D model
+  await page.getByRole("switch", { name: "Shift lines" }).click();
+  expect(await page.evaluate(() => window.__rainier.reloc.lines.visible)).toBe(true);
+  await expect(page.getByTestId("reloc-count")).toContainText("shown");
 });

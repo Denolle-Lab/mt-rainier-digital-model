@@ -71,6 +71,7 @@ UNICODE = {
     "²": r"\ensuremath{^2}",
     "³": r"\ensuremath{^3}",
     "¹": r"\ensuremath{^1}",
+    "⁴": r"\ensuremath{^4}",
     "⁵": r"\ensuremath{^5}",
     "⁻": r"\ensuremath{^-}",
     "₀": r"\ensuremath{_0}",
@@ -134,6 +135,46 @@ def check_unicode(text: str) -> None:
         )
 
 
+def _braced(text: str, i: int) -> int:
+    """Index just past the brace group that opens at text[i] == '{'."""
+    depth = 0
+    for j in range(i, len(text)):
+        depth += {"{": 1, "}": -1}.get(text[j], 0)
+        if depth == 0:
+            return j + 1
+    raise ValueError("unbalanced braces")
+
+
+def longtables_to_floats(tex: str) -> str:
+    """pandoc writes every table as a page-breaking longtable, which ignores floats already placed on its page
+    and overruns it. Every table here fits on a page, so each becomes a table float with a tabular."""
+    out, pos, begin = [], 0, "\\begin{longtable}[]"
+    while (i := tex.find(begin, pos)) >= 0:
+        j = _braced(tex, i + len(begin))
+        spec = tex[i + len(begin) + 1 : j - 1]
+        end = tex.index("\\end{longtable}", j)
+        body = tex[j:end]
+        cap = ""
+        if body.lstrip().startswith("\\caption"):
+            c0 = body.index("\\caption")
+            c1 = body.index("\\tabularnewline", c0)
+            cap, body = body[c0:c1].strip(), body[c1 + len("\\tabularnewline") :]
+        head = body[
+            body.index("\\toprule\\noalign{}") + len("\\toprule\\noalign{}") : body.index(
+                "\\midrule\\noalign{}"
+            )
+        ]
+        rows = body[body.index("\\endlastfoot") + len("\\endlastfoot") :]
+        out.append(tex[pos:i])
+        top = "\\begin{table}[tbp]\n" + (cap + "\n" if cap else "") + "\\centering\n"
+        tab = f"\\begin{{tabular}}{{{spec}}}\n\\toprule{head}\\midrule{rows.rstrip()}\n"
+        tab += "\\bottomrule\n\\end{tabular}"
+        out.append(top + tab + "\n\\end{table}")
+        pos = end + len("\\end{longtable}")
+    out.append(tex[pos:])
+    return "".join(out)
+
+
 def pandoc_common() -> list[str]:
     return [
         *("pandoc", SRC, "--from", "markdown+smart+lists_without_preceding_blankline"),
@@ -170,6 +211,7 @@ def pdf() -> Path:
             *("--variable", f"graphicspath={DOCS}", "--variable", f"graphicspath={REPO / 'docs'}", "-o", tex),
         ]
     )
+    tex.write_text(longtables_to_floats(tex.read_text()))
     run(["tectonic", "-X", "compile", "--keep-logs", "--keep-intermediates", tex.name], cwd=OUT)
     return tex.with_suffix(".pdf")
 

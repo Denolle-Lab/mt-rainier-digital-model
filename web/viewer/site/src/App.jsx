@@ -26,6 +26,9 @@ import { ModelVolume, loadVolumeMeta } from "./scene/ModelVolume.js";
 import HelpPanel, { HelpHint, markHelpSeen } from "./ui/HelpPanel.jsx";
 import HudDock from "./ui/HudDock.jsx";
 import QuakeLegend from "./ui/QuakeLegend.jsx";
+import RelocatedPanel from "./ui/RelocatedPanel.jsx";
+import { RelocatedQuakes } from "./scene/quakes/relocated.js";
+import { DEFAULT_RELOCATED, loadRelocated } from "./data/relocated.js";
 import Legend from "./ui/Legend.jsx";
 import StationPanel from "./ui/StationPanel.jsx";
 import Tooltip from "./ui/Tooltip.jsx";
@@ -49,6 +52,7 @@ function Atlas({ bundle, onError }) {
   const [scene, setScene] = useState(null), [siteId, setSiteId] = useState(null), [hover, setHover] = useState(null);
   const [detail, setDetail] = useState("loading…"), [active, setActive] = useState("home"), [modelKey, setModelKey] = useState(null), [sheet, setSheet] = useState(null), [dock, setDock] = useState(() => new Set()), [helpOpened, setHelpOpened] = useState(false), [volume, setVolume] = useState(null), [sens, setSens] = useState(null), [sfilter, setSfilter] = useState(DEFAULT_FILTER);
   const [mass, setMass] = useState(null), [mfilter, setMfilter] = useState(DEFAULT_MASS_FILTER);
+  const [reloc, setReloc] = useState(null);
 
   const openSite = useCallback((site, sc) => {
     setSiteId(site.id); setActive(site.id); setHover(null); setSheet(null);
@@ -77,6 +81,11 @@ function Atlas({ bundle, onError }) {
         s.mass = new MassEventPoints(s, doc); s.mass.setFilter(DEFAULT_MASS_FILTER);
         setMass({ doc, points: s.mass });
       });
+      loadRelocated(bundle.base).then(r => {   // optional: the relocated catalogue (rainier3d S26)
+        if (!r || cancelled) return;
+        s.reloc = new RelocatedQuakes(s, r); s.reloc.set(DEFAULT_RELOCATED);
+        setReloc(s.reloc);
+      });
       if (bundle.model) loadVolumeMeta(bundle.model.base).then(meta => {
         if (meta && !cancelled) { s.volume = new ModelVolume(s, meta, bundle.model.base); setVolume(s.volume); }
       });
@@ -88,7 +97,7 @@ function Atlas({ bundle, onError }) {
       };
       setScene(s);
     }, onError);
-    return () => { cancelled = true; layer?.dispose(); sc?.layers?.dispose(); sc?.volume?.dispose(); sc?.sensors?.dispose(); sc?.mass?.dispose(); sc?.dispose(); };
+    return () => { cancelled = true; layer?.dispose(); sc?.layers?.dispose(); sc?.volume?.dispose(); sc?.sensors?.dispose(); sc?.mass?.dispose(); sc?.reloc?.dispose(); sc?.dispose(); };
   }, [bundle, onError, openSite]);
 
   useEffect(() => {   // the panel pushes the right-hand controls inward, as in the Cascadia atlas
@@ -132,6 +141,7 @@ function Atlas({ bundle, onError }) {
                 <ModelLayers model={bundle.model} scene={scene} active={modelKey} onActive={setModelKey} />
                 <ModelLegend layer={modelLayer} />
                 {volume && <SubsurfacePanel volume={volume} scene={scene} />}
+                {reloc && <RelocatedPanel points={reloc} />}
               </div>) }] : []),
             { key: "legend", label: "Legend", icon: "legend", node: (
               <Legend bundle={bundle} sensors={sensorLegend} mass={!!mass}>

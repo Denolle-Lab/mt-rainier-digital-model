@@ -605,6 +605,139 @@ def export_volume(tree: xr.DataTree, dom, atlas: Path, dx: float = 500.0, dz: fl
     return meta
 
 
+# ---- strain in the volume (S25): extra subsurface properties and orientation bars on the depth slice ----
+# key: label, units, min, max, colour map, scale to the display unit, bar set drawn on the depth slice, note
+STRAIN_VOLUME_VARS = {
+    "load_volumetric": (
+        "Edifice-load volumetric strain",
+        "microstrain",
+        -600,
+        0,
+        "cmc.lajolla",
+        1e6,
+        "load",
+        "Static strain of the edifice weight (compression negative). Bars: SHmax of the load.",
+    ),
+    "load_max_shear_h": (
+        "Edifice-load horizontal shear strain",
+        "microstrain",
+        0,
+        20,
+        "cmc.batlow",
+        1e6,
+        "load",
+        "Static strain of the edifice weight. Bars: SHmax of the load.",
+    ),
+    "tect_areal_rate": (
+        "GNSS areal strain rate",
+        "nanostrain/yr",
+        -30,
+        30,
+        "cmc.vik",
+        1e9,
+        "tectonic",
+        "GNSS surface field carried down unchanged (assumption). Bars: axis of maximum shortening.",
+    ),
+    "tect_max_shear_rate": (
+        "GNSS maximum shear strain rate",
+        "nanostrain/yr",
+        0,
+        25,
+        "cmc.lajolla",
+        1e9,
+        "tectonic",
+        "GNSS surface field carried down unchanged (assumption). Bars: axis of maximum shortening.",
+    ),
+    "wrsz_shear_rate": (
+        "Right-lateral shear rate on WRSZ-parallel planes",
+        "nanostrain/yr",
+        -20,
+        20,
+        "cmc.vik",
+        1e9,
+        "tectonic",
+        "Resolved on vertical planes parallel to the WRSZ epicentres. Bars: axis of maximum shortening.",
+    ),
+}
+
+
+def export_strain(strain: xr.Dataset, dom, atlas: Path, spacing_cells=(10, 4), load_radius_m=20000.0) -> dict:
+    """Append the S25 strain fields to <atlas>/model/volume.json (same grid as export_volume) and write
+    <atlas>/model/strain_bars.json: orientation bars (scene km) every 1 km of elevation, tectonic and load."""
+    from pyproj import Transformer
+
+    out = atlas / "model"
+    meta = json.loads((out / "volume.json").read_text())
+    g = meta["grid"]
+    if strain.sizes["x"] != g["nx"] or strain.sizes["y"] != g["ny"] or strain.sizes["z"] != g["nz"]:
+        raise ValueError(
+            "strain_3d.zarr is not on the viewer volume grid; rerun S25 with the same dx, dz, z_bot"
+        )
+    for key, (label, units, vmin, vmax, cmap, scale, bars, note) in STRAIN_VOLUME_VARS.items():
+        v = strain[key].transpose("z", "y", "x").values * scale
+        q = np.where(~np.isfinite(v), 255, np.clip(np.rint(254 * (v - vmin) / (vmax - vmin)), 0, 254)).astype(
+            np.uint8
+        )
+        q.tofile(out / "volume" / f"{key}.u8")
+        cm = _cmap(cmap)
+        meta["vars"][key] = {
+            "label": label,
+            "units": units,
+            "file": f"volume/{key}.u8",
+            "kind": "continuous",
+            "lut": [[int(c * 255) for c in cm(min(i, 254) / 254)[:3]] for i in range(256)],
+            "legend": {"min": vmin, "max": vmax, "log": False, "ramp": _ramp(cm)},
+            "vmin": vmin,
+            "vmax": vmax,
+            "bars": bars,
+            "note": note,
+        }
+    fr = scene_frame(atlas)
+    inv = Transformer.from_crs(dom.crs, 4326, always_xy=True)
+    sx, sy = dom.summit_xy
+    step_m = g["dx_m"]
+
+    def scene(x, y):
+        lon, lat = inv.transform(x, y)
+        return (np.asarray(lon) - fr["lon0"]) * fr["kx"], (fr["lat0"] - np.asarray(lat)) * fr["kz"]
+
+    top, bottom = float(strain.z.max()) / 1000, float(strain.z.min()) / 1000  # the grid as exported
+    levels = np.arange(np.floor(top), np.ceil(bottom) - 0.5, -1.0)
+    sets = {"tectonic": [], "load": []}
+    for zk in levels:
+        lev = strain.sel(z=zk * 1000, method="nearest")
+        for kind, az_key, step in (
+            ("tectonic", "tect_az_shortening", spacing_cells[0]),
+            ("load", "load_shmax_az", spacing_cells[1]),
+        ):
+            sub = lev.isel(x=slice(step // 2, None, step), y=slice(step // 2, None, step))
+            X, Y = np.meshgrid(sub.x.values, sub.y.values)
+            az = np.radians(sub[az_key].values)
+            keep = np.isfinite(az)
+            if kind == "load":
+                keep &= np.hypot(X - sx, Y - sy) <= load_radius_m
+            half = 0.4 * step * step_m
+            x0, y0 = X[keep] - half * np.sin(az[keep]), Y[keep] - half * np.cos(az[keep])
+            x1, y1 = X[keep] + half * np.sin(az[keep]), Y[keep] + half * np.cos(az[keep])
+            a, b = scene(x0, y0)
+            c, d = scene(x1, y1)
+            sets[kind].append(np.round(np.column_stack([a, b, c, d]).ravel(), 3).tolist())
+    bars = {
+        "levels_km": levels.tolist(),
+        **sets,
+        "note": "segments x0, z0, x1, z1 in scene km, one list per level; tectonic: GNSS shortening axis; "
+        "load: SHmax of the edifice load (none in the cone interior)",
+    }
+    (out / "strain_bars.json").write_text(json.dumps(bars, separators=(",", ":")))
+    meta["bars"] = "strain_bars.json"
+    (out / "volume.json").write_text(json.dumps(meta))
+    return {
+        "vars": list(STRAIN_VOLUME_VARS),
+        "levels": len(levels),
+        "segments": {k: sum(len(v) // 4 for v in s) for k, s in sets.items()},
+    }
+
+
 # ---- sensors: every site of the S8 inventory, for the viewer's sensor layer ----
 # Temporary networks follow the FDSN convention (codes starting with a digit or X, Y, Z are temporary);
 # TA is a permanent code for a moving deployment. Non-FDSN sources are classed by what they are.
@@ -933,3 +1066,63 @@ def append_mass_movements(atlas: Path, flows, events) -> dict:
     }
     (out / "mass_events.json").write_text(json.dumps(doc, separators=(",", ":")))
     return {"flows": int(len(g)), "events": len(rows), "counts": counts}
+
+
+# ---- relocated catalogue (S26) for the viewer's before/after earthquake layer ----
+RELOCATED_FIELDS = (
+    "x_cc",
+    "y_cc",
+    "z_cc",
+    "x_1d",
+    "y_1d",
+    "z_1d",
+    "x_3d",
+    "y_3d",
+    "z_3d",
+    "mag",
+    "quality",
+    "gap",
+)
+
+
+def export_relocated(atlas: Path, catalog_csv: Path, dom, summary: dict | None = None) -> dict:
+    """outputs/catalog/catalog_relocated.csv (S26) -> <atlas>/quakes_relocated.bin + .json.
+
+    One float32 record of len(RELOCATED_FIELDS) per event located in both models: scene x, y, z (km; y is
+    elevation) of the ComCat, PNSN-1D and rainier3d-3D locations, magnitude, quality (3 = A, 2 = B, 1 = C) and
+    the azimuthal gap of the 3D location. Scene frame as in export_volume (scene_frame)."""
+    import pandas as pd
+    from pyproj import Transformer
+
+    cat = pd.read_csv(catalog_csv, index_col=0)
+    cat = cat.dropna(subset=["x_pnsn1d", "x_rainier3d"])
+    fr = scene_frame(atlas)
+    tf = Transformer.from_crs(dom.crs, 4326, always_xy=True)
+    cols = {}
+    for src, tag in (("cc", "cc"), ("pnsn1d", "1d"), ("rainier3d", "3d")):
+        lon, lat = tf.transform(cat[f"x_{src}"].values, cat[f"y_{src}"].values)
+        cols[f"x_{tag}"] = (lon - fr["lon0"]) * fr["kx"]
+        cols[f"y_{tag}"] = cat[f"z_{src}"].values / 1e3
+        cols[f"z_{tag}"] = -(lat - fr["lat0"]) * fr["kz"]
+    cols["mag"] = cat["mag"].values
+    cols["quality"] = cat["quality"].map({"A": 3, "B": 2, "C": 1}).fillna(0).values
+    cols["gap"] = cat["gap_rainier3d"].values
+    rec = np.column_stack([cols[k] for k in RELOCATED_FIELDS]).astype("<f4")
+    rec.tofile(atlas / "quakes_relocated.bin")
+    meta = {
+        "count": int(len(rec)),
+        "fields": list(RELOCATED_FIELDS),
+        "catalogs": {
+            "cc": {"label": "ComCat (PNSN)", "color": "#9aa0a6"},
+            "1d": {"label": "NonLinLoc, PNSN 1D model", "color": "#e8a33d"},
+            "3d": {"label": "NonLinLoc, rainier3d 3D model", "color": "#4c9be8"},
+        },
+        "from": str(cat["origin_time"].min())[:10],
+        "to": str(cat["origin_time"].max())[:10],
+        "magMin": float(cat["mag"].min()),
+        "source": "S26: PNSN analyst picks (ComCat), relocated with NonLinLoc (Lomax et al. 2000) in the "
+        "PNSN 1D model and in rainier3d, same picks and settings, hypocentres kept below the ground",
+        "summary": summary or {},
+    }
+    (atlas / "quakes_relocated.json").write_text(json.dumps(meta, indent=1))
+    return meta
