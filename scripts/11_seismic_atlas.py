@@ -80,11 +80,14 @@ def main():
         raise SystemExit(f"{canopy_store} is missing; run S19 first")
     # S24 mass movements: flow deposits (a drape) and event points, appended when S24 has run
     mm = dom.path("outputs") / "mass_movements"
-    if (mm / "flows.gpkg").exists() and (not a.layers or "mass_flows" in keys):
+    have_mm = all((mm / f).exists() for f in ("flows.gpkg", "events.gpkg"))
+    if have_mm and (not a.layers or "mass_flows" in keys):
         import geopandas as gpd
 
         r = append_mass_movements(atlas, gpd.read_file(mm / "flows.gpkg"), gpd.read_file(mm / "events.gpkg"))
         logging.info("mass movements appended: %d flow polygons, %d event points", r["flows"], r["events"])
+    elif a.layers and "mass_flows" in keys:
+        raise SystemExit(f"{mm} lacks flows.gpkg or events.gpkg; run S24 first")
     meta = json.loads((atlas / "model" / "layers.json").read_text())
     vol = export_volume(tree, dom, atlas)
     g = vol["grid"]

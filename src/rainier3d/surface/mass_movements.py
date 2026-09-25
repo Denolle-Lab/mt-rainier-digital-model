@@ -1,12 +1,13 @@
 """Mass movements and faults: fetch the open inventories, clip them to the domain, and build the catalogue.
 
-Sources (configs/sources.yaml keys), each cached under data/raw/<source>/:
-  wgs_landslide_inventory  DNR landslide inventory: lidar-protocol deposits (layer 21), recent landslides
-                           (layer 1, points), compilation of older mapping (layer 131)
-  allstadt_2017_esec       seismically recorded mass movements, western US 1977-2017 (Events.csv)
-  schilling_2008           USGS lahar hazard zones of Hoblitt et al. (1998), shapefiles
-  dnr_gems_100k            1:100k faults (layer 7); lahar deposits are the Qvl map units already cached by S1
-  dnr_quaternary_faults    DNR Quaternary active faults
+Sources, as data/raw/ cache folder -> configs/sources.yaml key:
+  wgs_landslides/        wgs_landslide_inventory  DNR landslide inventory: lidar-protocol deposits (layer 21),
+                                                  recent landslides (layer 1, points), compilation (layer 131)
+  allstadt2017/          allstadt_2017_esec       seismically recorded mass movements, western US 1977-2017
+  usgs_rainier_hazards/  schilling_2008           lahar hazard zones of Hoblitt et al. (1998), shapefiles
+  geology/               dnr_gems_100k            1:100k faults (layer 7); lahar deposits = S1's Qvl units
+  geology/               dnr_quaternary_faults    DNR Quaternary active faults
+  dem_3dep_1m/           usgs_3dep                1 m windows around landslides; 3DEP source footprints
 
 The catalogue has two parts. Flows (lahar deposits and debris flows) keep their polygons. Every other event
 is a point: the seismic location for the seismic catalogue, the mapped point for recent landslides, and the
