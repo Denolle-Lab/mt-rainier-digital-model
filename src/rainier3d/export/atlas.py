@@ -130,11 +130,11 @@ CONTINUOUS = {
         "index 0 to 1",
         0,
         1,
-        "cmc.bilbao",
+        "cmc.bilbao_r",
         False,
         "From the 1996 helicopter EM survey (Finn et al. 2001): low apparent resistivity of the edifice "
         "lavas, "
-        "top ~20-150 m below the glacier bed; 0 outside the survey",
+        "top ~20-150 m below the glacier bed; transparent below 0.1 and outside the survey",
     ),
     "apparent_magnetization": (
         "apparent_magnetization",
@@ -273,7 +273,8 @@ def surface_derived(tree: xr.DataTree) -> dict[str, np.ndarray]:
                 if "alt_coverage" in s
                 else np.isfinite(s["alt_a_surface"].values)
             )
-            out[key] = np.where(cov, s["alt_a_surface"].values, np.nan)
+            a = s["alt_a_surface"].values  # drape only altered ground (>= 0.1) so the imagery shows elsewhere
+            out[key] = np.where(cov & (a >= 0.1), a, np.nan)
             continue
         v = np.where(top, l1[var].values, 0.0).sum(0) / np.maximum(n, 1)
         v = np.where(n > 0, v, np.nan)
@@ -491,7 +492,7 @@ VOLUME_VARS = {
     "vp": ("Vp", "m/s", 1500, 7200, "cmc.roma"),
     "vpvs": ("Vp/Vs", "", 1.5, 2.3, "cmc.vik"),
     "rho": ("Density", "kg/m³", 1800, 3100, "cmc.lapaz_r"),
-    "alteration": ("Hydrothermal alteration", "0-1", 0, 1, "cmc.bilbao"),
+    "alteration": ("Hydrothermal alteration", "0-1", 0, 1, "cmc.bilbao_r"),
     "unit": ("Model units", "", 0, 0, None),
 }
 

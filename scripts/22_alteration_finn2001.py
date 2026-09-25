@@ -69,6 +69,7 @@ def main():
     full.attrs = {
         "source": "Rystrom, Finn & Deszcz-Pan 2000 (USGS OFR 00-027); method after Finn et al. 2001",
         "thresholds": json.dumps(cfg),
+        "fresh_log10_rho": ds.attrs["fresh_log10_rho"],
         "registration_corr": json.dumps(reg),
         "magnetization": json.dumps(minfo),
     }
@@ -153,6 +154,7 @@ def main():
             }
             for k, m in zones.items()
         },  # fmt: skip
+        "fresh_log10_rho_edifice_median": ds.attrs["fresh_log10_rho"],
         "registration_corr": reg,
         "magnetization": minfo,
         "product": str(path.relative_to(REPO)) if path.is_relative_to(REPO) else str(path),
