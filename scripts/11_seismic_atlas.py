@@ -38,7 +38,8 @@ def main():
     from rainier3d.surface.imagery import fetch_s2_composite
 
     if a.layers:
-        meta = merge_layers(tree, dom, manifest, atlas / "model", fl, a.layers.split(","))
+        keys = [k.strip() for k in a.layers.split(",") if k.strip()]
+        meta = merge_layers(tree, dom, manifest, atlas / "model", fl, keys)
     else:
         meta = export_layers(tree, dom, manifest, atlas / "model", fl, imagery=fetch_s2_composite(dom))
         sen = export_sensors(atlas, REPO / "web" / "atlas" / "data")  # S8 inventory

@@ -9,7 +9,7 @@ surveyed edifice at that frequency (mostly fresh rock; each frequency saturates 
 (start and full in decades below L_f; configs/units.yaml)
   depth       doi_f = min(doi_max, k * delta),  delta = 503 sqrt(rho_a / f) m (skin depth)
 and in 3D, at depth d below the bedrock surface (the glacier bed where there is ice),
-  a(x, y, d) = max_f a_f(x, y) * taper(d / doi_f(x, y)),  full to doi_f, linear to 0 at 1.25 doi_f,
+  a(x, y, d) = max_f a_f(x, y) * taper(d, doi_f(x, y)),  full to doi_f, linear to 0 at 1.25 doi_f,
 restricted to the units listed in the configuration (the edifice lavas). Outside the survey the field is 0 and
 ``alt_coverage`` is 0.
 
@@ -44,7 +44,10 @@ def em_fields(
         g = A.to_model_grid(A.read_grid(raw, f), x, y, crs).values
         ok = np.isfinite(g)
         cover = ok if cover is None else cover | ok
-        ref[f] = float(np.nanmedian(g[ok & edifice]))
+        sel = ok & edifice
+        if not sel.any():
+            raise ValueError(f"no surveyed cells of the configured units at {f}: check alteration units")
+        ref[f] = float(np.median(g[sel]))
         a = np.clip((ref[f] - d0 - g) / (d1 - d0), 0.0, 1.0)
         skin = 503.0 * np.sqrt(10.0 ** np.where(ok, g, 0.0) / A.EM_FREQS[f])
         doi = np.minimum(float(cfg["doi_max_m"]), float(cfg["doi_skin_fraction"]) * skin)
@@ -68,7 +71,7 @@ def em_fields(
 
 
 def taper(d: np.ndarray, doi: np.ndarray) -> np.ndarray:
-    """1 above doi, linear to 0 at 1.25 doi, 0 below (and 0 where doi is 0)."""
+    """taper(d, doi) at depth d: 1 for 0 <= d <= doi, linear to 0 at d = 1.25 doi, 0 deeper or where doi is 0."""
     with np.errstate(divide="ignore", invalid="ignore"):
         t = np.clip((1.25 * doi - d) / (0.25 * doi), 0.0, 1.0)
     return np.where((doi > 0) & (d >= 0), t, 0.0)
