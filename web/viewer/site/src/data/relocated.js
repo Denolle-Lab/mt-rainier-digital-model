@@ -22,7 +22,7 @@ export function selectCatalog({ records, meta }, catalog, minQuality = 2) {
   const pos = [], mag = [];
   for (let i = 0; i < n; i++) {
     const r = records.subarray(i * k, (i + 1) * k);
-    if (r[iq] < minQuality || !Number.isFinite(r[ix]) || !Number.isFinite(r[iy])) continue;
+    if (r[iq] < minQuality || ![r[ix], r[iy], r[iz], r[im]].every(Number.isFinite)) continue;
     pos.push(r[ix], r[iy], r[iz]); mag.push(r[im]);
   }
   return { pos: new Float32Array(pos), mag: new Float32Array(mag), n: mag.length };

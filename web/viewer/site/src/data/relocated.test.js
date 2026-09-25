@@ -18,6 +18,13 @@ describe("relocated catalogue", () => {
     expect(Array.from(a.pos)).toEqual([1.2, -7, 2.2].map(Math.fround));
     expect(selectCatalog(reloc, "cc", 1).n).toBe(2);
   });
+  it("skips events with a non-finite coordinate or magnitude", () => {
+    const bad = { meta: reloc.meta, records: reloc.records.slice() };
+    bad.records[8] = NaN;                                          // z_3d of the first (A-quality) event
+    expect(selectCatalog(bad, "3d", 1).n).toBe(1);
+    bad.records[9] = NaN;                                          // and its magnitude
+    expect(selectCatalog(bad, "cc", 1).n).toBe(1);
+  });
   it("builds 1D -> 3D shift segments", () => {
     const s = shiftSegments(reloc, "1d", "3d", 1);
     expect(s.length).toBe(12);

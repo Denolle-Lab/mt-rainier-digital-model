@@ -51,7 +51,9 @@ export class RelocatedQuakes {
     g.setAttribute("mag", new THREE.BufferAttribute(sel.mag, 1));
     g.computeBoundingSphere();
     this.pointU.uColor.value.set(cat?.color ?? "#ffffff");
-    this.lines.geometry.setAttribute("position", new THREE.BufferAttribute(shiftSegments(this.reloc, "1d", "3d", s.minQuality), 3));
+    if (s.on && s.lines) {   // segments only when shown; the quality filter changes them
+      this.lines.geometry.setAttribute("position", new THREE.BufferAttribute(shiftSegments(this.reloc, "1d", "3d", s.minQuality), 3));
+    }
     this.points.visible = !!s.on; this.lines.visible = !!(s.on && s.lines);
     this.shown = sel.n; this.above = countAboveGround(sel.pos, (x, z) => this.rs.elevKm(x, z));
   }

@@ -86,7 +86,7 @@ def main():
     # ---- NonLinLoc
     obs = N.write_obs(picks[picks.event.isin(keep)].sort_values(["event", "pick_time"]), nd / "picks.obs")
     x0, y0, x1, y1 = (v / 1e3 for v in dom.bounds)
-    d = 0.5
+    d = a.dx / 1e3  # search cells as the travel-time grid
     z0 = round(-float(g.z[0]) / 1e3 + d, 1)  # one cell below the top of the time grids
     search = {"nx": int((x1 - x0 - 2) / d), "ny": int((y1 - y0 - 2) / d), "nz": int((19.0 - z0) / d),
               "x0": x0 + 1, "y0": y0 + 1, "z0": z0, "d": d}  # fmt: skip
