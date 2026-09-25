@@ -17,7 +17,7 @@ export default function SubsurfacePanel({ volume, scene }) {
   const showSlice = on => { setSlice(on); volume.setSlice(on, km); if (on && !key) pick("vs"); };
   const v = key ? vars[key] : null;
   const layer = v && { label: `${v.label} below ground`, units: v.units, kind: v.kind, legend: v.legend,
-    note: "Fused rainier3d model, 500 m × 250 m cells", sources: [] };
+    note: v.note ? `${v.note} 500 m × 250 m cells` : "Fused rainier3d model, 500 m × 250 m cells", sources: [] };
   return (
     <div className="layers subsurface">
       <div className="eyebrow">Below ground</div>
