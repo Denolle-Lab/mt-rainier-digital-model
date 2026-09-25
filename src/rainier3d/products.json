@@ -1,0 +1,42 @@
+{
+  "catalog_version": 1,
+  "note": "Derived products of rainier3d, freely redistributable with attribution. Filled by scripts/20_publish_products.py.",
+  "products": {
+    "model": {
+      "version": null,
+      "file": "rainier3d_model.zarr.zip",
+      "url": null,
+      "sha256": null,
+      "bytes": null,
+      "description": "Fused 3D model: levels L1-L3 (Vp, Vs, rho, Qp, Qs, units, alteration, geology and regional inputs) and the surface layers, UTM 10N + NAVD88 (xarray DataTree, zarr v3)",
+      "license": "CC-BY-4.0 (derived product); see docs/data_policy.md for each input",
+      "excluded": [],
+      "cite": "Denolle, M. and Yao, D. (2026). rainier3d: a geology-driven 3D velocity model of Mount Rainier. https://github.com/Denolle-Lab/mt-rainier-digital-model"
+    },
+    "gnss": {
+      "version": "weekly",
+      "rolling": true,
+      "schedule": "weekly, Mondays 09:00 UTC (.github/workflows/gnss-weekly.yml); dated copies rainier3d_gnss_<as_of>.zip in the same release",
+      "file": "rainier3d_gnss.zip",
+      "url": "https://github.com/Denolle-Lab/mt-rainier-digital-model/releases/download/gnss-latest/rainier3d_gnss.zip",
+      "sha256_url": "https://github.com/Denolle-Lab/mt-rainier-digital-model/releases/download/gnss-latest/rainier3d_gnss.zip.sha256",
+      "sha256": null,
+      "bytes": null,
+      "description": "GNSS station velocities (MIDAS, QC flags), strain-rate grid, daily regional strain series and the download manifest (S17, S18), refreshed weekly",
+      "license": "CC-BY-4.0; acknowledge PANGA/CWU and UNR/NGL",
+      "excluded": [],
+      "cite": "as model; GPS time series provided by the Pacific Northwest Geodetic Array, Central Washington University"
+    },
+    "edifice_load": {
+      "version": null,
+      "file": "rainier3d_edifice_load.zarr.zip",
+      "url": null,
+      "sha256": null,
+      "bytes": null,
+      "description": "Stress from the weight of the edifice (Boussinesq half-space) on the model levels L1-L3 (S18)",
+      "license": "CC-BY-4.0",
+      "excluded": [],
+      "cite": "as model"
+    }
+  }
+}

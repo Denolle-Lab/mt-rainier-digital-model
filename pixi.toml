@@ -68,6 +68,8 @@ s12 = "python scripts/12_calibrate_vs.py"
 s13 = "python scripts/13_joint_calibration.py"
 s14 = "python scripts/14_relocate.py"
 bib = "python scripts/15_bibliography.py"
+s17 = "python scripts/17_gnss_fetch.py"
+s18 = "python scripts/18_gnss_strain.py"
 # 3D viewer (web/viewer, React + three.js): terrain, stations and quakes from USGS/EarthScope, then S11 model layers
 viewer-data = { cmd = "python -m rainier.build --out ../site/public/atlas --cache ../../../data/raw/viewer_cache", cwd = "web/viewer/data" }
 viewer-data-test = { cmd = "pytest -q", cwd = "web/viewer/data" }
@@ -75,3 +77,28 @@ viewer-bundle = "mkdir -p outputs && tar czf outputs/viewer-atlas-bundle.tar.gz 
 atlas = "python -m http.server 8765 --bind 127.0.0.1 --directory web/atlas"
 all = { depends-on = ["s1", "s2", "s3", "s4", "s5", "s6", "s7", "s8"] }
 s22 = "python scripts/22_alteration_finn2001.py"
+
+# Slim environment for the weekly GNSS refresh on GitHub Actions (.github/workflows/gnss-weekly.yml): only what
+# S17, S18 (--no-load) and S20 (--only gnss) import. The package runs from src/ without installing it.
+[feature.gnss.dependencies]
+python = ">=3.12,<3.14"
+numpy = ">=2"
+scipy = "*"
+numba = "*"
+pandas = ">=2.2"
+pyarrow = "*"
+xarray = ">=2025.1"
+zarr = ">=3"
+netcdf4 = "*"
+pyyaml = "*"
+pyproj = ">=3.6"
+shapely = ">=2"
+requests = "*"
+
+[feature.gnss.tasks]
+gnss-fetch = { cmd = "python scripts/17_gnss_fetch.py", env = { PYTHONPATH = "src" } }
+gnss-strain = { cmd = "python scripts/18_gnss_strain.py", env = { PYTHONPATH = "src" } }
+gnss-publish = { cmd = "python scripts/20_publish_products.py --only gnss", env = { PYTHONPATH = "src" } }
+
+[environments]
+gnss = { features = ["gnss"], no-default-feature = true }
