@@ -15,6 +15,9 @@ import ModelReadout from "./ui/ModelReadout.jsx";
 import MobileDock from "./ui/MobileDock.jsx";
 import NavPad from "./ui/NavPad.jsx";
 import SubsurfacePanel from "./ui/SubsurfacePanel.jsx";
+import SensorTip from "./ui/SensorTip.jsx";
+import { SensorPoints } from "./scene/SensorPoints.js";
+import { DEFAULT_FILTER, classifyMarker, extraSites, kindCounts, loadSensors, passes } from "./data/sensors.js";
 import { ModelVolume, loadVolumeMeta } from "./scene/ModelVolume.js";
 import HelpCard, { helpSeen } from "./ui/HelpCard.jsx";
 import QuakeLegend from "./ui/QuakeLegend.jsx";
@@ -39,7 +42,7 @@ export function detailText(frame, summit) {
 function Atlas({ bundle, onError }) {
   const canvasRef = useRef(null), overlayRef = useRef(null), layerRef = useRef(null);
   const [scene, setScene] = useState(null), [siteId, setSiteId] = useState(null), [hover, setHover] = useState(null);
-  const [detail, setDetail] = useState("loading…"), [active, setActive] = useState("home"), [modelKey, setModelKey] = useState(null), [sheet, setSheet] = useState(null), [help, setHelp] = useState(() => !helpSeen()), [volume, setVolume] = useState(null);
+  const [detail, setDetail] = useState("loading…"), [active, setActive] = useState("home"), [modelKey, setModelKey] = useState(null), [sheet, setSheet] = useState(null), [help, setHelp] = useState(() => !helpSeen()), [volume, setVolume] = useState(null), [sens, setSens] = useState(null), [sfilter, setSfilter] = useState(DEFAULT_FILTER);
 
   const openSite = useCallback((site, sc) => {
     setSiteId(site.id); setActive(site.id); setHover(null); setSheet(null);
@@ -57,6 +60,12 @@ function Atlas({ bundle, onError }) {
         onClick: site => openSite(site, s),
       });
       if (bundle.quakes) s.layers = new QuakeLayers(s, bundle.quakes, overlayRef.current);
+      loadSensors(bundle.base).then(inv => {
+        if (!inv || cancelled) return;
+        const extras = extraSites(inv, bundle.stations);
+        s.sensors = new SensorPoints(s, extras, inv.das); s.sensors.setFilter(DEFAULT_FILTER);
+        setSens({ all: [...bundle.stations.sites.filter(x => x.onMap).map(classifyMarker), ...extras], das: inv.das, points: s.sensors, notes: inv.notes ?? {} });
+      });
       if (bundle.model) loadVolumeMeta(bundle.model.base).then(meta => {
         if (meta && !cancelled) { s.volume = new ModelVolume(s, meta, bundle.model.base); setVolume(s.volume); }
       });
@@ -68,7 +77,7 @@ function Atlas({ bundle, onError }) {
       };
       setScene(s);
     }, onError);
-    return () => { cancelled = true; layer?.dispose(); sc?.layers?.dispose(); sc?.volume?.dispose(); sc?.dispose(); };
+    return () => { cancelled = true; layer?.dispose(); sc?.layers?.dispose(); sc?.volume?.dispose(); sc?.sensors?.dispose(); sc?.dispose(); };
   }, [bundle, onError, openSite]);
 
   useEffect(() => {   // the panel pushes the right-hand controls inward, as in the Cascadia atlas
@@ -76,6 +85,11 @@ function Atlas({ bundle, onError }) {
   }, [siteId]);
 
   const site = siteId ? bundle.siteById[siteId] : null;
+  const applyFilter = f => {
+    setSfilter(f); sens?.points.setFilter(f);
+    layerRef.current?.setFilter(x => passes(classifyMarker(x), f));
+  };
+  const sensorLegend = sens && { filter: sfilter, onFilter: applyFilter, counts: kindCounts(sens.all, sfilter), das: sens.das };
   const modelLayer = modelKey ? bundle.model.byKey[modelKey] : null;
   return (
     <>
@@ -88,7 +102,7 @@ function Atlas({ bundle, onError }) {
             {scene.layers && <LayerPanel layers={scene.layers} scene={scene} onStations={on => layerRef.current?.setVisible(on)} />}
           </Controls>
           <GoTo majors={bundle.majors} active={active} onPlace={k => { setActive(k); scene.flyTo(k); }} onSite={s => openSite(s, scene)} />
-          <Legend bundle={bundle}>
+          <Legend bundle={bundle} sensors={sensorLegend}>
             {bundle.quakes && <QuakeLegend meta={bundle.quakes.meta} drawn={scene.layers?.drawn} />}
           </Legend>
           {bundle.model && (
@@ -99,11 +113,12 @@ function Atlas({ bundle, onError }) {
             </div>
           )}
           {modelLayer?.values && <ModelReadout scene={scene} model={bundle.model} layer={modelLayer} box={bundle.overviewBox} />}
-          <Tooltip hover={hover} />
+          <Tooltip hover={hover} notes={sens?.notes} />
+          {sens && <SensorTip scene={scene} points={sens.points} />}
           <MobileDock sheet={sheet} onSheet={setSheet} hasModel={!!bundle.model} />
           <NavPad scene={scene} onHelp={() => setHelp(true)} />
           {help && <HelpCard onClose={() => setHelp(false)} />}
-          {site && <StationPanel site={site} bundle={bundle} onFly={s => scene.flyToSite(s)}
+          {site && <StationPanel site={site} bundle={bundle} notes={sens?.notes} onFly={s => scene.flyToSite(s)}
             onClose={() => { setSiteId(null); layerRef.current?.setSelected(null); }} />}
         </>
       )}

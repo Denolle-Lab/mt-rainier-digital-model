@@ -125,14 +125,28 @@ CONTINUOUS = {
     ),
     "alteration_surface": (
         "alteration_surface",
-        "Hydrothermal alteration",
+        "Hydrothermal alteration, surface rock",
         "Geology",
         "index 0 to 1",
         0,
         1,
-        "cmc.bilbao",
+        "cmc.bilbao_r",
         False,
-        "model alteration field in the top rock cell",
+        "From the 1996 helicopter EM survey (Finn et al. 2001): low apparent resistivity of the edifice "
+        "lavas, "
+        "top ~20-150 m below the glacier bed; transparent below 0.1 and outside the survey",
+    ),
+    "apparent_magnetization": (
+        "apparent_magnetization",
+        "Apparent magnetisation (terrain-correlated)",
+        "Geology",
+        "A/m",
+        -1,
+        5,
+        "cmc.vik",
+        False,
+        "Reduced-to-pole anomaly of the 1996 survey regressed on the terrain effect, 500 m window; "
+        "low values mark demagnetised (altered) or reversed rock",
     ),
     "vs_top": (
         "vs_top",
@@ -253,6 +267,15 @@ def surface_derived(tree: xr.DataTree) -> dict[str, np.ndarray]:
     n = top.sum(0)
     out = {}
     for key, var in (("vs_top", "vs"), ("alteration_surface", "alteration")):
+        if key == "alteration_surface" and "alt_a_surface" in s:  # S22 map at the surface resolution
+            cov = (
+                s["alt_coverage"].values > 0
+                if "alt_coverage" in s
+                else np.isfinite(s["alt_a_surface"].values)
+            )
+            a = s["alt_a_surface"].values  # drape only altered ground (>= 0.1) so the imagery shows elsewhere
+            out[key] = np.where(cov & (a >= 0.1), a, np.nan)
+            continue
         v = np.where(top, l1[var].values, 0.0).sum(0) / np.maximum(n, 1)
         v = np.where(n > 0, v, np.nan)
         # L1 is coarser than the surface grid: repeat cells onto it
@@ -360,8 +383,14 @@ def export_layers(tree: xr.DataTree, dom, manifest: dict, out: Path, flowlines=N
         keys = list(filter(None, s[var].attrs.get("gaia:source_keys", "").split(","))) if var in s else []
         if key in ("vs_top", "alteration_surface"):
             keys = (
-                ["cvm17", "crescent_gen0", "dnr_gems_100k"] if key == "vs_top" else ["finn_2001", "john_2008"]
+                ["cvm17", "crescent_gen0", "dnr_gems_100k"]
+                if key == "vs_top"
+                else ["finn_2001", "rystrom_2000"]
+                if "alt_a_surface" in s
+                else ["finn_2001", "john_2008"]
             )
+        if key == "apparent_magnetization":
+            keys = ["finn_2001", "rystrom_2000"]
         legend = {"min": vmin, "max": vmax, "log": log, "ramp": _ramp(_cmap(cmap)), "cmap": cmap}
         emit(key, label, group, a, False, legend, units, note, keys, log)
 
@@ -463,6 +492,7 @@ VOLUME_VARS = {
     "vp": ("Vp", "m/s", 1500, 7200, "cmc.roma"),
     "vpvs": ("Vp/Vs", "", 1.5, 2.3, "cmc.vik"),
     "rho": ("Density", "kg/m³", 1800, 3100, "cmc.lapaz_r"),
+    "alteration": ("Hydrothermal alteration", "0-1", 0, 1, "cmc.bilbao_r"),
     "unit": ("Model units", "", 0, 0, None),
 }
 
@@ -501,7 +531,7 @@ def export_volume(tree: xr.DataTree, dom, atlas: Path, dx: float = 500.0, dz: fl
 
     out = atlas / "model" / "volume"
     out.mkdir(parents=True, exist_ok=True)
-    g = uniform(tree, dx=dx, dz=dz, z_bot=-20000.0, variables=("vp", "vs", "rho"))
+    g = uniform(tree, dx=dx, dz=dz, z_bot=-20000.0, variables=("vp", "vs", "rho", "alteration"))
     air = g["air"].values.astype(bool)
     g["vpvs"] = g["vp"] / g["vs"]
     # units: nearest cell of the level that holds each depth (categorical, never interpolated)
@@ -572,4 +602,122 @@ def export_volume(tree: xr.DataTree, dom, atlas: Path, dx: float = 500.0, dz: fl
             "vmax": vmax,
         }
     (out.parent / "volume.json").write_text(json.dumps(meta))
+    return meta
+
+
+# ---- sensors: every site of the S8 inventory, for the viewer's sensor layer ----
+# Temporary networks follow the FDSN convention (codes starting with a digit or X, Y, Z are temporary);
+# TA is a permanent code for a moving deployment. Non-FDSN sources are classed by what they are.
+TEMP_CODES = {"TA"}
+TEMP_SOURCES = ("2025 Rainier node deployment",)
+
+
+def is_temporary(site_id: str, source: str) -> bool:
+    if source.startswith(TEMP_SOURCES):
+        return True
+    if source.startswith("FDSN"):
+        net = site_id.split(".")[0]
+        return net[:1].isdigit() or net[:1] in "XYZ" or net in TEMP_CODES
+    return False
+
+
+def viewer_kind(kind: str, family: str) -> str:
+    """Our instrument kind or family -> the viewer's kinds (web/viewer/site/src/data/kinds.js)."""
+    k = kind.lower()
+    for key, words in (
+        ("geophone", ("geophone", "node")),
+        ("accelerometer", ("accelerometer",)),
+        ("infrasound", ("infrasound",)),
+        ("gnss", ("gnss",)),
+        ("tiltmeter", ("tilt",)),
+        ("strainmeter", ("strainmeter",)),
+        ("seismometer", ("seismometer",)),
+    ):
+        if any(w in k for w in words):
+            return key
+    return {
+        "meteorology": "hydromet",
+        "hydrology": "hydromet",
+        "nodes": "geophone",
+        "strong": "accelerometer",
+        "seismic": "seismometer",
+        "gnss": "gnss",
+        "infrasound": "infrasound",
+    }.get(family, "other")
+
+
+def export_sensors(atlas: Path, web_data: Path) -> dict:
+    """S8's web/atlas/data/{sites,das}.geojson -> <atlas>/model/sensors.json in the viewer's scene frame.
+    Deployers' names are left out of the public file."""
+    fr = scene_frame(atlas)
+    to_x = lambda lon: (lon - fr["lon0"]) * fr["kx"]  # noqa: E731
+    to_z = lambda lat: -(lat - fr["lat0"]) * fr["kz"]  # noqa: E731
+    sites = []
+    for f in json.loads((web_data / "sites.geojson").read_text())["features"]:
+        p, (lon, lat) = f["properties"], f["geometry"]["coordinates"][:2]
+        sensors = json.loads(p.get("sensors") or "[]")
+        kinds = sorted(
+            {viewer_kind(s.get("kind", ""), s.get("family", p["family"])) for s in sensors}
+            or {viewer_kind("", p["family"])}
+        )
+        starts = [s["start"] for s in sensors if s.get("start")]
+        ends = [s["end"] for s in sensors if s.get("end")]
+        sites.append(
+            {
+                "id": p["id"],
+                "name": p["name"],
+                "lon": round(lon, 6),
+                "lat": round(lat, 6),
+                "x": round(to_x(lon), 4),
+                "z": round(to_z(lat), 4),
+                "elev": p.get("elev"),
+                "kinds": kinds,
+                "source": p["source"],
+                "temporary": is_temporary(p["id"], p["source"]),
+                "status": p["status"],
+                "start": min(starts) if starts else None,
+                "end": None if p["status"] == "operating" else (max(ends) if ends else None),
+                "instruments": sorted({s.get("kind", "") for s in sensors} - {""}),
+                "notes": p.get("notes") or "",
+                "url": p.get("url") or "",
+            }
+        )
+    das, ch = [], 0
+    for f in json.loads((web_data / "das.geojson").read_text())["features"]:
+        ch = max(ch, int(f["properties"].get("ch1", -1)) + 1)
+        g = f["geometry"]
+        lines = g["coordinates"] if g["type"] == "MultiLineString" else [g["coordinates"]]
+        for ln in lines:
+            das.append([[round(to_x(c[0]), 4), round(to_z(c[1]), 4)] for c in ln])
+    counts = {}
+    for s in sites:
+        for k in s["kinds"]:
+            key = f"{k}|{'temporary' if s['temporary'] else 'permanent'}|{s['status']}"
+            counts[key] = counts.get(key, 0) + 1
+    # reviewed notes per station code (configs/sensor_notes.yaml), attached to the site that holds the station
+    import yaml
+
+    from rainier3d.config.domain import REPO
+
+    notes_cfg = yaml.safe_load((REPO / "configs" / "sensor_notes.yaml").read_text()) or {}
+    for s in sites:
+        codes = [c.strip() for c in s["name"].split("+")] + [s["id"]]
+        extra = [notes_cfg[c]["note"] for c in dict.fromkeys(codes) if c in notes_cfg]
+        if extra:
+            s["notes"] = " ".join([*extra, s["notes"]]).strip()
+    meta = {
+        "sites": sites,
+        "notes": {k: v["note"] for k, v in notes_cfg.items()},
+        "das": {
+            "name": "Paradise–Nisqually Entrance DAS fiber",
+            "segments": das,
+            "temporary": True,
+            "status": "operating",
+            "channels": ch,
+        },
+        "counts": counts,
+        "source": "rainier3d S8 sensor inventory (EarthScope FDSN, UW 2025 nodes, "
+        "EarthScope GNSS, Synoptic), exported by S11",
+    }
+    (atlas / "model" / "sensors.json").write_text(json.dumps(meta, separators=(",", ":")))
     return meta

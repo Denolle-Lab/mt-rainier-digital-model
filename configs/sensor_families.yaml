@@ -23,7 +23,7 @@ fdsn_rules:                     # [regex on channel code, family, label]
   - ['^[HBML]H[ZNE123]$', seismic, broadband seismometer]
   - ['^[ES]H[ZNE123]$',  seismic, short-period seismometer]
   - ['^[BLR]S[0-9A-Z]$', strain,  borehole strainmeter]
-  - ['^[BLR]A[0-9A-Z]$', strain,  tiltmeter]
+  - ['^[BHLRSE]A[0-9A-Z]$', strain,  tiltmeter]   # H: 100 Hz quartz tiltmeters (UW.LON9, Longmire)
   - ['^[LRVBU]F[ZNE123XYZ]$', mt, magnetometer]
   - ['^[LRVBU]Q[ZNE123XYZ]$', mt, electric-field dipole]
 
