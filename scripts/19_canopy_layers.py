@@ -1,7 +1,9 @@
 """S19: canopy and soil layers of the canopy-storage project -> data/processed/surface_canopy.zarr.
 
 Reads configs/canopy_products.yaml (files, units, source keys). The layers share the 100 m surface grid and
-are merged into model.zarr /surface by S5 like the S2 layers; S11 drapes them in the 3D viewer.
+are kept in their own store, not merged into model.zarr; S11 appends them (and the soil-map image) to the 3D
+viewer bundle when the store exists. A layer whose delivered file is missing is skipped with a warning; any
+other error stops the stage.
 
 Usage: pixi run python scripts/19_canopy_layers.py
 """
@@ -17,7 +19,7 @@ import yaml
 
 from rainier3d.config.domain import REPO, load_domain
 from rainier3d.io.store import write
-from rainier3d.surface.canopy import layer
+from rainier3d.surface.canopy import layer, source_path
 
 
 def main():
@@ -27,10 +29,10 @@ def main():
     root = Path(cfg["root"]).expanduser()
     out = {}
     for spec in cfg["layers"]:
-        try:
-            out[spec["name"]] = layer(dom, spec, root)
-        except Exception as e:  # a missing delivery skips the layer, never fills it
-            logging.warning("%s skipped: %s", spec["name"], e)
+        if not source_path(spec, root).exists():  # a missing delivery skips the layer, never fills it
+            logging.warning("%s skipped: %s not found", spec["name"], source_path(spec, root))
+            continue
+        out[spec["name"]] = layer(dom, spec, root)
     ds = xr.Dataset(out)
     ds.attrs = {"crs": dom.crs, "vertical_datum": dom.vertical_datum, "domain": dom.name}
     p = write(ds, dom.path("processed") / "surface_canopy.zarr")

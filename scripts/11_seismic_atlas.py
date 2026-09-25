@@ -8,6 +8,9 @@ layers.json (other layers and the sensors are kept as published); the subsurface
 
 Usage: pixi run s11 [-- --atlas web/viewer/site/public/atlas]
        pixi run s11 -- --layers alteration_surface,apparent_magnetization
+
+The canopy-storage layers of S19 (data/processed/surface_canopy.zarr) and the soil-map image are appended when
+that store exists; their keys can also be given to --layers.
 """
 
 from __future__ import annotations
@@ -17,8 +20,11 @@ import json
 import logging
 from pathlib import Path
 
+import xarray as xr
+import yaml
+
 from rainier3d.config.domain import REPO, load_domain
-from rainier3d.export.atlas import export_layers, export_sensors, export_volume
+from rainier3d.export.atlas import append_canopy_layers, export_layers, export_sensors, export_volume
 from rainier3d.io.store import read_tree
 from rainier3d.surface import layers as L
 
@@ -37,9 +43,15 @@ def main():
     fl = L.fetch_flowlines_hr(dom) if hr.exists() else L.fetch_flowlines(dom)
     from rainier3d.surface.imagery import fetch_s2_composite
 
+    canopy_store = dom.path("processed") / "surface_canopy.zarr"
+    canopy_cfg = yaml.safe_load((REPO / "configs" / "canopy_products.yaml").read_text())
+    canopy_keys = {s["name"] for s in canopy_cfg["layers"]} | {
+        i["name"] for i in canopy_cfg.get("images", [])
+    }
     if a.layers:
         keys = [k.strip() for k in a.layers.split(",") if k.strip()]
-        meta = merge_layers(tree, dom, manifest, atlas / "model", fl, keys)
+        model_keys = [k for k in keys if k not in canopy_keys]
+        meta = merge_layers(tree, dom, manifest, atlas / "model", fl, model_keys) if model_keys else None
     else:
         meta = export_layers(tree, dom, manifest, atlas / "model", fl, imagery=fetch_s2_composite(dom))
         sen = export_sensors(atlas, REPO / "web" / "atlas" / "data")  # S8 inventory
@@ -49,6 +61,16 @@ def main():
             len(sen["das"]["segments"]),
             sen["das"]["channels"],
         )
+    # S19 canopy-storage layers: kept in their own store and appended to the bundle when present
+    want = None if not a.layers else [k for k in keys if k in canopy_keys]
+    if canopy_store.exists() and (want is None or want):
+        added = append_canopy_layers(
+            atlas, dom, xr.open_zarr(canopy_store, consolidated=False), canopy_cfg, want
+        )
+        logging.info("canopy layers appended: %s", ", ".join(added))
+    elif want:
+        raise SystemExit(f"{canopy_store} is missing; run S19 first")
+    meta = json.loads((atlas / "model" / "layers.json").read_text())
     vol = export_volume(tree, dom, atlas)
     g = vol["grid"]
     logging.info(
