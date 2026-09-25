@@ -333,7 +333,7 @@ where LP is a horizontal Gaussian low-pass filter with half power at the cutoff 
 
 | Level | RMS of LP(ln V) − LP(ln V_reg), Vp | Same, Vs | Mean ln(V / V_reg), Vp | Same, Vs |
 |---|---|---|---|---|
-| L1 | 0.012 | 0.012 | +0.046 | +0.077 |
+| L1 | 0.011 | 0.012 | +0.046 | +0.077 |
 | L2 | 0.002 | 0.002 | +0.001 | +0.001 |
 | L3 | 0.0006 | 0.0006 | 0.0002 | 0.0001 |
 
@@ -403,7 +403,7 @@ The fit is resolved as follows ([@tbl:multipliers], [@tbl:bias], [@fig:calibrati
 **Why this parameterisation.** Two simpler parameterisations were tested against the same data ([@tbl:models]).
 - **Vs-only depth factor, catalogue hypocentres fixed.** It fits S as well as the adopted model, but pushes Vp/Vs to 1.60–1.67 at 2–4 km. That is low for crustal rock and lower still than expected beneath a volcano with a hydrothermal system: the S−P misfit of fixed hypocentres is partly a location error.
 - **Depth factors on the regional Vp and Vs at all depths, with relocation.** It fits as well as the adopted model, but places the correction in the regional model where the fusion does not use it. It requires Vp 7–19% faster in the top 2 km, where the fused model follows the geology, and it breaks the fusion invariant (0.050).
-- **Adopted parameterisation.** Fitting the geology's rock physics and correcting the regional model only below 1 km fits equally well, satisfies the invariant (0.012) and keeps the unit contrasts in physical parameters.
+- **Adopted parameterisation.** Fitting the geology's rock physics and correcting the regional model only below 1 km fits equally well, satisfies the invariant (0.011 for Vp, 0.012 for Vs) and keeps the unit contrasts in physical parameters.
 
 **Alteration and the calibration.** The calibration was run with a conduit-centred alteration field. Replacing it with the EM-based field of [@sec:alteration] changes the relocated RMS from 0.095 to 0.093 s for P and leaves S at 0.190 s, so the calibrated parameters are kept.
 
