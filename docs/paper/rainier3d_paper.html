@@ -2428,6 +2428,126 @@ shortening at six elevations: GNSS (grey, the same at every depth) and
 SHmax of the edifice load (coloured by its horizontal shear
 strain).</figcaption>
 </figure>
+<section id="sec:strainmethod" class="level3" data-number="6.5.1">
+<h3 data-number="6.5.1"><span class="header-section-number">6.5.1</span>
+How the strain fields are computed</h3>
+<p>Both fields are first-order estimates. Neither is computed with
+Green’s functions of the heterogeneous model or with a rheology other
+than linear elasticity. This subsection gives the calculation as
+implemented (<code>rainier3d.geodesy.load</code>,
+<code>rainier3d.geodesy.volume</code>, script S25) and then lists what
+it leaves out.</p>
+<p><strong>Tectonic strain rate.</strong> The horizontal strain-rate
+tensor
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mover><mi>ε</mi><mo accent="true">̇</mo></mover><mrow><mi>α</mi><mi>β</mi></mrow></msub><mo stretchy="false" form="prefix">(</mo><mi>x</mi><mo>,</mo><mi>y</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">\dot\varepsilon_{\alpha\beta}(x, y)</annotation></semantics></math>,
+with
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>α</mi><mo>,</mo><mi>β</mi><mo>∈</mo><mo stretchy="false" form="prefix">{</mo><mi>x</mi><mo>,</mo><mi>y</mi><mo stretchy="false" form="postfix">}</mo></mrow><annotation encoding="application/x-tex">\alpha, \beta \in \{x, y\}</annotation></semantics></math>,
+is the velocity-gradient fit of <a href="#sec:strain">Sect. 6</a> at the
+surface. At depth it is not calculated but assigned: <span id="eq:tectdepth"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mover><mi>ε</mi><mo accent="true">̇</mo></mover><mrow><mi>α</mi><mi>β</mi></mrow></msub><mo stretchy="false" form="prefix">(</mo><mi>x</mi><mo>,</mo><mi>y</mi><mo>,</mo><mi>z</mi><mo stretchy="false" form="postfix">)</mo><mo>=</mo><msub><mover><mi>ε</mi><mo accent="true">̇</mo></mover><mrow><mi>α</mi><mi>β</mi></mrow></msub><mo stretchy="false" form="prefix">(</mo><mi>x</mi><mo>,</mo><mi>y</mi><mo>,</mo><mn>0</mn><mo stretchy="false" form="postfix">)</mo><mo>,</mo><mspace width="2.0em"></mspace><msub><mover><mi>ε</mi><mo accent="true">̇</mo></mover><mrow><mi>z</mi><mi>z</mi></mrow></msub><mo>=</mo><mi>−</mi><mfrac><mi>ν</mi><mrow><mn>1</mn><mo>−</mo><mi>ν</mi></mrow></mfrac><mrow><mo stretchy="true" form="prefix">(</mo><msub><mover><mi>ε</mi><mo accent="true">̇</mo></mover><mrow><mi>x</mi><mi>x</mi></mrow></msub><mo>+</mo><msub><mover><mi>ε</mi><mo accent="true">̇</mo></mover><mrow><mi>y</mi><mi>y</mi></mrow></msub><mo stretchy="true" form="postfix">)</mo></mrow><mo>,</mo><mspace width="2.0em"></mspace><msub><mover><mi>ε</mi><mo accent="true">̇</mo></mover><mrow><mi>x</mi><mi>z</mi></mrow></msub><mo>=</mo><msub><mover><mi>ε</mi><mo accent="true">̇</mo></mover><mrow><mi>y</mi><mi>z</mi></mrow></msub><mo>=</mo><mn>0</mn><mi>.</mi><mspace width="2.0em"></mspace><mrow><mo stretchy="false" form="prefix">(</mo><mn>8</mn><mo stretchy="false" form="postfix">)</mo></mrow></mrow><annotation encoding="application/x-tex">\dot\varepsilon_{\alpha\beta}(x, y, z) = \dot\varepsilon_{\alpha\beta}(x, y, 0), \qquad \dot\varepsilon_{zz} = -\frac{\nu}{1-\nu}\left(\dot\varepsilon_{xx}+\dot\varepsilon_{yy}\right), \qquad \dot\varepsilon_{xz}=\dot\varepsilon_{yz}=0.\qquad{(8)}</annotation></semantics></math></span>
+The vertical component follows from a vanishing vertical stress rate
+(plane stress). This is the thin-plate view of the upper crust: it holds
+when the sources of deformation are far or deep compared with the depth
+of interest and the crust is laterally uniform. No source (megathrust
+locking, fault slip, block rotation) is inverted from the GNSS
+velocities.</p>
+<p>The shear on the WRSZ is resolved as <span id="eq:resolved"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mover><mi>γ</mi><mo accent="true">̇</mo></mover><mo>=</mo><mi>−</mi><mspace width="0.167em"></mspace><mi mathvariant="bold-italic">𝒔</mi><mo>⋅</mo><mover><mi mathvariant="bold-italic">𝜺</mi><mo accent="true">̇</mo></mover><mo>⋅</mo><mi mathvariant="bold-italic">𝒏</mi><mo>,</mo><mspace width="2.0em"></mspace><mrow><mo stretchy="false" form="prefix">(</mo><mn>9</mn><mo stretchy="false" form="postfix">)</mo></mrow></mrow><annotation encoding="application/x-tex">\dot\gamma = -\,\mathbf{s}\cdot\dot{\boldsymbol\varepsilon}\cdot\mathbf{n},\qquad{(9)}</annotation></semantics></math></span>
+with
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi mathvariant="bold-italic">𝒔</mi><annotation encoding="application/x-tex">\mathbf{s}</annotation></semantics></math>
+the horizontal unit vector along the strike and
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi mathvariant="bold-italic">𝒏</mi><annotation encoding="application/x-tex">\mathbf{n}</annotation></semantics></math>
+the horizontal normal. The sign is positive for right-lateral motion.
+The strike is the long axis of the covariance of the WRSZ
+epicentres.</p>
+<p><strong>Edifice-load stress.</strong> The load is the rock above the
+pre-volcanic surface of the geology model. Its columns of height
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>h</mi><annotation encoding="application/x-tex">h</annotation></semantics></math>
+are summed on 500 m cells into vertical point forces
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>P</mi><mi>k</mi></msub><mo>=</mo><mi>ρ</mi><mi>g</mi><msub><mi>h</mi><mi>k</mi></msub><msub><mi>A</mi><mi>k</mi></msub></mrow><annotation encoding="application/x-tex">P_k = \rho g h_k A_k</annotation></semantics></math>
+(<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>ρ</mi><annotation encoding="application/x-tex">\rho</annotation></semantics></math>
+= 2500 kg m⁻³). The forces act on a flat reference plane at the mean
+elevation of the edifice base (1789 m). The stress at a point is the sum
+over
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>k</mi><annotation encoding="application/x-tex">k</annotation></semantics></math>
+of the Boussinesq solution for a point force on the surface of a
+homogeneous, isotropic, linear-elastic half-space <span class="citation" data-cites="johnson_1985">(<a href="#ref-johnson_1985" role="doc-biblioref">Johnson, 1985</a>)</span>. At horizontal distance
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>r</mi><annotation encoding="application/x-tex">r</annotation></semantics></math>
+and depth
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>z</mi><annotation encoding="application/x-tex">z</annotation></semantics></math>
+below the plane, with
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>R</mi><mo>=</mo><msqrt><mrow><msup><mi>r</mi><mn>2</mn></msup><mo>+</mo><msup><mi>z</mi><mn>2</mn></msup></mrow></msqrt></mrow><annotation encoding="application/x-tex">R = \sqrt{r^2+z^2}</annotation></semantics></math>
+and tension positive: <span id="eq:boussinesq"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>σ</mi><mrow><mi>z</mi><mi>z</mi></mrow></msub><mo>=</mo><mi>−</mi><mfrac><mrow><mn>3</mn><mi>P</mi><msup><mi>z</mi><mn>3</mn></msup></mrow><mrow><mn>2</mn><mi>π</mi><msup><mi>R</mi><mn>5</mn></msup></mrow></mfrac><mo>,</mo><mspace width="1.0em"></mspace><msub><mi>σ</mi><mrow><mi>r</mi><mi>z</mi></mrow></msub><mo>=</mo><mi>−</mi><mfrac><mrow><mn>3</mn><mi>P</mi><mi>r</mi><msup><mi>z</mi><mn>2</mn></msup></mrow><mrow><mn>2</mn><mi>π</mi><msup><mi>R</mi><mn>5</mn></msup></mrow></mfrac><mo>,</mo><mspace width="1.0em"></mspace><msub><mi>σ</mi><mrow><mi>r</mi><mi>r</mi></mrow></msub><mo>=</mo><mfrac><mi>P</mi><mrow><mn>2</mn><mi>π</mi></mrow></mfrac><mrow><mo stretchy="true" form="prefix">[</mo><mfrac><mrow><mn>1</mn><mo>−</mo><mn>2</mn><mi>ν</mi></mrow><msup><mi>r</mi><mn>2</mn></msup></mfrac><mrow><mo stretchy="true" form="prefix">(</mo><mn>1</mn><mo>−</mo><mfrac><mi>z</mi><mi>R</mi></mfrac><mo stretchy="true" form="postfix">)</mo></mrow><mo>−</mo><mfrac><mrow><mn>3</mn><msup><mi>r</mi><mn>2</mn></msup><mi>z</mi></mrow><msup><mi>R</mi><mn>5</mn></msup></mfrac><mo stretchy="true" form="postfix">]</mo></mrow><mo>,</mo><mspace width="1.0em"></mspace><msub><mi>σ</mi><mrow><mi>θ</mi><mi>θ</mi></mrow></msub><mo>=</mo><mi>−</mi><mfrac><mrow><mi>P</mi><mo stretchy="false" form="prefix">(</mo><mn>1</mn><mo>−</mo><mn>2</mn><mi>ν</mi><mo stretchy="false" form="postfix">)</mo></mrow><mrow><mn>2</mn><mi>π</mi></mrow></mfrac><mrow><mo stretchy="true" form="prefix">[</mo><mfrac><mn>1</mn><msup><mi>r</mi><mn>2</mn></msup></mfrac><mrow><mo stretchy="true" form="prefix">(</mo><mn>1</mn><mo>−</mo><mfrac><mi>z</mi><mi>R</mi></mfrac><mo stretchy="true" form="postfix">)</mo></mrow><mo>−</mo><mfrac><mi>z</mi><msup><mi>R</mi><mn>3</mn></msup></mfrac><mo stretchy="true" form="postfix">]</mo></mrow><mi>.</mi><mspace width="2.0em"></mspace><mrow><mo stretchy="false" form="prefix">(</mo><mn>10</mn><mo stretchy="false" form="postfix">)</mo></mrow></mrow><annotation encoding="application/x-tex">\sigma_{zz} = -\frac{3Pz^3}{2\pi R^5}, \quad \sigma_{rz} = -\frac{3Prz^2}{2\pi R^5}, \quad
+\sigma_{rr} = \frac{P}{2\pi}\left[\frac{1-2\nu}{r^2}\left(1-\frac{z}{R}\right) - \frac{3r^2z}{R^5}\right], \quad
+\sigma_{\theta\theta} = -\frac{P(1-2\nu)}{2\pi}\left[\frac{1}{r^2}\left(1-\frac{z}{R}\right)-\frac{z}{R^3}\right].\qquad{(10)}</annotation></semantics></math></span>
+These stresses depend on Poisson’s ratio
+(<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>ν</mi><mo>=</mo><mn>0.25</mn></mrow><annotation encoding="application/x-tex">\nu = 0.25</annotation></semantics></math>)
+but not on the elastic moduli. Points within 250 m below the plane are
+left out, where the point-force field is singular.</p>
+<p><strong>Edifice-load strain.</strong> The stress is converted to
+strain with the isotropic compliance of each cell: <span id="eq:compliance"><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>ε</mi><mrow><mi>i</mi><mi>j</mi></mrow></msub><mo>=</mo><mfrac><msub><mi>σ</mi><mrow><mi>i</mi><mi>j</mi></mrow></msub><mrow><mn>2</mn><mi>μ</mi></mrow></mfrac><mo>−</mo><mfrac><mrow><mi>λ</mi><mspace width="0.167em"></mspace><msub><mi>σ</mi><mrow><mi>k</mi><mi>k</mi></mrow></msub></mrow><mrow><mn>2</mn><mi>μ</mi><mo stretchy="false" form="prefix">(</mo><mn>3</mn><mi>λ</mi><mo>+</mo><mn>2</mn><mi>μ</mi><mo stretchy="false" form="postfix">)</mo></mrow></mfrac><mspace width="0.167em"></mspace><msub><mi>δ</mi><mrow><mi>i</mi><mi>j</mi></mrow></msub><mo>,</mo><mspace width="2.0em"></mspace><mi>μ</mi><mo>=</mo><mi>ρ</mi><msubsup><mi>V</mi><mi>S</mi><mn>2</mn></msubsup><mo>,</mo><mspace width="1.0em"></mspace><mi>λ</mi><mo>=</mo><mi>ρ</mi><msubsup><mi>V</mi><mi>P</mi><mn>2</mn></msubsup><mo>−</mo><mn>2</mn><mi>μ</mi><mo>,</mo><mspace width="2.0em"></mspace><mrow><mo stretchy="false" form="prefix">(</mo><mn>11</mn><mo stretchy="false" form="postfix">)</mo></mrow></mrow><annotation encoding="application/x-tex">\varepsilon_{ij} = \frac{\sigma_{ij}}{2\mu} - \frac{\lambda\,\sigma_{kk}}{2\mu(3\lambda+2\mu)}\,\delta_{ij}, \qquad \mu = \rho V_S^2, \quad \lambda = \rho V_P^2 - 2\mu,\qquad{(11)}</annotation></semantics></math></span>
+with
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>V</mi><mi>P</mi></msub><annotation encoding="application/x-tex">V_P</annotation></semantics></math>,
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>V</mi><mi>S</mi></msub><annotation encoding="application/x-tex">V_S</annotation></semantics></math>
+and
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>ρ</mi><annotation encoding="application/x-tex">\rho</annotation></semantics></math>
+taken from the fused model.</p>
+<ul>
+<li><strong>Cone interior.</strong> Above the half-space (higher than
+1539 m), the stress is the laterally confined overburden,
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>σ</mi><mrow><mi>z</mi><mi>z</mi></mrow></msub><mo>=</mo><mi>−</mi><mi>ρ</mi><mi>g</mi><mi>d</mi></mrow><annotation encoding="application/x-tex">\sigma_{zz} = -\rho g d</annotation></semantics></math>
+and
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>σ</mi><mrow><mi>x</mi><mi>x</mi></mrow></msub><mo>=</mo><msub><mi>σ</mi><mrow><mi>y</mi><mi>y</mi></mrow></msub><mo>=</mo><mi>ν</mi><mspace width="0.167em"></mspace><msub><mi>σ</mi><mrow><mi>z</mi><mi>z</mi></mrow></msub><mi>/</mi><mo stretchy="false" form="prefix">(</mo><mn>1</mn><mo>−</mo><mi>ν</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">\sigma_{xx} = \sigma_{yy} = \nu\,\sigma_{zz}/(1-\nu)</annotation></semantics></math>,
+with
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>d</mi><annotation encoding="application/x-tex">d</annotation></semantics></math>
+the depth below the local ground.</li>
+<li><strong>SHmax.</strong> It is the eigenvector of the horizontal
+stress tensor
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo stretchy="false" form="prefix">(</mo><msub><mi>σ</mi><mrow><mi>x</mi><mi>x</mi></mrow></msub><mo>,</mo><msub><mi>σ</mi><mrow><mi>y</mi><mi>y</mi></mrow></msub><mo>,</mo><msub><mi>σ</mi><mrow><mi>x</mi><mi>y</mi></mrow></msub><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">(\sigma_{xx}, \sigma_{yy}, \sigma_{xy})</annotation></semantics></math>
+with the most compressive eigenvalue. It is undefined in the cone
+interior, where the horizontal stress is isotropic.</li>
+</ul>
+<p><strong>What the calculation does not include.</strong></p>
+<ul>
+<li><strong>Green’s functions of the 3D model.</strong> The stress is
+that of a uniform half-space, so the stiffness contrasts of the model
+neither concentrate nor divert it. Applying the local compliance (<a href="#eq:compliance">Eq. 11</a>) makes soft rock strain more under the
+same stress. The stress field, however, is not in equilibrium in the
+heterogeneous medium, and its axes do not rotate around stiff plutons or
+the soft edifice.</li>
+<li><strong>Topography as part of the elastic body.</strong> The load
+sits on a flat plane. The cone above it is not part of the elastic
+domain, and its interior is approximated in one dimension.</li>
+<li><strong>Rheology beyond linear elasticity.</strong> There is no
+viscoelastic relaxation of the warm lower crust or of the magma body, no
+plasticity, no pore-pressure coupling and no thermal stress.</li>
+<li><strong>A tectonic source model.</strong> The GNSS rates are not
+explained by locking, fault slip or block motion, so their variation
+with depth (<a href="#eq:tectdepth">Eq. 8</a>) is assumed rather than
+computed.</li>
+<li><strong>Absolute stress.</strong> The load gives a static stress and
+GNSS a strain rate. Without the magnitude of the tectonic background
+stress the two cannot be summed, so their orientations are reported
+separately.</li>
+</ul>
+<p><strong>A consistent model</strong> would compute the same quantities
+in three steps:</p>
+<ol type="1">
+<li>a static finite-element solution on the model mesh, with gravity
+acting on the real topography and heterogeneous
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>λ</mi><annotation encoding="application/x-tex">\lambda</annotation></semantics></math>
+and
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>μ</mi><annotation encoding="application/x-tex">\mu</annotation></semantics></math>
+from the fused velocities;</li>
+<li>Green’s functions computed in the same 3D elastic model, used to
+invert the GNSS velocities for their sources before computing strain
+rates at depth;</li>
+<li>a viscoelastic lower crust for time-dependent loading.</li>
+</ol>
+<p>The load pattern of <a href="#fig:strainorient">Fig. 20</a>,
+tangential beneath the summit and radial at depth, is the qualitative
+signature of any load on a cone. Heterogeneity would change its
+magnitudes and rotate its axes near stiffness contrasts. The depth
+extension of the GNSS axes is the least certain part of the product.</p>
+</section>
 </section>
 </section>
 <section id="sec:hydro" class="level1" data-number="7">
@@ -2909,6 +3029,12 @@ flags them. <a href="#tbl:formats">Table 24</a> lists the formats.</p>
 <td>SPECFEM3D Cartesian</td>
 </tr>
 <tr>
+<td>PyLith spatial database (SimpleGridDB): density, Vs, Vp, with a
+parameter snippet</td>
+<td>UTM 10N m, elevation up</td>
+<td>PyLith static and quasi-static elasticity</td>
+</tr>
+<tr>
 <td>CSV</td>
 <td>x, y, z and variables, one row per node</td>
 <td>spreadsheets, GIS</td>
@@ -3151,11 +3277,17 @@ fall below the cell size.</li>
 <li><strong>Glaciers.</strong> IceBoost exceeds the 1981 radar
 thicknesses on Emmons and Winthrop glaciers; its total should be
 compared with the lidar-based ice volume of <span class="citation" data-cites="sisson2011">Sisson et al. (<a href="#ref-sisson2011" role="doc-biblioref">2011</a>)</span>.</li>
-<li><strong>Geodesy.</strong> The GNSS network does not resolve strain
-on the edifice. The geodetic strain rate at depth rests on two
-assumptions (depth-invariant horizontal rate, plane stress). The
-edifice-load stress is a homogeneous half-space, with a
+<li><strong>Geodesy and strain.</strong> The GNSS network does not
+resolve strain on the edifice. The strain in the volume uses no Green’s
+functions of the heterogeneous model and no rheology beyond linear
+elasticity (<a href="#sec:strainmethod">Sect. 6.5.1</a>):
+<ul>
+<li>the geodetic strain rate at depth is assigned (depth-invariant
+horizontal rate, plane stress), not inverted from sources;</li>
+<li>the edifice-load stress is that of a uniform half-space with a flat
+surface, converted to strain with the local stiffness, with a
 confined-overburden approximation inside the cone.</li>
+</ul></li>
 <li><strong>Hydrology.</strong> The model has no hydrological state (<a href="#sec:hydro">Sect. 7</a>).</li>
 </ul>
 </section>
@@ -3188,10 +3320,17 @@ hydrological layers and the seismic properties.</p>
 <h1 class="codedataavailability unnumbered">Code and data
 availability</h1>
 <p>The code, configuration, source registry and this paper are at <a href="https://github.com/Denolle-Lab/mt-rainier-digital-model" class="uri">https://github.com/Denolle-Lab/mt-rainier-digital-model</a>
-(BSD-3-Clause). The derived products are release assets of the same
-repository (CC-BY 4.0), listed with checksums in
-<code>src/rainier3d/products.json</code> and downloaded with
-<code>rainier3d fetch</code>.</p>
+(BSD-3-Clause). The derived products are the assets of the release
+<code>products-v1.0.0</code> of the same repository (CC-BY 4.0): the
+model, the uniform grids, the strain in the volume, the edifice-load
+stress, the alteration field, the mass-movement catalogue and a GNSS
+snapshot. They are listed with SHA-256 checksums in
+<code>SHA256SUMS</code> and <code>src/rainier3d/products.json</code>,
+downloaded with <code>rainier3d fetch</code>, and described product by
+product, with command-line and Python examples, in
+<code>docs/products.md</code>. The software and the derived products are
+deposited on Zenodo as two versioned records
+(<code>docs/doi.md</code>).</p>
 <p>Appendix A lists the input data sets with their DOIs or service
 addresses. <code>docs/data_policy.md</code> gives the licence tier of
 each. <code>docs/data_manifest.csv</code> gives the checksum of each
@@ -3367,8 +3506,7 @@ Geological Survey (<a href="#ref-dnr_quaternary_faults" role="doc-biblioref">202
 directed the work. DY designed and built the three-dimensional viewer.
 MKö produced the vegetation products of the canopy-storage project
 (lidar canopy height and cover, Sentinel-2 leaf area index and the
-gridded GEDI products).</p>
-<!-- TODO(#13): contributions of MH, SH and MKi, to be supplied by the authors. -->
+gridded GEDI products). MH, SH and MKi contributed to the project.</p>
 </section>
 <section id="competing-interests" class="level1 competinginterests unnumbered">
 <h1 class="competinginterests unnumbered">Competing interests</h1>
