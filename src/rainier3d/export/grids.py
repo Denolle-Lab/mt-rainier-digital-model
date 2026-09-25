@@ -204,3 +204,38 @@ def write_emc(
     path.parent.mkdir(parents=True, exist_ok=True)
     out.to_netcdf(path, format="NETCDF3_CLASSIC")
     return path
+
+
+def write_specfem_xyz(ds: xr.Dataset, path: Path) -> Path:
+    """SPECFEM3D_Cartesian external tomography file (tomography_model.xyz): header lines with origin, end,
+    spacing, counts and value ranges, then one line per node 'x y z vp vs rho' (m, m/s, kg/m3) with x varying
+    fastest, then y, then z (from the bottom up, z = elevation). Air cells keep the rock values below them."""
+    z = ds.z.values[::-1]  # bottom up
+    x, y = ds.x.values, ds.y.values
+    vp, vs, rho = (ds[v].transpose("z", "y", "x").values[::-1] for v in ("vp", "vs", "rho"))
+    dx, dy, dz = float(x[1] - x[0]), float(y[1] - y[0]), float(z[1] - z[0])
+    Z, Y, X = np.meshgrid(z, y, x, indexing="ij")
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with open(path, "w") as f:
+        f.write(f"{x[0]:.1f} {y[0]:.1f} {z[0]:.1f} {x[-1]:.1f} {y[-1]:.1f} {z[-1]:.1f}\n")
+        f.write(f"{dx:.1f} {dy:.1f} {dz:.1f}\n{x.size} {y.size} {z.size}\n")
+        f.write(
+            f"{np.nanmin(vp):.1f} {np.nanmax(vp):.1f} {np.nanmin(vs):.1f} {np.nanmax(vs):.1f} "
+            f"{np.nanmin(rho):.1f} {np.nanmax(rho):.1f}\n"
+        )
+        np.savetxt(
+            f,
+            np.c_[X.ravel(), Y.ravel(), Z.ravel(), vp.ravel(), vs.ravel(), rho.ravel()],
+            fmt="%.1f %.1f %.1f %.1f %.1f %.1f",
+        )
+    return path
+
+
+def write_csv(ds: xr.Dataset, path: Path, variables=("vp", "vs", "rho", "qp", "qs")) -> Path:
+    """Plain CSV: x, y (UTM 10N m), z (elevation m), air flag and the variables; one row per node."""
+    df = ds[[v for v in (*variables, "air") if v in ds]].to_dataframe().reset_index()
+    path.parent.mkdir(parents=True, exist_ok=True)
+    df[["x", "y", "z", *[c for c in df.columns if c not in ("x", "y", "z")]]].to_csv(
+        path, index=False, float_format="%.2f"
+    )
+    return path
