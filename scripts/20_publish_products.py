@@ -32,6 +32,7 @@ import xarray as xr
 import yaml
 
 from rainier3d.config.domain import REPO, load_domain
+from rainier3d.io import store
 
 REPOSITORY = "Denolle-Lab/mt-rainier-digital-model"
 CATALOG = REPO / "src" / "rainier3d" / "products.json"
@@ -50,7 +51,8 @@ def zip_dir(src: Path, dst: Path, arcroot: str) -> Path:
             if p.is_file():
                 info = zipfile.ZipInfo(f"{arcroot}/{p.relative_to(src)}", date_time=(1980, 1, 1, 0, 0, 0))
                 info.external_attr = 0o644 << 16
-                z.writestr(info, p.read_bytes())
+                with open(p, "rb") as f, z.open(info, "w") as w:
+                    shutil.copyfileobj(f, w, 1 << 20)
     return dst
 
 
@@ -72,7 +74,7 @@ def package_model(dom, tmp: Path, out: Path, bad: set[str]):
         nodes[f"/{name}"] = ds.drop_vars(drop)
     t = xr.DataTree.from_dict(nodes)
     t.attrs = dict(tree.attrs) | {"excluded_variables": ", ".join(dropped), "license": "CC-BY-4.0 (derived)"}
-    t.to_zarr(tmp / "model.zarr", mode="w", consolidated=False, zarr_format=3)
+    store.write(t, tmp / "model.zarr")
     return zip_dir(tmp / "model.zarr", out / "rainier3d_model.zarr.zip", "model.zarr"), dropped
 
 

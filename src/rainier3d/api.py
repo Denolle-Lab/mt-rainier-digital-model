@@ -15,10 +15,12 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import re
 import shutil
 import zipfile
 from importlib import resources
 from pathlib import Path
+from urllib.parse import urlparse
 
 import numpy as np
 import xarray as xr
@@ -53,7 +55,8 @@ def _remote_sha256(url: str) -> str | None:
         r.raise_for_status()
     except requests.RequestException:
         return None
-    return r.text.split()[0]
+    token = (r.text.split() or [""])[0].lower()
+    return token if re.fullmatch(r"[0-9a-f]{64}", token) else None
 
 
 def fetch(name: str, url: str | None = None, sha256: str | None = None, force: bool = False) -> Path:
@@ -76,15 +79,21 @@ def fetch(name: str, url: str | None = None, sha256: str | None = None, force: b
     target = root / "extracted"
     if sha256 is None and not explicit and p.get("sha256_url"):
         sha256 = _remote_sha256(p["sha256_url"])
-        if sha256 is None and target.exists():
-            return target  # offline: keep the cached copy
+        if sha256 is None:
+            if target.exists():
+                return target  # offline: keep the cached (previously verified) copy
+            raise ConnectionError(f"{name}: cannot read the published checksum {p['sha256_url']}")
         if target.exists() and archive.exists() and _sha256(archive) == sha256 and not force:
             return target
     elif target.exists() and not force:
         return target
     root.mkdir(parents=True, exist_ok=True)
-    if Path(url).expanduser().exists():
-        shutil.copy(Path(url).expanduser(), archive)
+    scheme = urlparse(url).scheme.lower()
+    if scheme not in ("http", "https"):  # a local path (or file:// URL), e.g. a pipeline build
+        src = Path(urlparse(url).path if scheme == "file" else url).expanduser()
+        if not src.exists():
+            raise FileNotFoundError(f"{name}: {src}")
+        shutil.copy(src, archive)
     else:
         import requests
 

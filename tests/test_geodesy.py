@@ -121,3 +121,17 @@ def test_gnss_config_sections_have_registered_source_keys():
     keys = cfg["source_keys"]
     assert {"archives", "min_years", "qc", "strain", "regions", "events", "load"} <= set(keys)
     assert [k for ks in keys.values() for k in ks if k not in reg] == []
+
+
+def test_cached_file_missing_from_manifest_is_recorded(tmp_path):
+    """A cached file whose manifest was deleted is recorded again (no download), so verify_manifest works."""
+    from rainier3d.geodesy import archive as A
+
+    p = tmp_path / "gnss" / "unr" / "x.txt"
+    p.parent.mkdir(parents=True)
+    p.write_bytes(b"cached")
+    man = tmp_path / "gnss" / "manifest.csv"
+    assert A.fetch("https://example.org/x.txt", p, "unr", man) == p  # no network: the file is cached
+    assert "unr/x.txt" in man.read_text() and A.verify_manifest(man) == []
+    A.fetch("https://example.org/x.txt", p, "unr", man)
+    assert man.read_text().count("unr/x.txt") == 1  # recorded once
