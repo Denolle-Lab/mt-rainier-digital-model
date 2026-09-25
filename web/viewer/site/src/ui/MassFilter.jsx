@@ -1,3 +1,4 @@
+import Glyph from "./Glyph.jsx";
 import "./ui.css";
 
 // Mass-movement legend and filter. "Events" shows the points, "Dated only" keeps observed and seismically recorded
@@ -19,7 +20,7 @@ export default function MassFilter({ doc, filter, onFilter, counts, flows, onFlo
         {doc.classes.filter(c => counts[c.key]).map(c => (
           <button key={c.key} className="sf-kind" aria-pressed={on(c.key)} title={`Show only: ${c.label.toLowerCase()} (again: all)`}
             onClick={() => only(c.key)}>
-            <span className="m-dot" style={{ background: c.color }} /><span>{c.label}</span>
+            <Glyph glyph="chevron" color={c.color} size={13} /><span>{c.label}</span>
             <span className="mono n">{counts[c.key].toLocaleString("en-US")}</span>
           </button>
         ))}
