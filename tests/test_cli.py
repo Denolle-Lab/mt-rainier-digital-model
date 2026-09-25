@@ -125,3 +125,26 @@ def test_fetch_missing_local_path_raises(tmp_path, monkeypatch):
     monkeypatch.setenv("RAINIER3D_DATA", str(tmp_path / "cache"))
     with pytest.raises(FileNotFoundError):
         api.fetch("model", url=str(tmp_path / "nope.zip"))
+
+
+def test_pylith_simplegrid_header_and_rows(tmp_path):
+    """SimpleGridDB: counts and names in the header, one coordinate list per axis, x-fastest rows of
+    x y z density vs vp, and the .cfg snippet that points PyLith at the file."""
+    path, cfg = grids.write_pylith_simplegrid(_tiny_grid(), tmp_path / "rainier3d.spatialdb")
+    text = path.read_text()
+    assert "#SPATIAL_GRID.ascii 1" in text and "value-names = density vs vp" in text
+    assert (
+        "num-x = 3" in text
+        and "num-y = 2" in text
+        and "num-z = 3" in text
+        and "crs-string = EPSG:32610" in text
+    )
+    lines = [ln for ln in text.splitlines() if ln and not ln.startswith("//")]
+    body = lines[lines.index("}") + 1 :]
+    assert [len(ln.split()) for ln in body[:3]] == [3, 2, 3]  # x, y, z coordinate lists
+    rows = np.loadtxt(body[3:])
+    assert rows.shape == (3 * 2 * 3, 6)
+    assert rows[1, 0] == 2.0 and rows[1, 1] == 10.0  # x varies fastest
+    assert rows[0, 2] == -500.0 and rows[-1, 2] == 500.0  # z increasing (bottom up)
+    assert np.allclose(rows[:, 3:], [2700.0, 2900.0, 5000.0])
+    assert "db_auxiliary_field.filename = rainier3d.spatialdb" in cfg.read_text()

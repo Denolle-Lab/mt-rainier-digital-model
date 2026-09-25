@@ -43,6 +43,9 @@ geometry numbers are placeholders, marked `m1_placeholder` in `configs/`.
 | S22 alteration | `scripts/22_alteration_finn2001.py` | `alteration_finn2001.zarr`: alteration from the 1996 helicopter EM survey (`docs/alteration.md`) |
 | S23 paper | `scripts/23_paper.py` | `docs/paper/rainier3d_paper.html` and `.pdf` (ESSD class) from `docs/paper/rainier3d_paper.md` (`pixi run -e paper paper`; `.github/workflows/paper.yml`) |
 | S24 mass movements | `scripts/24_mass_movements.py` | `outputs/mass_movements/`: lahar and debris-flow outlines, landslide and seismic event points, faults, 1998 lahar zones; paper figure; viewer layers (`docs/mass_movements.md` lists every service call) |
+| S25 strain in the volume | `scripts/25_strain_volume.py` | `data/processed/strain_3d.zarr`, `outputs/gnss/strain_orientation.csv`: GNSS strain rate carried down and edifice-load strain, with orientations for shear-wave splitting (`docs/gnss_strain.md`) |
+| S26 relocated catalogue | `scripts/26_relocate_catalog.py` | `outputs/catalog/`: the PNSN catalogue relocated with NonLinLoc in the PNSN 1D model and in the rainier3d 3D model, same picks and settings, topography mask; viewer before/after (`quakes_relocated.*`) |
+| S27 Zenodo deposit | `scripts/27_zenodo_deposit.py` | a draft version of the software or data record on Zenodo (`docs/doi.md`) |
 | S28 canopy-storage pipeline | `scripts/28_canopy_pipeline.py` | `data/raw/canopy_storage/`: GEDI L3 canopy height, GEDI L2B footprints and grids, Sentinel-2 LAI, from the vendored code of `third_party/canopy-storage_seismic` (MIT); read by S19 (`docs/canopy_pipeline.md`; `pixi run -e canopy canopy`) |
 
 `docs/eikonal_benchmark.md` compares the eikonal solvers (`scripts/bench_eikonal.py`).
@@ -55,6 +58,9 @@ pixi run viz      # interactive PyVista window
 ```
 
 ## Download and format the products (CLI and Python)
+
+Every derived product, with command-line and Python examples, is described in `docs/products.md`; the DOI
+strategy is in `docs/doi.md`, and the citation in `CITATION.cff`.
 
 The derived products (the fused model, GNSS velocities and strain, the edifice-load stress) are published as
 release assets and listed in `src/rainier3d/products.json` with SHA-256 checksums. Inputs whose licence forbids

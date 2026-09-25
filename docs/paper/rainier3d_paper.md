@@ -629,6 +629,73 @@ parallel to the most compressive horizontal stress.
 
 ![Axes of maximum horizontal shortening at six elevations: GNSS (grey, the same at every depth) and SHmax of the edifice load (coloured by its horizontal shear strain).](figures/fig18_strain_orientation.png){#fig:strainorient width=100%}
 
+### How the strain fields are computed {#sec:strainmethod}
+
+Both fields are first-order estimates. Neither is computed with Green's functions of the heterogeneous model or
+with a rheology other than linear elasticity. This subsection gives the calculation as implemented
+(`rainier3d.geodesy.load`, `rainier3d.geodesy.volume`, script S25) and then lists what it leaves out.
+
+**Tectonic strain rate.** The horizontal strain-rate tensor $\dot\varepsilon_{\alpha\beta}(x, y)$, with
+$\alpha, \beta \in \{x, y\}$, is the velocity-gradient fit of [@sec:strain] at the surface. At depth it is not
+calculated but assigned:
+$$\dot\varepsilon_{\alpha\beta}(x, y, z) = \dot\varepsilon_{\alpha\beta}(x, y, 0), \qquad \dot\varepsilon_{zz} = -\frac{\nu}{1-\nu}\left(\dot\varepsilon_{xx}+\dot\varepsilon_{yy}\right), \qquad \dot\varepsilon_{xz}=\dot\varepsilon_{yz}=0.$$ {#eq:tectdepth}
+The vertical component follows from a vanishing vertical stress rate (plane stress). This is the thin-plate
+view of the upper crust: it holds when the sources of deformation are far or deep compared with the depth of
+interest and the crust is laterally uniform. No source (megathrust locking, fault slip, block rotation) is
+inverted from the GNSS velocities.
+
+The shear on the WRSZ is resolved as
+$$\dot\gamma = -\,\mathbf{s}\cdot\dot{\boldsymbol\varepsilon}\cdot\mathbf{n},$$ {#eq:resolved}
+with $\mathbf{s}$ the horizontal unit vector along the strike and $\mathbf{n}$ the horizontal normal. The sign is
+positive for right-lateral motion. The strike is the long axis of the covariance of the WRSZ epicentres.
+
+**Edifice-load stress.** The load is the rock above the pre-volcanic surface of the geology model. Its columns
+of height $h$ are summed on 500 m cells into vertical point forces $P_k = \rho g h_k A_k$ ($\rho$ = 2500 kg m⁻³).
+The forces act on a flat reference plane at the mean elevation of the edifice base (1789 m). The stress at a
+point is the sum over $k$ of the Boussinesq solution for a point force on the surface of a homogeneous,
+isotropic, linear-elastic half-space [@johnson_1985]. At horizontal distance $r$ and depth $z$ below the plane,
+with $R = \sqrt{r^2+z^2}$ and tension positive:
+$$\sigma_{zz} = -\frac{3Pz^3}{2\pi R^5}, \quad \sigma_{rz} = -\frac{3Prz^2}{2\pi R^5}, \quad
+\sigma_{rr} = \frac{P}{2\pi}\left[\frac{1-2\nu}{r^2}\left(1-\frac{z}{R}\right) - \frac{3r^2z}{R^5}\right], \quad
+\sigma_{\theta\theta} = -\frac{P(1-2\nu)}{2\pi}\left[\frac{1}{r^2}\left(1-\frac{z}{R}\right)-\frac{z}{R^3}\right].$$ {#eq:boussinesq}
+These stresses depend on Poisson's ratio ($\nu = 0.25$) but not on the elastic moduli. Points within 250 m below
+the plane are left out, where the point-force field is singular.
+
+**Edifice-load strain.** The stress is converted to strain with the isotropic compliance of each cell:
+$$\varepsilon_{ij} = \frac{\sigma_{ij}}{2\mu} - \frac{\lambda\,\sigma_{kk}}{2\mu(3\lambda+2\mu)}\,\delta_{ij}, \qquad \mu = \rho V_S^2, \quad \lambda = \rho V_P^2 - 2\mu,$$ {#eq:compliance}
+with $V_P$, $V_S$ and $\rho$ taken from the fused model.
+- **Cone interior.** Above the half-space (higher than 1539 m), the stress is the laterally confined
+  overburden, $\sigma_{zz} = -\rho g d$ and $\sigma_{xx} = \sigma_{yy} = \nu\,\sigma_{zz}/(1-\nu)$, with $d$ the
+  depth below the local ground.
+- **SHmax.** It is the eigenvector of the horizontal stress tensor $(\sigma_{xx}, \sigma_{yy}, \sigma_{xy})$
+  with the most compressive eigenvalue. It is undefined in the cone interior, where the horizontal stress is
+  isotropic.
+
+**What the calculation does not include.**
+- **Green's functions of the 3D model.** The stress is that of a uniform half-space, so the stiffness contrasts
+  of the model neither concentrate nor divert it. Applying the local compliance ([@eq:compliance]) makes soft
+  rock strain more under the same stress. The stress field, however, is not in equilibrium in the
+  heterogeneous medium, and its axes do not rotate around stiff plutons or the soft edifice.
+- **Topography as part of the elastic body.** The load sits on a flat plane. The cone above it is not part of the
+  elastic domain, and its interior is approximated in one dimension.
+- **Rheology beyond linear elasticity.** There is no viscoelastic relaxation of the warm lower crust or of the
+  magma body, no plasticity, no pore-pressure coupling and no thermal stress.
+- **A tectonic source model.** The GNSS rates are not explained by locking, fault slip or block motion, so their
+  variation with depth ([@eq:tectdepth]) is assumed rather than computed.
+- **Absolute stress.** The load gives a static stress and GNSS a strain rate. Without the magnitude of the
+  tectonic background stress the two cannot be summed, so their orientations are reported separately.
+
+**A consistent model** would compute the same quantities in three steps:
+1. a static finite-element solution on the model mesh, with gravity acting on the real topography and
+   heterogeneous $\lambda$ and $\mu$ from the fused velocities;
+2. Green's functions computed in the same 3D elastic model, used to invert the GNSS velocities for their sources
+   before computing strain rates at depth;
+3. a viscoelastic lower crust for time-dependent loading.
+
+The load pattern of [@fig:strainorient], tangential beneath the summit and radial at depth, is the qualitative
+signature of any load on a cone. Heterogeneity would change its magnitudes and rotate its axes near stiffness
+contrasts. The depth extension of the GNSS axes is the least certain part of the product.
+
 # Geohydrology {#sec:hydro}
 
 Water controls much of what rainier3d describes:
@@ -772,6 +839,7 @@ Resampled grids are interpolated linearly within each level. Cells above the gro
 | NonLinLoc 3D grids (P, S), slowness × cell size | UTM 10N km, depth down below sea level, `TRANSFORM NONE` | Grid2Time, NLLoc |
 | EMC netCDF3 | longitude, latitude, depth below sea level (km) | EarthScope Earth Model Collaboration tools |
 | SPECFEM3D `tomography_model.xyz` | UTM 10N m, elevation up, x fastest | SPECFEM3D Cartesian |
+| PyLith spatial database (SimpleGridDB): density, Vs, Vp, with a parameter snippet | UTM 10N m, elevation up | PyLith static and quasi-static elasticity |
 | CSV | x, y, z and variables, one row per node | spreadsheets, GIS |
 | GeoTIFF (surface layers) | UTM 10N, 100 m | GIS |
 
@@ -841,7 +909,9 @@ Below the ground it shows Vs, Vp, Vp/Vs, density, units, alteration and the stra
 - **Regional model below 9.9 km.** The regional model there is CRESCENT Vs with Brocher's Vp; the deep level of the Cascadia model (10.8–59.4 km) is not used.
 - **Resolution.** L1 is 250 m × 50 m, so thin deposits fall below the cell size.
 - **Glaciers.** IceBoost exceeds the 1981 radar thicknesses on Emmons and Winthrop glaciers; its total should be compared with the lidar-based ice volume of @sisson2011.
-- **Geodesy.** The GNSS network does not resolve strain on the edifice. The geodetic strain rate at depth rests on two assumptions (depth-invariant horizontal rate, plane stress). The edifice-load stress is a homogeneous half-space, with a confined-overburden approximation inside the cone.
+- **Geodesy and strain.** The GNSS network does not resolve strain on the edifice. The strain in the volume uses no Green's functions of the heterogeneous model and no rheology beyond linear elasticity ([@sec:strainmethod]):
+    - the geodetic strain rate at depth is assigned (depth-invariant horizontal rate, plane stress), not inverted from sources;
+    - the edifice-load stress is that of a uniform half-space with a flat surface, converted to strain with the local stiffness, with a confined-overburden approximation inside the cone.
 - **Hydrology.** The model has no hydrological state ([@sec:hydro]).
 
 # Conclusions {#sec:conclusions}
@@ -856,7 +926,7 @@ Every input is fetched from its original archive and checksummed. Every paramete
 
 # Code and data availability {.codedataavailability .unnumbered}
 
-The code, configuration, source registry and this paper are at <https://github.com/Denolle-Lab/mt-rainier-digital-model> (BSD-3-Clause). The derived products are release assets of the same repository (CC-BY 4.0), listed with checksums in `src/rainier3d/products.json` and downloaded with `rainier3d fetch`.
+The code, configuration, source registry and this paper are at <https://github.com/Denolle-Lab/mt-rainier-digital-model> (BSD-3-Clause). The derived products are the assets of the release `products-v1.0.0` of the same repository (CC-BY 4.0): the model, the uniform grids, the strain in the volume, the edifice-load stress, the alteration field, the mass-movement catalogue and a GNSS snapshot. They are listed with SHA-256 checksums in `SHA256SUMS` and `src/rainier3d/products.json`, downloaded with `rainier3d fetch`, and described product by product, with command-line and Python examples, in `docs/products.md`. The software and the derived products are deposited on Zenodo as two versioned records (`docs/doi.md`).
 
 Appendix A lists the input data sets with their DOIs or service addresses. `docs/data_policy.md` gives the licence tier of each. `docs/data_manifest.csv` gives the checksum of each cached input.
 
@@ -899,9 +969,7 @@ The code and this paper were written with an AI coding assistant (Claude, Anthro
 
 # Author contributions {.authorcontribution .unnumbered}
 
-MD designed the model, the calibration and the validation and directed the work. DY designed and built the three-dimensional viewer. MKö produced the vegetation products of the canopy-storage project (lidar canopy height and cover, Sentinel-2 leaf area index and the gridded GEDI products).
-
-<!-- TODO(#13): contributions of MH, SH and MKi, to be supplied by the authors. -->
+MD designed the model, the calibration and the validation and directed the work. DY designed and built the three-dimensional viewer. MKö produced the vegetation products of the canopy-storage project (lidar canopy height and cover, Sentinel-2 leaf area index and the gridded GEDI products). MH, SH and MKi contributed to the project.
 
 # Competing interests {.competinginterests .unnumbered}
 

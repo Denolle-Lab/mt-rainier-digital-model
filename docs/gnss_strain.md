@@ -157,6 +157,19 @@ SHmax of the load is tangential (circumferential) around the summit at and above
 Each row gives the magnitude with the azimuth (degrees east of north). Fast directions of splitting from
 aligned cracks are expected parallel to the most compressive horizontal stress.
 
+**How it is computed, and what it leaves out.** Section 6.5 of the paper ("How the strain fields are
+computed") gives the equations.
+- **Tectonic rate:** the GNSS strain-rate tensor is assigned at depth (depth-invariant horizontal rate, plane
+  stress). No source is inverted.
+- **Load stress:** the Boussinesq solution of a uniform elastic half-space with a flat surface, converted to
+  strain with the local stiffness.
+
+Neither uses Green's functions of the heterogeneous model or a rheology beyond linear elasticity. A consistent
+model would add three things:
+- a finite-element solution with gravity on the real topography and heterogeneous moduli;
+- Green's functions in the 3D model, to invert the GNSS velocities for their sources;
+- a viscoelastic lower crust.
+
 **In the 3D viewer.** The five strain fields are properties of "Below ground". With the depth slice on, the
 bars of the selected field are drawn at the nearest 1 km level: GNSS shortening axes for the tectonic fields,
 SHmax for the load fields.
