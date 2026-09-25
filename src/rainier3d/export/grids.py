@@ -214,7 +214,7 @@ def write_specfem_xyz(ds: xr.Dataset, path: Path) -> Path:
     x, y = ds.x.values, ds.y.values
     vp, vs, rho = (ds[v].transpose("z", "y", "x").values[::-1] for v in ("vp", "vs", "rho"))
     dx, dy, dz = float(x[1] - x[0]), float(y[1] - y[0]), float(z[1] - z[0])
-    Z, Y, X = np.meshgrid(z, y, x, indexing="ij")
+    Y, X = (a.ravel() for a in np.meshgrid(y, x, indexing="ij"))  # one z-slice of node coordinates
     path.parent.mkdir(parents=True, exist_ok=True)
     with open(path, "w") as f:
         f.write(f"{x[0]:.1f} {y[0]:.1f} {z[0]:.1f} {x[-1]:.1f} {y[-1]:.1f} {z[-1]:.1f}\n")
@@ -223,11 +223,13 @@ def write_specfem_xyz(ds: xr.Dataset, path: Path) -> Path:
             f"{np.nanmin(vp):.1f} {np.nanmax(vp):.1f} {np.nanmin(vs):.1f} {np.nanmax(vs):.1f} "
             f"{np.nanmin(rho):.1f} {np.nanmax(rho):.1f}\n"
         )
-        np.savetxt(
-            f,
-            np.c_[X.ravel(), Y.ravel(), Z.ravel(), vp.ravel(), vs.ravel(), rho.ravel()],
-            fmt="%.1f %.1f %.1f %.1f %.1f %.1f",
-        )
+        for k in range(z.size):  # one slice at a time: peak memory is one (ny * nx, 6) block
+            Z = np.full(X.size, z[k])
+            np.savetxt(
+                f,
+                np.c_[X, Y, Z, vp[k].ravel(), vs[k].ravel(), rho[k].ravel()],
+                fmt="%.1f %.1f %.1f %.1f %.1f %.1f",
+            )
     return path
 
 
