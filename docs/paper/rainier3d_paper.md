@@ -823,7 +823,7 @@ Every input is fetched from its original archive and checksummed. Every paramete
 
 # Code and data availability {.codedataavailability .unnumbered}
 
-The code, configuration, source registry and this paper are at <https://github.com/Denolle-Lab/mt-rainier-digital-model> (BSD-3-Clause). The derived products are release assets of the same repository (CC-BY 4.0), listed with checksums in `src/rainier3d/products.json` and downloaded with `rainier3d fetch`.
+The code, configuration, source registry and this paper are at <https://github.com/Denolle-Lab/mt-rainier-digital-model> (BSD-3-Clause). The derived products are the assets of the release `products-v1.0.0` of the same repository (CC-BY 4.0): the model, the uniform grids, the strain in the volume, the edifice-load stress, the alteration field, the mass-movement catalogue and a GNSS snapshot. They are listed with SHA-256 checksums in `SHA256SUMS` and `src/rainier3d/products.json`, downloaded with `rainier3d fetch`, and described product by product, with command-line and Python examples, in `docs/products.md`. The software and the derived products are deposited on Zenodo as two versioned records (`docs/doi.md`).
 
 Appendix A lists the input data sets with their DOIs or service addresses. `docs/data_policy.md` gives the licence tier of each. `docs/data_manifest.csv` gives the checksum of each cached input.
 
@@ -866,9 +866,7 @@ The code and this paper were written with an AI coding assistant (Claude, Anthro
 
 # Author contributions {.authorcontribution .unnumbered}
 
-MD designed the model, the calibration and the validation and directed the work. DY designed and built the three-dimensional viewer. MKö produced the vegetation products of the canopy-storage project (lidar canopy height and cover, Sentinel-2 leaf area index and the gridded GEDI products).
-
-<!-- TODO(#13): contributions of MH, SH and MKi, to be supplied by the authors. -->
+MD designed the model, the calibration and the validation and directed the work. DY designed and built the three-dimensional viewer. MKö produced the vegetation products of the canopy-storage project (lidar canopy height and cover, Sentinel-2 leaf area index and the gridded GEDI products). MH, SH and MKi contributed to the project.
 
 # Competing interests {.competinginterests .unnumbered}
 

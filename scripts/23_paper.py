@@ -147,13 +147,17 @@ def _braced(text: str, i: int) -> int:
 
 def longtables_to_floats(tex: str) -> str:
     """pandoc writes every table as a page-breaking longtable, which ignores floats already placed on its page
-    and overruns it. Every table here fits on a page, so each becomes a table float with a tabular."""
+    and overruns it. Tables that fit on a page become table floats; long ones (appendix) stay longtables."""
     out, pos, begin = [], 0, "\\begin{longtable}[]"
     while (i := tex.find(begin, pos)) >= 0:
         j = _braced(tex, i + len(begin))
         spec = tex[i + len(begin) + 1 : j - 1]
         end = tex.index("\\end{longtable}", j)
         body = tex[j:end]
+        if body.count("\\\\") > 18:  # a long table (appendix) keeps breaking across pages
+            out.append(tex[pos : end + len("\\end{longtable}")])
+            pos = end + len("\\end{longtable}")
+            continue
         cap = ""
         if body.lstrip().startswith("\\caption"):
             c0 = body.index("\\caption")
