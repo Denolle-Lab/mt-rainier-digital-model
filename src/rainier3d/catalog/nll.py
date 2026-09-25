@@ -11,6 +11,7 @@ Topography: LOCTOPO_SURFACE with an ASCII GMT grid of the ground elevation in km
 from __future__ import annotations
 
 import os
+import re
 import subprocess
 from pathlib import Path
 
@@ -136,7 +137,8 @@ def read_hyp(path: Path) -> pd.DataFrame:
         if not t:
             continue
         if t[0] == "NLLOC":
-            cur = {"event": None, "status": " ".join(t[2:])}
+            q = re.findall(r'"([^"]*)"', line)  # NLLOC "<file root>" "<status>" "<message>"
+            cur = {"event": None, "status": q[1] if len(q) > 1 else "", "message": q[2] if len(q) > 2 else ""}
         elif cur is None:
             continue
         elif t[0] == "SIGNATURE" or t[0] == "COMMENT":

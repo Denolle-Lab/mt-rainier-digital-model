@@ -45,6 +45,6 @@ END_NLLOC
 """
     (tmp_path / "s.hyp").write_text(hyp)
     r = N.read_hyp(tmp_path / "s.hyp").iloc[0]
-    assert r.event == "uw123" and r.status.startswith('"LOCATED"')
+    assert r.event == "uw123" and r.status == "LOCATED" and r.message == "Location completed."
     assert (r.x_km, r.y_km, r.z_km, r.nphs, r.gap) == (594.5, 5189.4, 3.25, 14, 95.0)
     assert np.isclose(r.z_sd_km, 0.5) and r.h_unc_max_km == 0.26

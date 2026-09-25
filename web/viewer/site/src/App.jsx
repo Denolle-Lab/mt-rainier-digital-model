@@ -129,7 +129,6 @@ function Atlas({ bundle, onError }) {
           <Header bundle={bundle} detail={detail} onPick={s => openSite(s, scene)} />
           <Controls scene={scene}>
             {scene.layers && <LayerPanel layers={scene.layers} scene={scene} onStations={on => layerRef.current?.setVisible(on)} />}
-            {reloc && <RelocatedPanel points={reloc} />}
           </Controls>
           <GoTo majors={bundle.majors} active={active} onPlace={k => { setActive(k); scene.flyTo(k); }} onSite={s => openSite(s, scene)} />
           <Legend bundle={bundle} sensors={sensorLegend} mass={!!mass}>
@@ -141,6 +140,7 @@ function Atlas({ bundle, onError }) {
               <ModelLayers model={bundle.model} scene={scene} active={modelKey} onActive={setModelKey} />
               <ModelLegend layer={modelLayer} />
               {volume && <SubsurfacePanel volume={volume} scene={scene} />}
+              {reloc && <RelocatedPanel points={reloc} />}
             </div>
           )}
           {modelLayer?.values && <ModelReadout scene={scene} model={bundle.model} layer={modelLayer} box={bundle.overviewBox} />}

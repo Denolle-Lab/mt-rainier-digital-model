@@ -2,6 +2,8 @@ import { useState } from "react";
 import { DEFAULT_RELOCATED } from "../data/relocated.js";
 import "./ui.css";
 
+const SHORT = { cc: "ComCat", "1d": "PNSN 1D", "3d": "rainier3d 3D" };
+
 // Before / after: the same earthquakes as located by ComCat, by NonLinLoc in the PNSN 1D model, and by NonLinLoc in
 // the rainier3d 3D model (same picks and settings, hypocentres kept below the ground).
 export default function RelocatedPanel({ points }) {
@@ -16,10 +18,11 @@ export default function RelocatedPanel({ points }) {
       </button>
       {st.on && (
         <div className="sub">
-          <div className="seg" role="radiogroup" aria-label="Catalogue">
+          <div className="seg" role="group" aria-label="Catalogue">
             {Object.entries(meta.catalogs).map(([k, c]) => (
-              <button key={k} role="radio" aria-checked={st.catalog === k} className={st.catalog === k ? "on" : ""}
-                style={{ borderColor: c.color }} onClick={() => apply({ ...st, catalog: k })}>{c.label}</button>
+              <button key={k} aria-pressed={st.catalog === k} title={c.label} onClick={() => apply({ ...st, catalog: k })}>
+                <span style={{ color: c.color }}>●</span> {SHORT[k] ?? k}
+              </button>
             ))}
           </div>
           <button className="tog" role="switch" aria-checked={st.lines} aria-label="Shift lines" onClick={() => apply({ ...st, lines: !st.lines })}>

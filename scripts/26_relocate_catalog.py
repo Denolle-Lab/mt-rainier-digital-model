@@ -25,12 +25,13 @@ import xarray as xr
 
 from rainier3d.catalog import fetch
 from rainier3d.catalog import nll as N
-from rainier3d.config.domain import load_domain
+from rainier3d.config.domain import REPO, load_domain
 from rainier3d.export import grids
 from rainier3d.io.store import read_tree
 from rainier3d.validate import pnsn
 
 MODELS = ("pnsn1d", "rainier3d")
+PAPER_FIG = REPO / "docs" / "paper" / "figures"  # copies under the paper's figure numbers
 
 
 def main():
@@ -110,7 +111,7 @@ def main():
     res = {}
     for m in MODELS:
         r = N.read_hyp(nd / "loc" / f"{m}.sum.grid0.loc.hyp")
-        logging.info("%s: %d locations (%s)", m, len(r), r.status.str.split().str[0].value_counts().to_dict())
+        logging.info("%s: %d locations (%s)", m, len(r), r.status.value_counts().to_dict())
         res[m] = r.set_index("event")
 
     # ---- compare
@@ -228,6 +229,7 @@ def figures(dom, out):
     ax[0, 0].set_ylabel("northing (km)")
     ax[1, 0].set_ylabel("elevation (km)")
     fig.savefig(out / "fig_catalogs.png", dpi=130)
+    fig.savefig(PAPER_FIG / "fig19_relocated_catalogs.png", dpi=130)
 
     fig, ax = plt.subplots(1, 2, figsize=(13, 5), constrained_layout=True)
     dz = -(q.z_rainier3d - q.z_pnsn1d) / 1e3
@@ -251,6 +253,7 @@ def figures(dom, out):
           xlabel="easting (km)",
           ylabel="northing (km)")  # fmt: skip
     fig.savefig(out / "fig_shifts.png", dpi=130)
+    fig.savefig(PAPER_FIG / "fig20_relocated_shifts.png", dpi=130)
 
 
 if __name__ == "__main__":
