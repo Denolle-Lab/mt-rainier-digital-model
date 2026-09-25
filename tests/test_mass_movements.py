@@ -111,3 +111,35 @@ def test_append_mass_movements_writes_layer_and_points(tmp_path):
     assert abs(e["x"]) < 1e-3 and abs(e["z"]) < 1e-3  # the summit is the scene origin
     assert e["volume_m3"] is None  # NaN becomes null in JSON
     assert doc["sources"]["allstadt_2017_esec"]["link"].startswith("https://doi.org/")
+
+
+def test_failed_window_falls_back_to_30m_and_is_flagged(tmp_path, monkeypatch):
+    import rainier3d.surface.mass_movements as M
+    from rainier3d.config.domain import load_domain
+
+    n = 100
+    z = np.repeat(np.arange(n, 0, -1, dtype="float32")[:, None], n, axis=1) * 10.0
+    dem = tmp_path / "dem30.tif"
+    with rasterio.open(
+        dem,
+        "w",
+        driver="GTiff",
+        width=n,
+        height=n,
+        count=1,
+        dtype="float32",
+        crs="EPSG:32610",
+        transform=from_origin(590000, 5190000, 10, 10),
+    ) as r:
+        r.write(z, 1)
+    polys = gpd.GeoSeries([box(590200, 5189200, 590400, 5189600)], crs="EPSG:32610")
+    src = gpd.GeoDataFrame(
+        {"dem_res": ["1m"]}, geometry=[box(589000, 5188000, 592000, 5191000)], crs="EPSG:32610"
+    )
+    monkeypatch.setattr(M, "fetch_crown_dems", lambda dom, p, keys: [None])
+    pts, res = M._crowns(load_domain(), polys, ["deposit_1"], dem, src)
+    assert np.isclose(pts.iloc[0].y, 5189600)
+    assert res == ["3DEP 30 m (window failed)"]
+    monkeypatch.setattr(M, "fetch_crown_dems", lambda dom, p, keys: [dem])  # a window that worked
+    pts, res = M._crowns(load_domain(), polys, ["deposit_1"], dem, src)
+    assert res == ["3DEP 1m"]

@@ -3,9 +3,9 @@ import { DEFAULT_MASS_FILTER, massCounts, passesMass } from "./massEvents.js";
 
 const ev = [
   { cls: "rock_avalanche", date: "2011-06-24 16:40:54", located: "seismic" },
-  { cls: "rock_avalanche", date: "", located: "crown (DEM)" },
-  { cls: "slide", date: "2009-01-08", located: "crown (DEM)" },
-  { cls: "complex", date: "", located: "crown (DEM)" },
+  { cls: "rock_avalanche", date: "", located: "crown" },
+  { cls: "slide", date: "2009-01-08", located: "crown" },
+  { cls: "complex", date: "", located: "crown" },
 ];
 
 describe("mass-movement filter", () => {

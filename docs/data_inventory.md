@@ -125,7 +125,7 @@ Verified and fetched by S24 on 2026-09-25 (`pixi run s24`); counts are for the m
 
 | Item | Ref / access | Status | Use |
 |---|---|---|---|
-| WA landslide inventory: lidar-protocol deposits, recent landslides, compilation | gis.dnr.wa.gov/site3 … Geology/Landslide_Inventory_Database/MapServer, layers 21, 1, 131 | V | S24 debris-flow polygons (463), landslide points (1,630) |
+| WA landslide inventory: lidar-protocol deposits, recent landslides, compilation | gis.dnr.wa.gov/site3 … Geology/Landslide_Inventory_Database/MapServer, layers 21, 1, 131 | V | S24 debris-flow polygons (463), landslide points (1,631) |
 | Seismogenic mass movements, western US 1977–2017 | Allstadt, McVey & Malone 2017, 10.5066/F7251H3W (Events.csv) | V | S24 dated events (19) |
 | Exotic Seismic Events Catalog v3 | Collins et al. 2025, 10.5066/P90VGCSK | V (record under revision) | not scripted: no file download |
 | Lahar hazard zones of 1998 | Schilling et al. 2008, OFR 2007-1220, 10.3133/ofr20071220 | V | S24 hazard layer, figure |

@@ -17,7 +17,7 @@ export default function MassTip({ scene, points, doc }) {
       <div className="t-name">{e.name || cls?.label}</div>
       <div className="t-sub">{e.type} · {when}</div>
       <div className="t-more">
-        {isSeismic(e) ? `Seismically located, ${e.confidence}` : `Located at the ${e.located}`}
+        {isSeismic(e) ? `Seismically located, ${e.confidence}` : `Located at the ${e.located}${e.crown_dem ? `, on ${e.crown_dem.replace(/(\d)m$/, "$1 m")} elevation` : ""}`}
         {e.volume_m3 ? ` · volume ${fmtVol(e.volume_m3)}` : ""}{e.depth_m ? ` · failure depth ${e.depth_m} m` : ""}
         {!isSeismic(e) && e.confidence ? ` · confidence ${e.confidence.toLowerCase()}` : ""}
       </div>

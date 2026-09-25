@@ -10,7 +10,8 @@ Sources (configs/sources.yaml keys), each cached under data/raw/<source>/:
 
 The catalogue has two parts. Flows (lahar deposits and debris flows) keep their polygons. Every other event
 is a point: the seismic location for the seismic catalogue, the mapped point for recent landslides, and the
-crown (highest boundary point on the 3DEP DEM) for landslide polygons, which is where the failure started.
+crown (highest boundary point on a 1 m 3DEP window) for landslide polygons, where the failure started.
+Every service call is listed in docs/mass_movements.md.
 """
 
 from __future__ import annotations
@@ -21,7 +22,7 @@ import geopandas as gpd
 import numpy as np
 import pandas as pd
 import requests
-from shapely.geometry import Point
+from shapely.geometry import Point, box
 from shapely.ops import polygonize, unary_union
 
 from rainier3d.config.domain import Domain
@@ -182,26 +183,96 @@ def _event_class(text) -> str:
     return "complex"
 
 
-def crown_points(polys: gpd.GeoSeries, dem_path) -> gpd.GeoSeries:
-    """The highest point of each polygon's boundary on the DEM: the head of the landslide."""
+def fetch_crown_dems(dom: Domain, polys: gpd.GeoSeries, keys: list[str], workers: int = 4) -> list:
+    """A 1 m elevation window around each landslide polygon (20 m margin), cached as one GeoTIFF per polygon.
+
+    Service: USGS 3DEP dynamic elevation through py3dep.get_dem(bbox, resolution=1, crs=4326), which resamples
+    the best 3DEP source at each point (1 m lidar where it exists, else 3 m or 10 m) and returns EPSG:5070.
+    Cache: data/raw/dem_3dep_1m/landslides/<key>.tif. A window that fails is logged and left out (None).
+    """
+    from concurrent.futures import ThreadPoolExecutor
+
+    import py3dep
+
+    root = dom.path("raw") / "dem_3dep_1m" / "landslides"
+    root.mkdir(parents=True, exist_ok=True)
+    boxes = polys.buffer(20).to_crs(4326).bounds.to_numpy()
+
+    def one(i):
+        path = root / f"{keys[i]}.tif"
+        if not path.exists():
+            try:
+                dem = py3dep.get_dem(tuple(boxes[i]), resolution=1, crs=4326)
+                dem.rio.to_raster(path, compress="deflate", predictor=3)
+            except Exception as e:  # noqa: BLE001 - one failed window must not stop the catalogue
+                log.warning("3DEP 1 m window %s failed: %s", keys[i], e)
+                return None
+        return path
+
+    with ThreadPoolExecutor(workers) as ex:
+        out = list(ex.map(one, range(len(polys))))
+    log.info(
+        "3DEP 1 m windows: %d of %d polygons (cache %s)", sum(p is not None for p in out), len(out), root
+    )
+    return out
+
+
+def fetch_3dep_sources(dom: Domain) -> gpd.GeoDataFrame:
+    """Footprints of the 3DEP source DEMs (dem_res 1m, 3m, 10m, ...) over the box: py3dep.query_3dep_sources.
+    Used only to record which resolution lies under each crown."""
+    path = dom.path("raw") / "dem_3dep_1m" / "3dep_sources.gpkg"
+    if not path.exists():
+        path.parent.mkdir(parents=True, exist_ok=True)
+        import py3dep
+
+        src = py3dep.query_3dep_sources(dom.bbox_4326)[["dem_res", "geometry"]]
+        src.to_file(path)
+    return gpd.read_file(path).to_crs(dom.crs)
+
+
+def crown_points(polys: gpd.GeoSeries, dems: list, step: float = 2.0) -> gpd.GeoSeries:
+    """The highest point of each polygon's boundary, sampled every ``step`` m on that polygon's DEM window
+    (or on one DEM for all, if ``dems`` is a single path): the head of the landslide."""
     import rasterio
 
-    with rasterio.open(dem_path) as r:
-        out = []
-        for geom in polys:
-            ring = geom.simplify(10).boundary
-            pts = [p for line in getattr(ring, "geoms", [ring]) for p in line.coords]
-            g = gpd.GeoSeries([Point(p) for p in pts], crs=polys.crs).to_crs(r.crs)
-            z = np.array([v[0] for v in r.sample([(p.x, p.y) for p in g])], dtype=float)
-            z[~np.isfinite(z)] = -np.inf
-            out.append(Point(pts[int(np.argmax(z))]))
+    if not isinstance(dems, list):
+        dems = [dems] * len(polys)
+    out = []
+    for geom, dem in zip(polys, dems, strict=True):
+        ring = geom.boundary.segmentize(step)
+        pts = np.array([p for line in getattr(ring, "geoms", [ring]) for p in line.coords])[:, :2]
+        if dem is None:
+            out.append(None)
+            continue
+        with rasterio.open(dem) as r:
+            xy = gpd.GeoSeries(gpd.points_from_xy(pts[:, 0], pts[:, 1]), crs=polys.crs).to_crs(r.crs)
+            z = np.array([v[0] for v in r.sample(zip(xy.x, xy.y, strict=True))], dtype=float)
+            if r.nodata is not None:
+                z[z == r.nodata] = np.nan
+        z[~np.isfinite(z)] = -np.inf
+        out.append(Point(pts[int(np.argmax(z))]) if np.isfinite(z).any() and z.max() > -np.inf else None)
     return gpd.GeoSeries(out, crs=polys.crs)
+
+
+def _crowns(dom: Domain, polys: gpd.GeoSeries, keys: list[str], dem30, src: gpd.GeoDataFrame):
+    """Crown points on the 1 m windows, falling back to the 30 m DEM; and the 3DEP resolution under each."""
+    fine = crown_points(polys, fetch_crown_dems(dom, polys, keys))
+    coarse = polys[fine.isna().to_numpy()]
+    if len(coarse):
+        fine[fine.isna()] = crown_points(coarse, dem30).to_numpy()
+    res = []
+    for p, used_1m in zip(fine, ~polys.index.isin(coarse.index), strict=True):
+        hit = src[src.contains(p)].dem_res
+        best = min(hit, key=lambda r: float(r.rstrip("m"))) if len(hit) else "unknown"
+        res.append(f"3DEP {best}" if used_1m else "3DEP 30 m (window failed)")
+    return fine, res
 
 
 def build_catalogue(
     dom: Domain, map_units: gpd.GeoDataFrame, dem_path
 ) -> tuple[gpd.GeoDataFrame, gpd.GeoDataFrame]:
-    """(flows, events), both in the domain CRS and clipped to the domain box."""
+    """(flows, events), both in the domain CRS and clipped to the domain box. ``dem_path`` is the 30 m DEM,
+    the fallback for crowns whose 1 m window could not be fetched."""
     ls = fetch_landslides(dom)
     dep, comp = ls["deposits"], ls["compilation"]
     # the compilation repeats older mapping of some protocol deposits: keep a compilation polygon only if its
@@ -228,8 +299,17 @@ def build_catalogue(
     flows = gpd.GeoDataFrame(flows, crs=dom.crs)
 
     rows = []
-    pd_dep, pd_comp = dep[~dep_flow], comp[~comp_flow]
-    for geom, r in zip(crown_points(pd_dep.geometry, dem_path), pd_dep.itertuples(), strict=True):
+    inside = box(*dom.bounds)
+    pd_dep = dep[~dep_flow & dep.intersects(inside)]
+    pd_comp = comp[~comp_flow & comp.intersects(inside)]
+    src = fetch_3dep_sources(dom)
+    crown_dep, res_dep = _crowns(
+        dom, pd_dep.geometry, [f"deposit_{k}" for k in pd_dep.LANDSLIDE_ID], dem_path, src
+    )
+    crown_comp, res_comp = _crowns(
+        dom, pd_comp.geometry, [f"compilation_{k}" for k in pd_comp.LANDSLIDE_ID], dem_path, src
+    )
+    for geom, dres, r in zip(crown_dep, res_dep, pd_dep.itertuples(), strict=True):
         cls = "complex" if r.MOVEMENT == "Complex" else _event_class(r.MOVEMENT)
         rows.append(
             {
@@ -242,11 +322,12 @@ def build_catalogue(
                 "depth_m": _ft(r.FAIL_DEPTH_FT),
                 "volume_m3": _ft3(r.VOLUME_FT3),
                 "confidence": _s(r.CONFIDENCE),
-                "located": "crown (DEM)",
+                "located": "crown",
+                "crown_dem": dres,
                 "source": "wgs_landslide_inventory",
             }
         )
-    for geom, r in zip(crown_points(pd_comp.geometry, dem_path), pd_comp.itertuples(), strict=True):
+    for geom, dres, r in zip(crown_comp, res_comp, pd_comp.itertuples(), strict=True):
         date = _date(r.LANDSLIDE_DATE)
         rows.append(
             {
@@ -259,7 +340,8 @@ def build_catalogue(
                 "depth_m": None,
                 "volume_m3": None,
                 "confidence": _s(r.DATA_CONFIDENCE),
-                "located": "crown (DEM)",
+                "located": "crown",
+                "crown_dem": dres,
                 "source": "wgs_landslide_inventory",
             }
         )
@@ -276,6 +358,7 @@ def build_catalogue(
                 "volume_m3": None,
                 "confidence": _s(r.CONFIDENCE),
                 "located": "mapped point",
+                "crown_dem": "",
                 "source": "wgs_landslide_inventory",
             }
         )
@@ -294,6 +377,7 @@ def build_catalogue(
                 "volume_m3": None if pd.isna(r.Volume) else float(r.Volume),
                 "confidence": f"location ±{r.LocUncert_km:g} km",
                 "located": "seismic",
+                "crown_dem": "",
                 "source": "allstadt_2017_esec",
             }
         )

@@ -99,7 +99,7 @@ The database is compiled by code, not by hand, following five rules.
 
 1. **One registry.** `configs/sources.yaml` lists every data set and publication the model uses (78 entries). Each entry gives its DOI or service address, licence, the date and method of verification, and its role in the model. Every number in the configuration files names a registry key. A value chosen by the authors carries the key `m1_placeholder`, so the unsourced values can be listed and replaced. The bibliography of this paper is generated from the same registry (`pixi run bib`), with BibTeX keys equal to the registry keys.
 2. **Original archives, cached.** Each stage downloads what it needs from the original archive, clipped to the model box where the service allows it. Examples are a window of a cloud-optimised GeoTIFF, an OPeNDAP subset, a feature-service query or a staged file. Each download is cached under `data/raw/<source>/`, and reruns read the cache. The GNSS stage also writes a manifest with the URL, retrieval time, size and SHA-256 of each file.
-3. **A checksum for every cached file.** `scripts/00_data_manifest.py` records the size and SHA-256 of all cached files in the committed table `docs/data_manifest.csv` (426 files, 1.48 GB; [@tbl:raw]). `pixi run manifest -- --check` compares a rebuilt cache with it. Some services can return different bytes on a later request: ComCat can revise picks, and the USGS can re-stage NHDPlus. The check lists those files, so any difference between a rebuilt model and the published one can be traced to its input.
+3. **A checksum for every cached file.** `scripts/00_data_manifest.py` records the size and SHA-256 of all cached files in the committed table `docs/data_manifest.csv` (2,065 files, 3.30 GB; [@tbl:raw]). `pixi run manifest -- --check` compares a rebuilt cache with it. Some services can return different bytes on a later request: ComCat can revise picks, and the USGS can re-stage NHDPlus. The check lists those files, so any difference between a rebuilt model and the published one can be traced to its input.
 4. **One environment.** The software is pinned in `pixi.lock` for Linux and macOS (arm64). Two slim environments serve automation: `gnss` for the weekly strain refresh and `paper` for this report.
 5. **Invariants.** The test suite checks the built model against rules that must hold whatever the data:
     - no properties above the ground;
@@ -126,6 +126,7 @@ The database is compiled by code, not by hand, following five rules.
 | `wgs_landslides` | S24 | Washington landslide inventory: lidar-protocol deposits, recent landslides, compilation | 3 | 3 |
 | `allstadt2017` | S24 | Seismically recorded mass movements, western United States (`Events.csv`) | 1 | 0.03 |
 | `usgs_rainier_hazards` | S24 | Lahar hazard zones of 1998 (shapefiles) | 1 | 0.2 |
+| `dem_3dep_1m` | S24 | 3DEP 1 m windows around landslide polygons; 3DEP source footprints | 1,639 | 1,818 |
 
 : The raw input cache, from `docs/data_manifest.csv`. SOLUS100 soil thickness is read directly from its cloud-optimised GeoTIFFs and is not cached. {#tbl:raw}
 
@@ -148,7 +149,7 @@ pixi run all                       # S1-S8: surface, layers, geology, rock physi
 pixi run s2 -- --ma                # optional: the Ma et al. (2026) water table (~1 GB download)
 pixi run s22 && pixi run s3 && pixi run s4 && pixi run s5   # alteration from the EM survey, then rebuild
 pixi run s17 && pixi run s18       # GNSS positions, velocities, strain, edifice load
-pixi run s24                       # mass movements and faults: catalogue, figure, viewer layers
+pixi run s24                       # mass movements and faults: catalogue, figure, viewer layers (~1.8 GB of 1 m windows)
 pixi run s9                        # uniform grids for ray tracing and location
 pixi run manifest -- --check       # compare the rebuilt cache with docs/data_manifest.csv
 pixi run test                      # unit tests and the invariants of the built model
@@ -592,9 +593,9 @@ For each event, the catalogue records the following:
 - the triggering conditions where known;
 - the source and its licence.
 
-**The catalogue.** Script S24 fetches four machine-readable sources, clips them to the box and writes the catalogue to `outputs/mass_movements/` ([@tbl:mass-counts], [@fig:mass]). It has two parts.
+**The catalogue.** Script S24 fetches four machine-readable sources, clips them to the box and writes the catalogue to `outputs/mass_movements/` ([@tbl:mass-counts], [@fig:mass]). `docs/mass_movements.md` lists each service call with its endpoint, parameters, paging and cache path. The catalogue has two parts.
 - **Flows.** Lahar deposits and debris flows keep their mapped outlines, because their runout is the information. The lahar deposits are the Qvl units of the 1:100,000 map [@dnr_gems_100k]: the Osceola Mudflow [@vallance_scott_1997] covers 79.7 km² of the box, the Electron Mudflow 18.8 km² and other lahar deposits 16.0 km². The debris flows are the flow-type polygons of the Washington State Landslide Inventory Database [@wgs_landslide_inventory]: 198 from its lidar-protocol mapping and 265 from its compilation of older mapping.
-- **Events.** Every other mass movement is a point. The Allstadt et al. compilation of seismogenic mass movements [@allstadt_2017_esec] gives 19 events in the box with a time and a seismic location: the ten 2011 rock and ice avalanches of the Nisqually headwall, five rock falls from Russell Cliff in 1989 and 1992, a 2010 snow avalanche, a 2014 ice avalanche, and the August 2015 rock fall and debris flow. The inventory gives 1,623 landslide polygons of other types and seven recent-landslide points. A polygon becomes a point at its crown, the highest point of its outline on the 3DEP DEM, which is where failure began. The compilation repeats three protocol deposits; those copies are dropped.
+- **Events.** Every other mass movement is a point. The Allstadt et al. compilation of seismogenic mass movements [@allstadt_2017_esec] gives 19 events in the box with a time and a seismic location: the ten 2011 rock and ice avalanches of the Nisqually headwall, five rock falls from Russell Cliff in 1989 and 1992, a 2010 snow avalanche, a 2014 ice avalanche, and the August 2015 rock fall and debris flow. The inventory gives 1,624 landslide polygons of other types and seven recent-landslide points. A polygon becomes a point at its crown, the highest point of its outline, where failure began. The crown is sampled every 2 m on a 1 m window of the USGS 3DEP elevation service around each polygon [@usgs_3dep], which returns the best 3DEP source at each point: 994 crowns lie on 1 m lidar, 441 on 3 m and 186 on 10 m data. Three windows were refused by the service on every attempt; those crowns are placed on the 30 m DEM and flagged. The compilation repeats three protocol deposits; those copies are dropped.
 
 The inventory records a failure depth for every lidar-protocol deposit (453 deposits in the box, median 14.6 m), so these deposits could later be given a volume in the model. The 1998 lahar inundation zones [@hoblitt_1998; @schilling_2008] are kept as a separate hazard layer, not as events: the case 1 zone covers 964 km² of the box. The Exotic Seismic Events Catalog version 3 [@esec_v3] extends the seismic compilation to 2025 but has no scripted download yet.
 
@@ -608,9 +609,9 @@ The inventory records a failure depth for every lidar-protocol deposit (453 depo
 | | Snow or ice avalanche | seismic | 2 | |
 | | Debris flow, outburst flood | seismic | 1 | |
 | | Slide, debris slide | mapped 317; recent 7 | 324 | |
-| | Complex or unknown type | mapped | 1,266 | |
+| | Complex or unknown type | mapped | 1,267 | |
 
-: The mass-movement catalogue in the model box (S24, `outputs/mass_movements/summary.csv`, run of 2026-09-25). Seismic events are from @allstadt_2017_esec; mapped and recent events from @wgs_landslide_inventory. Of the 1,649 events, 377 are dated; 351 of these are landslides of the January 2009 storm in the compilation. {#tbl:mass-counts}
+: The mass-movement catalogue in the model box (S24, `outputs/mass_movements/summary.csv`, run of 2026-09-25). Seismic events are from @allstadt_2017_esec; mapped and recent events from @wgs_landslide_inventory. Of the 1,650 events, 377 are dated; 351 of these are landslides of the January 2009 storm in the compilation. {#tbl:mass-counts}
 
 ![Mass movements and faults. (a) Lahar deposits and mapped debris flows, the case 1 lahar inundation zone of 1998 (dashed), and faults of the 1:100,000 map (thin) and of the Quaternary fault layer (thick). (b) Event points by class: landslides at their crown (dots) and seismically recorded events (stars).](figures/fig16_mass_movements.png){#fig:mass width=100%}
 

@@ -42,6 +42,7 @@ geometry numbers are placeholders, marked `m1_placeholder` in `configs/`.
 | S21 iMUSH check | `scripts/21_compare_imush.py` | `outputs/model_comparison/`: comparison with Ulberg et al. (2020) |
 | S22 alteration | `scripts/22_alteration_finn2001.py` | `alteration_finn2001.zarr`: alteration from the 1996 helicopter EM survey (`docs/alteration.md`) |
 | S23 paper | `scripts/23_paper.py` | `docs/paper/rainier3d_paper.html` and `.pdf` (ESSD class) from `docs/paper/rainier3d_paper.md` (`pixi run -e paper paper`; `.github/workflows/paper.yml`) |
+| S24 mass movements | `scripts/24_mass_movements.py` | `outputs/mass_movements/`: lahar and debris-flow outlines, landslide and seismic event points, faults, 1998 lahar zones; paper figure; viewer layers (`docs/mass_movements.md` lists every service call) |
 
 `docs/eikonal_benchmark.md` compares the eikonal solvers (`scripts/bench_eikonal.py`).
 
