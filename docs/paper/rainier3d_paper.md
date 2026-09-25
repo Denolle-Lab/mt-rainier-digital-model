@@ -101,9 +101,9 @@ The domain and its sensors are mapped in [@fig:map].
 
 The database is compiled by code, not by hand, following five rules.
 
-1. **One registry.** `configs/sources.yaml` lists every data set and publication the model uses (76 entries). Each entry gives its DOI or service address, licence, the date and method of verification, and its role in the model. Every number in the configuration files names a registry key. A value chosen by the authors carries the key `m1_placeholder`, so the unsourced values can be listed and replaced. The bibliography of this paper is generated from the same registry (`pixi run bib`), with BibTeX keys equal to the registry keys.
+1. **One registry.** `configs/sources.yaml` lists every data set and publication the model uses (78 entries). Each entry gives its DOI or service address, licence, the date and method of verification, and its role in the model. Every number in the configuration files names a registry key. A value chosen by the authors carries the key `m1_placeholder`, so the unsourced values can be listed and replaced. The bibliography of this paper is generated from the same registry (`pixi run bib`), with BibTeX keys equal to the registry keys.
 2. **Original archives, cached.** Each stage downloads what it needs from the original archive, clipped to the model box where the service allows it. Examples are a window of a cloud-optimised GeoTIFF, an OPeNDAP subset, a feature-service query or a staged file. Each download is cached under `data/raw/<source>/`, and reruns read the cache. The GNSS stage also writes a manifest with the URL, retrieval time, size and SHA-256 of each file.
-3. **A checksum for every cached file.** `scripts/00_data_manifest.py` records the size and SHA-256 of all cached files in the committed table `docs/data_manifest.csv` (419 files, 1.48 GB; [@tbl:raw]). `pixi run manifest -- --check` compares a rebuilt cache with it. Some services can return different bytes on a later request: ComCat can revise picks, and the USGS can re-stage NHDPlus. The check lists those files, so any difference between a rebuilt model and the published one can be traced to its input.
+3. **A checksum for every cached file.** `scripts/00_data_manifest.py` records the size and SHA-256 of all cached files in the committed table `docs/data_manifest.csv` (2,065 files, 3.30 GB; [@tbl:raw]). `pixi run manifest -- --check` compares a rebuilt cache with it. Some services can return different bytes on a later request: ComCat can revise picks, and the USGS can re-stage NHDPlus. The check lists those files, so any difference between a rebuilt model and the published one can be traced to its input.
 4. **One environment.** The software is pinned in `pixi.lock` for Linux and macOS (arm64). Two slim environments serve automation: `gnss` for the weekly strain refresh and `paper` for this report.
 5. **Invariants.** The test suite checks the built model against rules that must hold whatever the data:
     - no properties above the ground;
@@ -116,7 +116,7 @@ The database is compiled by code, not by hand, following five rules.
 | Source folder | Stage | Content | Files | Size (MB) |
 |------------|----|--------------------|----|-----|
 | `dem` | S1 | USGS 3DEP 1 arc-second DEM, clipped | 1 | 59 |
-| `geology` | S1 | Washington 1:100,000 geology (GeMS), queried from the feature service | 1 | 5 |
+| `geology` | S1, S24 | Washington 1:100,000 geology (GeMS) map units and faults; Quaternary faults | 3 | 5 |
 | `glaciers` | S1 | IceBoost v2 per-glacier thickness, RGI 6.0 outlines, GlaThiDa | 222 | 44 |
 | `ecology` | S2 | ETH canopy height 2020, NLCD 2021, clipped | 2 | 27 |
 | `hydrology` | S2 | NHDPlus HR geodatabases (HU4 1703, 1708, 1711), two water-table grids | 7 | 924 |
@@ -127,6 +127,10 @@ The database is compiled by code, not by hand, following five rules.
 | `gnss` | S17 | PANGA and UNR daily positions, velocity fields, manifest | 80 | 218 |
 | `emc` | S21 | iMUSH tomography (EMC netCDF) | 1 | 5 |
 | `rainier_aerogeophysics` | S22 | 1996 helicopter EM and magnetic grids | 8 | 19 |
+| `wgs_landslides` | S24 | Washington landslide inventory: lidar-protocol deposits, recent landslides, compilation | 3 | 3 |
+| `allstadt2017` | S24 | Seismically recorded mass movements, western United States (`Events.csv`) | 1 | 0.03 |
+| `usgs_rainier_hazards` | S24 | Lahar hazard zones of 1998 (shapefiles) | 1 | 0.2 |
+| `dem_3dep_1m` | S24 | 3DEP 1 m windows around landslide polygons; 3DEP source footprints | 1,639 | 1,818 |
 
 : The raw input cache, from `docs/data_manifest.csv`. SOLUS100 soil thickness is read directly from its cloud-optimised GeoTIFFs and is not cached. {#tbl:raw}
 
@@ -149,6 +153,7 @@ pixi run all                       # S1-S8: surface, layers, geology, rock physi
 pixi run s2 -- --ma                # optional: the Ma et al. (2026) water table (~1 GB download)
 pixi run s22 && pixi run s3 && pixi run s4 && pixi run s5   # alteration from the EM survey, then rebuild
 pixi run s17 && pixi run s18       # GNSS positions, velocities, strain, edifice load
+pixi run s24                       # mass movements and faults: catalogue, figure, viewer layers (~1.8 GB of 1 m windows)
 pixi run s9                        # uniform grids for ray tracing and location
 pixi run manifest -- --check       # compare the rebuilt cache with docs/data_manifest.csv
 pixi run test                      # unit tests and the invariants of the built model
@@ -179,6 +184,7 @@ Three surface layers set the top of every model column.
     - All 149 map symbols present in the box are assigned to 14 surface model units by rules on the symbol, checked against each unit's full name in the map's Description of Map Units. Every cell receives a unit.
     - The rules are in `configs/units.yaml`, and the generated crosswalk is committed for review.
     - The park map of @fiske_1963 is carried as a georeferenced image for display.
+- **Faults.** The same map gives 134 fault traces in the box (220 km), 106 of them high-angle dip-slip faults and 46 concealed. The Washington Quaternary fault layer adds four features [@dnr_quaternary_faults]: the Western Rainier and Goat Rocks seismic zones, drawn as geophysical lineaments, the Devils Dream reverse fault and an unnamed oblique reverse fault. Neither source gives a dip, and no fault section of the 2023 National Seismic Hazard Model lies in the box [@nshm23_fsd]; the nearest, the Olympia and Tacoma faults, are 17 and 28 km outside it. Faults are therefore mapped traces ([@fig:mass]a) and are not surfaces in the 3D model.
 - **Glacier ice thickness.** IceBoost v2 per-glacier grids [@iceboost_v2] for the 219 glaciers of the Randolph Glacier Inventory 6.0 [@rgi60] whose centroids fall in the box, 97.3 km² in all. The grids are area-averaged onto the 100 m grid, and each glacier is rescaled so that its volume matches the IceBoost total for it. This removes an 18% overestimate from counting partly glacier-covered cells as full. The total is 5.50 km³, of which 5.32 km³ is on the cone.
 
 The glacier bed is the ground elevation minus the ice thickness. Against the 1981 radar surveys of @driedger1986 as archived in GlaThiDa [@glathida], maximum thickness agrees for Carbon, Nisqually and Tahoma glaciers ([@fig:glaciers]). IceBoost is thicker on Emmons (273 vs 185 m) and Winthrop (237 vs 98 m) glaciers. Part of any difference reflects thinning since 1981 [@sisson2011].
@@ -591,11 +597,29 @@ For each event, the catalogue records the following:
 - the triggering conditions where known;
 - the source and its licence.
 
-**Sources that are machine-readable.** Four groups can seed the catalogue directly.
-- **Landslide polygons.** The Washington State Landslide Inventory Database [@wgs_landslide_inventory] holds lidar-protocol mapping and a compilation layer. The compilation layer includes the park-wide mapping of 448 mass movements over 37 km² by @riedel_dorsch_2016. The U.S. Landslide Inventory [@usgs_landslide_inventory_v3; @mirus_2020] compiles the same state data nationally.
-- **Lahar hazard zones.** The lahar inundation zones of @hoblitt_1998 are distributed as digital data [@schilling_2008]. They are hazard zones, not events.
-- **Seismogenic mass movements.** The Exotic Seismic Events Catalog [@esec_v3] and the western United States compilation of @allstadt_2017_esec (CC0) list seismically recorded landslides, debris flows and outburst floods with source parameters.
-- **Seismic event types.** PNSN classifies surface events in its own catalogue. These classes are not in ComCat: within 25 km of the summit, ComCat lists 14,288 events and none of them is a surface event. The curated PNSN dataset of @ni2023 and the classifiers of @kharita_2026 give labelled waveforms for training detectors.
+**The catalogue.** Script S24 fetches four machine-readable sources, clips them to the box and writes the catalogue to `outputs/mass_movements/` ([@tbl:mass-counts], [@fig:mass]). `docs/mass_movements.md` lists each service call with its endpoint, parameters, paging and cache path. The catalogue has two parts.
+- **Flows.** Lahar deposits and debris flows keep their mapped outlines, because their runout is the information. The lahar deposits are the Qvl units of the 1:100,000 map [@dnr_gems_100k]: the Osceola Mudflow [@vallance_scott_1997] covers 79.7 km² of the box, the Electron Mudflow 18.8 km² and other lahar deposits 16.0 km². The debris flows are the flow-type polygons of the Washington State Landslide Inventory Database [@wgs_landslide_inventory]: 198 from its lidar-protocol mapping and 265 from its compilation of older mapping.
+- **Events.** Every other mass movement is a point. The Allstadt et al. compilation of seismogenic mass movements [@allstadt_2017_esec] gives 19 events in the box with a time and a seismic location: the ten 2011 rock and ice avalanches of the Nisqually headwall, five rock falls from Russell Cliff in 1989 and 1992, a 2010 snow avalanche, a 2014 ice avalanche, and the August 2015 rock fall and debris flow. The inventory gives 1,624 landslide polygons of other types and seven recent-landslide points. A polygon becomes a point at its crown, the highest point of its outline, where failure began. The crown is sampled every 2 m on a 1 m window of the USGS 3DEP elevation service around each polygon [@usgs_3dep], which returns the best 3DEP source at each point: 994 crowns lie on 1 m lidar, 441 on 3 m and 186 on 10 m data. Three windows were refused by the service on every attempt; those crowns are placed on the 30 m DEM and flagged. The compilation repeats three protocol deposits; those copies are dropped.
+
+The inventory records a failure depth for every lidar-protocol deposit (453 deposits in the box, median 14.6 m), so these deposits could later be given a volume in the model. The 1998 lahar inundation zones [@hoblitt_1998; @schilling_2008] are kept as a separate hazard layer, not as events: the case 1 zone covers 964 km² of the box. The Exotic Seismic Events Catalog version 3 [@esec_v3] extends the seismic compilation to 2025 but has no scripted download yet.
+
+| Part | Class | Source | Count | Area (km²) |
+|--------|------------------|-----------|----|----|
+| Flows | Osceola Mudflow | @dnr_gems_100k | 1 | 79.7 |
+| | Electron Mudflow | @dnr_gems_100k | 1 | 18.8 |
+| | Other lahar deposits | @dnr_gems_100k | 1 | 16.0 |
+| | Debris flows | @wgs_landslide_inventory | 463 | 11.2 |
+| Events | Rock fall, rock and ice avalanche | seismic 16; mapped 40 | 56 | |
+| | Snow or ice avalanche | seismic | 2 | |
+| | Debris flow, outburst flood | seismic | 1 | |
+| | Slide, debris slide | mapped 317; recent 7 | 324 | |
+| | Complex or unknown type | mapped | 1,267 | |
+
+: The mass-movement catalogue in the model box (S24, `outputs/mass_movements/summary.csv`, run of 2026-09-25). Seismic events are from @allstadt_2017_esec; mapped and recent events from @wgs_landslide_inventory. Of the 1,650 events, 377 are dated; 351 of these are landslides of the January 2009 storm in the compilation. {#tbl:mass-counts}
+
+![Mass movements and faults. (a) Lahar deposits and mapped debris flows, the case 1 lahar inundation zone of 1998 (dashed), and faults of the 1:100,000 map (thin) and of the Quaternary fault layer (thick). (b) Event points by class: landslides at their crown (dots) and seismically recorded events (stars).](figures/fig16_mass_movements.png){#fig:mass width=100%}
+
+**Other machine-readable sources.** The U.S. Landslide Inventory [@usgs_landslide_inventory_v3; @mirus_2020] compiles the same state data nationally, and the compilation layer includes the park-wide mapping of 448 mass movements over 37 km² by @riedel_dorsch_2016. PNSN classifies surface events in its own catalogue, but these classes are not in ComCat: within 25 km of the summit, ComCat lists 14,288 events and none of them is a surface event. The curated PNSN dataset of @ni2023 and the classifiers of @kharita_2026 give labelled waveforms for training detectors.
 
 **Sources in the literature.** Other sources are reports and papers, from which events are digitised.
 - **Lahars.** Holocene lahars and their deposits: @crandell_1971, @scott_1995, and the Osceola Mudflow [@vallance_scott_1997].
@@ -614,7 +638,7 @@ For each event, the catalogue records the following:
 
 : Sources for the mass-movement catalogue. {#tbl:mass}
 
-Each record carries its source and licence, like every other layer. Records from the landslide inventories and the seismic catalogues can be fetched by script. Records from the literature are entered from their tables with a citation to the page.
+Each record carries its source, like every other layer. Records from the literature are to be entered from their tables with a citation to the page.
 
 # Accessing the model {#sec:access}
 
@@ -680,9 +704,10 @@ The viewer runs in a web browser, including on phones. It is a React and three.j
 - the surface layers of [@sec:surface];
 - the alteration field and the apparent magnetisation;
 - the seismic, geodetic, infrasound, tiltmeter and fibre sensors, with permanent and temporary networks separated;
-- the PNSN seismicity.
+- the PNSN seismicity;
+- the mass movements of [@sec:mass]: the flow deposits as a draped layer and the events as points on the ground, filtered by class and date from the legend.
 
-Below the ground it shows Vs, Vp, Vp/Vs, density, units and alteration, on a vertical section along the terrain cut and on a horizontal depth slice. Its map data are built by scripts S8 and S11 and published as a release asset named in `web/viewer/DATA_RELEASE`.
+Below the ground it shows Vs, Vp, Vp/Vs, density, units and alteration, on a vertical section along the terrain cut and on a horizontal depth slice. Its map data are built by scripts S8, S11 and S24 and published as a release asset named in `web/viewer/DATA_RELEASE`.
 
 # Limitations {#sec:limits}
 
@@ -709,7 +734,7 @@ rainier3d assembles, in one reproducible structure, what is openly known about t
 - **Surface.** Layers for geology, ice, soil, water, vegetation and imagery on a common grid.
 - **Geodesy and load.** GNSS strain rates, refreshed weekly, and the stress of the edifice load at depth.
 
-Every input is fetched from its original archive and checksummed. Every parameter names its source, and every product can be downloaded with one command in the formats that seismological codes read. The next layers are the mass-movement catalogue and couplings between the hydrological layers and the seismic properties.
+Every input is fetched from its original archive and checksummed. Every parameter names its source, and every product can be downloaded with one command in the formats that seismological codes read. The mass-movement catalogue is a first time-dependent layer; the next are the events digitised from the literature and couplings between the hydrological layers and the seismic properties.
 
 # Code and data availability {.codedataavailability .unnumbered}
 
@@ -747,6 +772,10 @@ The code and this paper were written with an AI coding assistant (Claude, Anthro
 | NLCD 2021 | land cover | @nlcd_2021 |
 | Copernicus Sentinel-2 L2A | imagery, NDVI, NDSI, leaf area index | @sentinel2_l2a; @sentinel2_lai_2023 |
 | GEDI L2B, L3, L4B | plant area index, canopy height, biomass | @gedi_l2b; @gedi_l3; @gedi_l4b |
+| Washington State Landslide Inventory Database | landslide and debris-flow catalogue | @wgs_landslide_inventory |
+| Seismogenic mass movements, western United States | dated, seismically located events | @allstadt_2017_esec |
+| Mount Rainier volcano hazards, digital data | lahar inundation zones | @hoblitt_1998; @schilling_2008 |
+| Quaternary active faults of Washington | faults | @dnr_quaternary_faults |
 
 : Input data sets. {#tbl:datasets}
 
