@@ -4,7 +4,7 @@ the closest available proxy for LAI; GEDI has no native LAI product)
 for a region of interest.
 
 Output: a CSV of footprint-level points (lon, lat, pai, quality info,
-track info) that grid_gedi_l2b_pai.py then bins into a 1km raster.
+track info) that 02_grid_gedi_l2b_pai.py then bins into a 1km raster.
 
 Requirements:
     pip install earthaccess h5py numpy pandas
@@ -158,4 +158,4 @@ out_path = os.path.join(OUT_DIR, f"footprints_{suffix}.csv")
 all_points.to_csv(out_path, index=False)
 
 print(f"\nSaved {len(all_points)} footprints to {os.path.abspath(out_path)}")
-print(f"Next: point IN_CSV in grid_gedi_l2b_pai.py to this file.")
+print(f"Next: point IN_CSV in 02_grid_gedi_l2b_pai.py to this file.")

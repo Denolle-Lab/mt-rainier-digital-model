@@ -35,5 +35,5 @@ model domain.
 | `lai_sentinel2` | `Sentinel2/lai_mosaic_pnw.tif` | delivered file |
 | `gedi_pai` | not produced: the gridder writes the maximum, not the mean | delivered `L2B_PAI_mean.tif` |
 | `gedi_biomass`, `gedi_biomass_se` | no script (GEDI L4B) | delivered files |
-| `canopy_height_lidar`, `vegetation_cover_lidar` | no script (`CHM/README.md`: manual QGIS workflow) | delivered files |
+| `canopy_height_lidar`, `vegetation_cover_lidar` | no grid script: `CHM/01`–`02` give values at stations only, from the WA DNR Lidar Portal 2022–2023 "Wali" DSM and DTM; the grids were made from the same tiles in QGIS | delivered files |
 | `soil_map` | no script | delivered file |

@@ -52,7 +52,7 @@ import cfgrib
 # that product into. OUTPUT (the final extracted timeseries) goes to
 # ../../output_non-seismic_code/ -- mirroring result_non-seismic_code/'s
 # flat layout -- with a filename matching what the seismic_code pipeline
-# reads it back as (e.g. 07_storage_capacity_sup.py, 08_storage_capacity.ipynb).
+# reads it back as (e.g. 07_storage_capacity_sup.py, 08_storage_capacity.py).
 PRODUCTS = {
     "REFLECTIVITY": dict(
         DATA_DIR="../../output_non-seismic_code/MRMS/MergedReflectivityQComposite",

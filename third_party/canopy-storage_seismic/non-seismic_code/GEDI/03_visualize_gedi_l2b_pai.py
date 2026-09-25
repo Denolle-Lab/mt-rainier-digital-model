@@ -1,5 +1,5 @@
 """
-Visualize self-gridded GEDI L2B PAI (from grid_gedi_l2b_pai.py), with
+Visualize self-gridded GEDI L2B PAI (from 02_grid_gedi_l2b_pai.py), with
 station markers overlaid.
 
 Panel order is always: mean value -> uncertainty -> footprint count ->

@@ -1,5 +1,5 @@
 """
-Grid GEDI L2B PAI footprints (from download_gedi_l2b_pai.py) into a
+Grid GEDI L2B PAI footprints (from 01_download_gedi_l2b_pai.py) into a
 1km raster, using the same EPSG:6933 equal-area convention GEDI itself
 uses for L4B.
 

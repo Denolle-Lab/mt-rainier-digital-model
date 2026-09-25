@@ -390,12 +390,12 @@ johnson_1985:
   role: stress from the edifice load (S18)
 
 canopy_lidar_chm:
-  title: Canopy height model and vegetation cover fraction, 10 m, from airborne lidar DSM/DTM mosaics (NAD83(HARN) Washington South ftUS), made in QGIS for the canopy-storage project (M. Koepfli)
-  url: https://github.com/koepflma/canopy-storage_seismic (private; non-seismic_code/CHM/README.md)
-  license: "unknown until the lidar source is documented (TODO: WA DNR Lidar Portal or PSLC?)"
+  title: Canopy height model and vegetation cover fraction, 10 m, from airborne lidar DSM/DTM tiles of the WA DNR Lidar Portal (2022-2023 "Wali" acquisitions, e.g. Rainier Wali 2022; NAD83(HARN) Washington South ftUS), gridded in QGIS for the canopy-storage project (M. Koepfli)
+  url: https://lidarportal.dnr.wa.gov/ (tiles); https://github.com/koepflma/canopy-storage_seismic (private; non-seismic_code/CHM/, commit 292ebe4)
+  license: "WA DNR Lidar Portal terms not yet confirmed (the portal pages are script-rendered; ask the DNR lidar manager)"
   verified: "no"
   role: canopy_height_lidar, vegetation_cover_lidar surface layers (S19)
-  redistribute_derived: false   # lidar source undocumented; not published until it is
+  redistribute_derived: false   # until the WA DNR terms are confirmed
 
 sentinel2_lai_2023:
   title: Sentinel-2 L2A leaf area index (ESA SNAP biophysical processor neural network, sentinel-hub custom script), 10 m mosaic, 2023-07-01 to 2023-08-15, via the Copernicus Data Space Ecosystem; canopy-storage project

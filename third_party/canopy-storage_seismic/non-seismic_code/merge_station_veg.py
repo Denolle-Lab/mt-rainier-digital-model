@@ -2,11 +2,11 @@
 merge_station_veg.py
 
 Consolidates the vegetation/canopy predictors from GEDI (canopy height +
-PAI), Sentinel-2 (LAI), and the QGIS-derived CHM -- plus the station
-locations themselves -- into ONE per-station table, station_veg.csv,
-matching the shipped reference (result_non-seismic_code/station_veg.csv)
-and the format the seismic_code pipeline reads (BIO_COL_MAP in
-07_rainfall_spearman_hist.py / 07_storage_capacity_sup.py):
+PAI), Sentinel-2 (LAI), and CHM -- plus the station locations themselves
+-- into ONE per-station table, station_veg.csv, matching the shipped
+reference (result_non-seismic_code/station_veg.csv) and the format the
+seismic_code pipeline reads (BIO_COL_MAP in 07_rainfall_spearman_hist.py
+/ 07_storage_capacity_sup.py):
 
     station, latitude, longitude, elevation_m,
     lai, lai_n_valid_px, lai_n_total_px,
@@ -18,10 +18,9 @@ Run AFTER:
       (produces ../output_non-seismic_code/GEDI/stations_with_gedi_values.csv)
     - Sentinel2/02_sample_stations_from_mosaic.py
       (produces ../output_non-seismic_code/Sentinel2/station_lai_values.csv)
-    - the CHM step, which is a MANUAL QGIS workflow, not a script (see
-      CHM/README.md) -- its output is checked in directly at CHM_CSV
-      below, the same way seismic_data/ and result_seismic_code/ are
-      provided reference data rather than something regenerated here.
+    - CHM/01_download_lidar_tiles.py + CHM/02_process_chm.py
+      (produces ../output_non-seismic_code/CHM/station_chm_values.csv --
+      see CHM/README.md for what these two scripts automate)
 
 CHM_height_meter is a finer, ~100 m^2-resolution canopy-height product,
 distinct from GEDI L3's 1 km gridded rh100_mean (see BIO_COL_MAP's
@@ -37,9 +36,7 @@ import pandas as pd
 STATIONS_CSV = "../seismic_data/df_station_locations.csv"
 GEDI_CSV = "../output_non-seismic_code/GEDI/stations_with_gedi_values.csv"
 LAI_CSV = "../output_non-seismic_code/Sentinel2/station_lai_values.csv"
-# Manual QGIS output (station, CHM_height_meter) -- see CHM/README.md for
-# the source raster and exact QGIS steps used to produce it.
-CHM_CSV = "CHM/station_chm_values.csv"
+CHM_CSV = "../output_non-seismic_code/CHM/station_chm_values.csv"
 
 OUT_CSV = "../output_non-seismic_code/station_veg.csv"
 
@@ -57,20 +54,23 @@ OUT_COLUMNS = [
 
 
 def load_chm(path):
-    """station -> CHM_height_meter, from the manual QGIS output. All-NaN
-    (with a warning) if that file hasn't been added yet, so this script
-    stays runnable while the CHM step is pending."""
+    """station -> CHM_height_meter, from CHM/02_process_chm.py's output.
+    All-NaN (with a warning) if that file hasn't been produced yet, so
+    this script stays runnable while the CHM step is pending. A station
+    with no lidar coverage at all also comes out NaN here -- see
+    02_process_chm.py's own docstring."""
     if not os.path.isfile(path):
         print(f"[merge_station_veg] WARNING: {path} not found -- "
-              f"CHM_height_meter written as all-NaN. See CHM/README.md "
-              f"for how to produce it (QGIS, manual step, not a script).")
+              f"CHM_height_meter written as all-NaN. Run "
+              f"CHM/01_download_lidar_tiles.py then CHM/02_process_chm.py "
+              f"to produce it (see CHM/README.md).")
         return pd.DataFrame(columns=["station", "CHM_height_meter"])
 
     chm = pd.read_csv(path)
     if "CHM_height_meter" not in chm.columns:
         raise KeyError(
             f"{path} has no 'CHM_height_meter' column -- found {list(chm.columns)}. "
-            f"Check the QGIS export (see CHM/README.md).")
+            f"Check CHM/02_process_chm.py's output (see CHM/README.md).")
     return chm[["station", "CHM_height_meter"]]
 
 

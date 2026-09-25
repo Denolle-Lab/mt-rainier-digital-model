@@ -5,38 +5,37 @@ distinct from GEDI L3's 1 km gridded `rh100_mean` (see `BIO_COL_MAP`'s
 `'CH 100m²'` vs `'CH 1km²'` in `07_rainfall_spearman_hist.py` /
 `07_storage_capacity_sup.py`).
 
-Unlike GEDI, Sentinel-2, and MRMS, this one was produced **manually in
-QGIS**, not through a scriptable download/processing pipeline — so there's
-no `0X_*.py` script here, and none is planned; the steps below are the
-record of how it was made instead.
-
 ## Canopy height from airborne LiDAR
 
 Canopy height at each station is derived from airborne LiDAR (source:
-WGS2023RainierWali — see the paper's references) following these
-processing steps:
+WGS2023RainierWali — see the paper's references), via two scripts:
 
-1. **Build virtual mosaics.** In QGIS (Raster → Miscellaneous → Build
-   Virtual Raster), combine all Digital Surface Model (DSM) tiles into a
-   single virtual mosaic (`dsm_mosaic.vrt`), and repeat separately for the
-   Digital Terrain Model (DTM) tiles (`dtm_mosaic.vrt`), without placing
-   each input into a separate band.
-2. **Compute canopy height.** Using the Raster Calculator, subtract the
-   DTM from the DSM and convert from feet to meters:
+1. **`01_download_lidar_tiles.py`** — downloads only the DSM/DTM tiles
+   that actually cover a station, from the WA DNR Lidar Portal
+   (https://lidarportal.dnr.wa.gov/). The 240 stations span several WA
+   DNR lidar acquisition projects (all part of the same 2022/2023 "Wali"
+   campaign this citation refers to, e.g. "Rainier Wali 2022", "White
+   Watershed Wali 2022"), not one single project — this script finds
+   whichever project(s) cover each station and downloads from those.
+   Still large: DSM/DTM tiles are ~1.5 ft resolution, so this is
+   realistically 100+ GB. Resumable if interrupted.
+2. **`02_process_chm.py`** — for each station, reads a small window
+   (sized to ~10 m at each tile's native resolution) directly out of the
+   one DSM and DTM tile that contains it, computes
+   `CHM = mean(DSM - DTM) * 0.3048` (feet → meters) over that window, and
+   writes `station_chm_values.csv`.
 
-       CHM = (DSM - DTM) * 0.3048
+This is the scripted equivalent of building a full DSM/DTM mosaic,
+computing CHM over it, downsampling to 10 m by averaging, and sampling at
+station points in QGIS — restricted to just the ~10 m neighborhood each
+station actually needs, which is what `02_process_chm.py`'s own docstring
+walks through step by step.
 
-   with the output extent calculated from the DSM mosaic and the output
-   CRS matching the input layers. This yields a full-resolution canopy
-   height model (CHM).
-3. **Downsample to 10 m.** Using Warp (Reproject) with the *average*
-   resampling method (giving the mean canopy height per output cell) and
-   an output resolution of 10 m (32.8 ft), producing `CHM_10m.tif`.
-4. **Sample at station locations.** Using the "Sample Raster Values" tool
-   with the station coordinates as input points and `CHM_10m.tif` as the
-   raster layer, extract a canopy height value per station.
-5. **Export.** Save the sampled layer as a CSV with station coordinates
-   included as separate X/Y columns.
+A station can come out with `CHM_height_meter = NaN` for two different
+reasons, both reported by the two scripts as they run: it falls outside
+every "Wali"-project footprint entirely, or (confirmed to happen in
+practice) it sits right at a seam between two tiles where WA DNR's own
+tile grid has a small real gap.
 
 ## Output
 
@@ -44,8 +43,9 @@ processing steps:
 
     station, CHM_height_meter
 
-placed in this folder — `merge_station_veg.py` reads it from here
-(`CHM_CSV = "CHM/station_chm_values.csv"`) and merges it into
+written to `../output_non-seismic_code/CHM/` (never overwriting reference
+data, same convention as GEDI and Sentinel-2's own outputs) —
+`merge_station_veg.py` reads it from there and merges it into
 `station_veg.csv` alongside the GEDI and Sentinel-2 columns. Until this
-file is added, `merge_station_veg.py` still runs; `CHM_height_meter` comes
-out all-NaN with a warning.
+file is produced, `merge_station_veg.py` still runs; `CHM_height_meter`
+comes out all-NaN with a warning.

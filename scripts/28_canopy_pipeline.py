@@ -14,7 +14,8 @@ Steps (docs/canopy_pipeline.md lists services, parameters and credentials):
 
 A step whose product already exists is skipped (the cache rule of data/raw/); --force reruns it. A step
 whose credentials are missing is skipped with a message. The station-sampling scripts (GEDI/04, Sentinel2/02,
-MRMS, merge_station_veg.py) need a station CSV and are not run here.
+CHM/01 and 02, MRMS, merge_station_veg.py) need the project's station CSV and are not run here; CHM/01 alone
+would download about 100 GB of WA DNR lidar tiles.
 
 Usage: pixi run -e canopy canopy [-- --steps gedi_l3,s2_lai] [--force]
 """

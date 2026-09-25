@@ -1,6 +1,9 @@
 """
-Step 2: Download Sentinel-2 LAI (10m) for a large AOI by tiling requests,
-then mosaic into a single GeoTIFF.
+01_download_lai.py
+
+Downloads Sentinel-2 LAI (10m) for a large AOI by tiling requests, then
+mosaics into a single GeoTIFF. Run 02_sample_stations_from_mosaic.py
+afterwards to extract per-station values from the mosaic.
 
 Uses the OFFICIAL SNAP biophysical-processor LAI evalscript, cloned directly from:
 https://github.com/sentinel-hub/custom-scripts/blob/master/sentinel-2/lai/script.js

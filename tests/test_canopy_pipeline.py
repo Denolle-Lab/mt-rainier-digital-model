@@ -17,7 +17,9 @@ def test_vendored_code_is_unmodified_and_licensed():
     assert (VENDOR / "LICENSE").read_text().startswith("MIT License")
     assert (VENDOR / "PROVENANCE.md").exists()
     sums = [line.split(maxsplit=1) for line in (VENDOR / "SHA256SUMS").read_text().splitlines() if line]
-    assert len(sums) == 16  # 13 files of non-seismic_code, LICENSE, LICENSE-DATA, environment.yml
+    # every vendored file is listed: non-seismic_code/, LICENSE, LICENSE-DATA, environment.yml
+    on_disk = {str(p.relative_to(VENDOR)) for p in (VENDOR / "non-seismic_code").rglob("*") if p.is_file()}
+    assert {name for _, name in sums} == on_disk | {"LICENSE", "LICENSE-DATA", "environment.yml"}
     for digest, name in sums:
         assert hashlib.sha256((VENDOR / name).read_bytes()).hexdigest() == digest, name
 

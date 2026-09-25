@@ -1,6 +1,8 @@
 """
-Step 3 (mosaic version): Extract LAI at station points from the downloaded mosaic,
-and add the result as new columns directly onto the existing stations CSV.
+02_sample_stations_from_mosaic.py
+
+Extracts LAI at station points from the downloaded mosaic, and adds the
+result as new columns directly onto the existing stations CSV.
 
 Run AFTER 01_download_lai.py has produced lai_mosaic_pnw.tif.
 
