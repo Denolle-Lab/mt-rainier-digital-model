@@ -71,7 +71,7 @@ def em_fields(
 
 
 def taper(d: np.ndarray, doi: np.ndarray) -> np.ndarray:
-    """taper(d, doi) at depth d: 1 for 0 <= d <= doi, linear to 0 at d = 1.25 doi, 0 deeper or where doi is 0."""
+    """At depth d: 1 for 0 <= d <= doi, linear to 0 at d = 1.25 doi; 0 deeper, or where doi is 0."""
     with np.errstate(divide="ignore", invalid="ignore"):
         t = np.clip((1.25 * doi - d) / (0.25 * doi), 0.0, 1.0)
     return np.where((doi > 0) & (d >= 0), t, 0.0)
