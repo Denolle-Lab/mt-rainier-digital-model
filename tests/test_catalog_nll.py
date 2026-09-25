@@ -1,4 +1,4 @@
-"""NonLinLoc helpers of the catalogue relocation (S25): topography grid, observation file, summary parser."""
+"""NonLinLoc helpers of the catalogue relocation (S26): topography grid, observation file, summary parser."""
 
 import numpy as np
 import pandas as pd

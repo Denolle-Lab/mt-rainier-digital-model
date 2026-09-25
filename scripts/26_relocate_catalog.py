@@ -1,4 +1,4 @@
-"""S25: relocate the PNSN catalogue with NonLinLoc, in the PNSN 1D model and in the rainier3d 3D model.
+"""S26: relocate the PNSN catalogue with NonLinLoc, in the PNSN 1D model and in the rainier3d 3D model.
 
 Both relocations use the same picks, stations, locator and settings, so their difference isolates the velocity
 model (Vp and Vp/Vs); ComCat is kept as a third reference. NonLinLoc (Lomax et al. 2000): EDT likelihood,
@@ -10,7 +10,7 @@ quality), summary.json, figures; NonLinLoc inputs and outputs under outputs/cata
 
 Quality: A = gap < 180 deg, >= 8 phases, 3D depth sd < 2 km; B = gap < 250 deg, >= 6 phases; C = the rest.
 
-Usage: pixi run python scripts/25_relocate_catalog.py [--start 2023-01-01 --end 2026-01-01 --minmag 1]
+Usage: pixi run python scripts/26_relocate_catalog.py [--start 2023-01-01 --end 2026-01-01 --minmag 1]
 """
 
 from __future__ import annotations
@@ -43,10 +43,12 @@ def main():
     ap.add_argument(
         "--figures-only", action="store_true", help="redraw from outputs/catalog/catalog_relocated.csv"
     )
+    ap.add_argument("--viewer", default="", help="viewer atlas directory: also write quakes_relocated.*")
     a = ap.parse_args()
     dom = load_domain()
     if a.figures_only:
         figures(dom, dom.path("outputs") / "catalog")
+        viewer(a.viewer, dom)
         return
     tag = f"catalog_{a.start[:4]}_{int(a.end[:4]) - 1}_m{a.minmag:g}"
     cache = dom.path("raw") / "pnsn" / tag
@@ -162,6 +164,20 @@ def main():
     (out / "summary.json").write_text(json.dumps(summ, indent=1))
     logging.info("\n%s", json.dumps(summ, indent=1))
     figures(dom, out)
+    viewer(a.viewer, dom)
+
+
+def viewer(atlas: str, dom) -> None:
+    if not atlas:
+        return
+    from pathlib import Path
+
+    from rainier3d.export.atlas import export_relocated
+
+    out = dom.path("outputs") / "catalog"
+    summ = json.loads((out / "summary.json").read_text()) if (out / "summary.json").exists() else {}
+    meta = export_relocated(Path(atlas).expanduser(), out / "catalog_relocated.csv", dom, summ)
+    logging.info("viewer: %d relocated events -> %s/quakes_relocated.*", meta["count"], atlas)
 
 
 def figures(dom, out):

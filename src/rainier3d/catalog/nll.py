@@ -1,4 +1,4 @@
-"""Relocate a PNSN catalogue with NonLinLoc (Lomax et al. 2000) in rainier3d grids (S25).
+"""Relocate a PNSN catalogue with NonLinLoc (Lomax et al. 2000) in rainier3d grids (S26).
 
 NonLinLoc is an external program (github.com/alomax/NonLinLoc, GPL-3): set RAINIER3D_NLL_BIN to the directory
 holding Grid2Time and NLLoc (default ~/.local/nonlinloc). Grids use TRANS NONE: x, y in UTM 10N km, z in km

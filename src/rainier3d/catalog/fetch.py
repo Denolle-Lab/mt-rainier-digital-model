@@ -1,4 +1,4 @@
-"""PNSN events, analyst picks and stations for a catalogue relocation (S25).
+"""PNSN events, analyst picks and stations for a catalogue relocation (S26).
 
 Events: ComCat (network uw) in the domain box. Picks: the phase-data QuakeML of each event (P and S arrivals
 of the preferred origin), cached in data/raw/pnsn/quakeml/ (shared with S6/S13). Stations: EarthScope FDSN,
