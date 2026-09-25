@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { isTypingTarget } from "../scene/cameraMath.js";
 import "./ui.css";
 
@@ -26,17 +26,22 @@ export default function LayerPanel({ layers, scene, onStations, parts = ["quakes
   const toggle = (k, v) => { layers.set(k, v); setSt(layers.state); };
   const applyCut = c => { setCut(c); scene.setCut(c); };
   const showStations = v => { setStations(v); onStations(v); };
+  // one listener per panel for its lifetime; it calls the latest handler, which sees the current state
+  const onKey = useRef(null);
   useEffect(() => {
-    const onKey = e => {
+    onKey.current = e => {
       if (e.metaKey || e.ctrlKey || e.altKey || isTypingTarget(e.target)) return;
       const k = e.key?.toLowerCase();
       if (has("quakes") && layers && (k === "g" || k === "s" || k === "d")) { const key = { g: "cloud", s: "shells", d: "dots" }[k]; toggle(key, !layers.state[key]); }
       if (has("ground") && k === "x") applyCut({ ...cut, on: !cut.on });
       if (has("stations") && k === "t") showStations(!stations);
     };
-    addEventListener("keydown", onKey);
-    return () => removeEventListener("keydown", onKey);
   });
+  useEffect(() => {
+    const h = e => onKey.current?.(e);
+    addEventListener("keydown", h);
+    return () => removeEventListener("keydown", h);
+  }, []);
   return (
     <div className="layers">
       {has("quakes") && layers && <>
