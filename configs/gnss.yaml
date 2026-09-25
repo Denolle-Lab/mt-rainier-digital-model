@@ -1,0 +1,65 @@
+# GNSS pipeline (S17 fetch, S18 velocities and strain). Every number here is a choice to review.
+
+# Provenance of each section (keys in configs/sources.yaml). m1_placeholder marks author choices (thresholds,
+# scales, bulk properties) that are not yet taken from the literature.
+source_keys:
+  archives: [panga_gnss, unr_ngl_gnss]
+  min_years: [blewitt_2016_midas]
+  qc: [m1_placeholder]
+  strain: [shen_2015_strain, m1_placeholder]   # method from Shen et al. 2015; scales and thresholds are choices
+  regions: [comcat_uw, m1_placeholder]         # WRSZ band from PNSN seismicity; radii are choices
+  events: [comcat_uw]
+  load: [johnson_1985, m1_placeholder]         # Boussinesq solution; rho and Poisson ratio are placeholders
+
+# Data freeze: products are cut at this date so reruns read the same days; advance it deliberately.
+as_of: "2026-09-01"
+start: "2008-01-01"
+
+# Stations: all sites in this box (lon_min, lat_min, lon_max, lat_max), so the strain field around the domain
+# is constrained from outside it too.
+network_bbox: [-124.0, 45.6, -119.8, 48.2]
+
+# Archives in priority order: the first one that has a site supplies its series; later ones fill gaps.
+# PANGA (CWU) is the regional analysis centre; UNR (Nevada Geodetic Laboratory) is the backup.
+archives: [panga, unr]
+
+# Velocities: MIDAS (Blewitt et al., 2016); series shorter than this are not used for velocities.
+min_years: 2.5
+
+# Site quality control before strain (S18). Flagged sites stay in velocities.csv with their flag; strain is
+# computed without them, and the edifice series also with them (strain_edifice_all.csv), for comparison.
+qc:
+  max_diff_from_panga_mm_yr: 1.0   # MIDAS vs PANGA's published NA20 velocity, horizontal (PANGA sites)
+  max_diff_from_neighbours_mm_yr: 2.5
+  neighbour_radius_km: 40
+
+# Strain grid (S18): spacing, Gaussian scales tried in order, and the minimum summed weight / station count.
+strain:
+  grid_spacing_m: 5000
+  scales_m: [5000, 7500, 10000, 15000, 20000, 30000, 40000, 60000]
+  min_weight: 6.0
+  min_stations: 4
+
+# Regions for daily strain series (uniform strain of the stations inside, from daily displacements).
+regions:
+  wrsz:
+    label: West Rainier Seismic Zone
+    # band of PNSN seismicity 12-18 km west of the summit (report Section 7); polygon lon/lat
+    polygon: [[-122.10, 46.60], [-121.88, 46.60], [-121.88, 47.00], [-122.10, 47.00]]
+    buffer_km: 25   # stations within this distance of the polygon take part
+  edifice:
+    label: Edifice hydrothermal zone and summit swarms
+    center: [-121.7603, 46.8523]
+    radius_km: 25
+
+# Swarms to mark on the series. Dates to be checked against the catalogue before publication.
+events:
+  - {date: "2009-02-13", label: "2009 summit swarm (Shelly et al., 2013)"}
+  - {date: "2025-07-08", label: "July 2025 summit swarm"}
+
+# Edifice load (Boussinesq half-space): bulk density and Poisson's ratio (placeholders, as in Section 5)
+load:
+  rho_kgm3: 2500
+  poisson: 0.25
+  load_cell_m: 500
+  min_depth_m: 250
