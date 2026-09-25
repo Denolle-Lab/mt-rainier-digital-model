@@ -39,6 +39,6 @@ Nobody needs an account to use the published products.
 
 ## Attribution
 
-Cite the model as Denolle and Yao (2026) (see `products.json`), plus the sources of the layers you use. `configs/sources.yaml` gives each one's DOI or URL. Also include:
+Cite the model as Denolle et al. (2026) (see `products.json`), plus the sources of the layers you use. `configs/sources.yaml` gives each one's DOI or URL. Also include:
 - "Contains modified Copernicus Sentinel data 2023/2025" for Sentinel-2 layers;
 - "GPS time series provided by the Pacific Northwest Geodetic Array, Central Washington University" for the GNSS products.

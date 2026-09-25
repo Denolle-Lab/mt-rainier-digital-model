@@ -102,6 +102,7 @@ def run(cmd: list[str], cwd: Path | None = None) -> None:
 
 
 def workflow_figure() -> None:
+    run(["dot", "-c"])  # register Graphviz output plugins (a fresh conda environment has none registered)
     for fmt in ("svg", "pdf"):
         run(["dot", f"-T{fmt}", DOCS / "workflow.dot", "-o", DOCS / "figures" / f"fig0_workflow.{fmt}"])
 

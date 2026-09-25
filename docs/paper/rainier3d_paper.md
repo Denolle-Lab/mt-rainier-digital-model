@@ -4,17 +4,21 @@ pagetitle: "rainier3d: a digital model of Mount Rainier"
 kicker: "Gaia Hazlab · Data description"
 description: "How the rainier3d model of Mount Rainier is built from open archives: surface layers, 3D geology and hydrothermal alteration, seismic velocities calibrated on PNSN travel times, geodetic strain and edifice-load stress, geohydrology, and how to download and reuse it."
 runningtitle: "rainier3d, a digital model of Mount Rainier"
-runningauthor: "Denolle and Yao"
+runningauthor: "Denolle et al."
 correspondence: "Marine Denolle (mdenolle@uw.edu)"
 essd-authors:
   - {given: "Marine", family: "Denolle", affil: "1", email: "mdenolle@uw.edu"}
   - {given: "Derek", family: "Yao", affil: "2"}
+  - {given: "Michael", family: "Hemmett", affil: "1"}
+  - {given: "Manuela", family: "Köpfli", affil: "1"}
+  - {given: "Sangwoo", family: "Han", affil: "1"}
+  - {given: "Maleen", family: "Kidiwela", affil: "1"}
 essd-affiliations:
   - {id: "1", name: "Department of Earth and Space Sciences, University of Washington, Seattle, WA, USA"}
   - {id: "2", name: "Computer Science and Art, University of Washington, Seattle, WA, USA"}
 repository: "https://github.com/Denolle-Lab/mt-rainier-digital-model"
 viewer: "https://denolle-lab.github.io/mt-rainier-digital-model/"
-footer: "rainier3d · M. Denolle and D. Yao · Gaia Hazlab, University of Washington · Built from docs/paper/rainier3d_paper.md by scripts/23_paper.py."
+footer: "rainier3d · M. Denolle, D. Yao, M. Hemmett, M. Köpfli, S. Han and M. Kidiwela · Gaia Hazlab, University of Washington · Built from docs/paper/rainier3d_paper.md by scripts/23_paper.py."
 link-citations: true
 numberSections: true
 abstract: |
@@ -748,7 +752,7 @@ The code and this paper were written with an AI coding assistant (Claude, Anthro
 
 # Author contributions {.authorcontribution .unnumbered}
 
-MD designed the model, the calibration and the validation and directed the work. DY designed and built the three-dimensional viewer.
+MD designed the model, the calibration and the validation and directed the work. DY designed and built the three-dimensional viewer. MKö produced the vegetation products of the canopy-storage project (lidar canopy height and cover, Sentinel-2 leaf area index and the gridded GEDI products). MH, SH and MKi: contributions to be stated.
 
 # Competing interests {.competinginterests .unnumbered}
 
