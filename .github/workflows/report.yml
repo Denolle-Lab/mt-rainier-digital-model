@@ -1,0 +1,73 @@
+name: Build the report (HTML and ESSD PDF)
+
+# Builds docs/report/rainier3d.md into a self-contained HTML page and the ESSD manuscript PDF with
+# scripts/23_report_build.py (pixi environment "paper": pandoc, pandoc-crossref, tectonic, graphviz). No model data
+# are needed: figures are committed by S10, S16, S21 and S22. Pull requests build and attach the files as a workflow
+# artifact; pushes to main also replace the assets of the rolling release report-latest.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "docs/report/**"
+      - "docs/references.bib"
+      - "docs/alteration/*.png"
+      - "docs/gnss/*.png"
+      - "scripts/23_report_build.py"
+      - ".github/workflows/report.yml"
+      - "pixi.toml"
+      - "pixi.lock"
+  pull_request:
+    paths:
+      - "docs/report/**"
+      - "docs/references.bib"
+      - "docs/alteration/*.png"
+      - "docs/gnss/*.png"
+      - "scripts/23_report_build.py"
+      - ".github/workflows/report.yml"
+      - "pixi.toml"
+      - "pixi.lock"
+  workflow_dispatch:
+
+permissions:
+  contents: write   # release assets on main
+
+concurrency:
+  group: report-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: prefix-dev/setup-pixi@v0.10.2
+        with:
+          pixi-version: v0.76.2
+          environments: paper
+          locked: true
+          cache: true
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/Tectonic
+          key: tectonic-${{ hashFiles('pixi.lock') }}
+      - name: Build HTML and PDF
+        run: pixi run -e paper report
+      - uses: actions/upload-artifact@v4
+        with:
+          name: rainier3d-report
+          path: |
+            outputs/report/rainier3d_report.html
+            outputs/report/rainier3d_essd.pdf
+            outputs/report/rainier3d_essd.tex
+      - name: Publish to the release report-latest
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release view report-latest >/dev/null 2>&1 || gh release create report-latest --latest=false \
+            --title "rainier3d report (rebuilt on every change)" \
+            --notes "Built by .github/workflows/report.yml from docs/report/rainier3d.md."
+          gh release upload report-latest outputs/report/rainier3d_report.html outputs/report/rainier3d_essd.pdf \
+            outputs/report/rainier3d_essd.tex --clobber

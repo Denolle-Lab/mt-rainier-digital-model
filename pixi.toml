@@ -51,6 +51,7 @@ scikit-fmm = ">=2025.6.23, <2026"
 
 [tasks]
 test = "pytest -q tests"
+manifest = "python scripts/00_data_manifest.py"
 lint = "ruff check src scripts tests"
 s1 = "python scripts/01_surface.py"
 s2 = "python scripts/02_surface_layers.py"
@@ -102,3 +103,17 @@ gnss-publish = { cmd = "python scripts/20_publish_products.py --only gnss", env 
 
 [environments]
 gnss = { features = ["gnss"], no-default-feature = true }
+paper = { features = ["paper"], no-default-feature = true }
+
+# Report build (scripts/23_report_build.py, .github/workflows/report.yml): Pandoc Markdown -> self-contained HTML
+# and ESSD LaTeX -> PDF. No model data needed; figures are committed.
+[feature.paper.dependencies]
+python = ">=3.12,<3.14"
+pyyaml = "*"
+pandoc = ">=3.8.2,<3.10"   # the range pandoc-crossref 0.3.25 declares on conda-forge
+pandoc-crossref = "*"
+tectonic = ">=0.15"
+graphviz = "*"
+
+[feature.paper.tasks]
+report = "python scripts/23_report_build.py"

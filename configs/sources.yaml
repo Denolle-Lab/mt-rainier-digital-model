@@ -9,6 +9,8 @@ dnr_gems_100k:
   license: public (WA DNR)
   verified: web-2026-09-23
   role: surface lithology (layer 11), description of map units (layer 13); orientations (layer 1) for M3
+  bib_author: "{Washington Geological Survey}"   # author and year for the BibTeX entry (live service: year accessed)
+  bib_year: 2026
 
 nps_gri_mora:
   title: NPS GRI Digital Geologic-GIS Map of Mount Rainier National Park (after Fiske et al. 1963)
@@ -37,6 +39,8 @@ usgs_3dep:
   license: public domain
   verified: web-2026-09-23
   role: DEM
+  bib_author: "{U.S. Geological Survey}"   # author and year for the BibTeX entry (live service: year accessed)
+  bib_year: 2026
 
 cvm17:
   title: Wirth, Grant, Stone, Stephenson & Frankel 2025, Cascadia velocity model v1.7 with shallow soils and topography, USGS OFR 2025-1045
@@ -76,6 +80,8 @@ comcat_uw:
   url: https://earthquake.usgs.gov/fdsnws/event/1/
   verified: web-2026-09-23 (89 M>=2 events in domain 2015-2026 with phase-data)
   role: analyst picks and PNSN hypocentres for S6
+  bib_author: "{U.S. Geological Survey}"   # author and year for the BibTeX entry (live service: year accessed)
+  bib_year: 2026
 
 fdsn_iris_stations:
   title: EarthScope (IRIS) FDSN station service
@@ -132,6 +138,8 @@ earthscope_fdsn:
   url: https://service.earthscope.org/fdsnws/station/1/
   verified: web-2026-09-23 (864 stations, 3969 channel epochs)
   role: seismic, strong motion, nodes, infrasound, strain/tilt, MT sensors
+  bib_author: "{EarthScope Consortium}"   # author and year for the BibTeX entry (live service: year accessed)
+  bib_year: 2026
 
 earthscope_gnss:
   title: EarthScope/UNAVCO GNSS site metadata web service
@@ -184,6 +192,8 @@ iceboost_v2:
   paper: "Maffezzoli et al., IceBoost (Geosci. Model Dev., 2025) -- citation and DOI not verified"
   verified: web-2026-09-23 (files downloaded; metadata read from GeoTIFF tags)
   role: ice thickness (S1), ice-free bed
+  bib_author: "Maffezzoli, N."   # author and year for the BibTeX entry (live service: year accessed)
+  bib_year: 2025
 
 rgi60:
   title: RGI Consortium 2017, Randolph Glacier Inventory 6.0 (via OGGM rgi62_stats.csv)
@@ -219,6 +229,7 @@ ma2026_wtd:
   note: mean only on Zenodo; the ensemble IQR (wtd_uncertainty) needs a HydroGEN PIN through hf_hydrodata (dataset ma_2025, grid conus2_wtd.30)
   role: water-table depth (surface layer water_table_depth; atlas layer, cited)
   redistribute_derived: false   # CC-BY-NC-ND: no derivatives; users rebuild with S2 --ma
+  bib_author: "Ma, Y. and Condon, L. E. and Koch, J. and Bennett, A. and Defnet, A. and Tijerina-Kreuzer, D. and Melchior, P. and Maxwell, R. M."
 
 fan2017_wtd:
   title: Fan, Miguez-Macho, Jobbagy, Jackson & Otero-Casal 2017, Hydrologic regulation of plant rooting depth, PNAS; global water-table depth annual mean (after Fan et al. 2013, Science)
@@ -251,6 +262,8 @@ nlcd_2021:
   license: public domain
   verified: web-2026-09-24 (WCS GetCoverage)
   role: land cover (surface layer land_cover)
+  bib_author: "{U.S. Geological Survey}"   # author and year for the BibTeX entry (live service: year accessed)
+  bib_year: 2023
 
 nhdplus_hr:
   title: U.S. Geological Survey NHDPlus High Resolution (1:24k) network flowlines, VAA and EROM mean annual flow (QAMA), HU4 1711, 1708, 1703
@@ -258,6 +271,8 @@ nhdplus_hr:
   license: public domain
   verified: web-2026-09-24 (staged GDB download; 60,174 flowlines in the domain)
   role: stream network, Strahler order and mean annual flow (surface layer stream_order; atlas stream lines)
+  bib_author: "{U.S. Geological Survey}"   # author and year for the BibTeX entry (live service: year accessed)
+  bib_year: 2026
 
 sentinel2_l2a:
   title: Copernicus Sentinel-2 L2A surface reflectance (ESA), via Microsoft Planetary Computer STAC; cloud-masked (SCL 4,5,6,7,11) median of scenes <= 25% cloud, 2025-08-01 to 2025-09-30
@@ -266,6 +281,8 @@ sentinel2_l2a:
   verified: web-2026-09-24 (8 acquisition days in the composite)
   note: recipe from gaia-hazlab/seis-hydro-2-sed workflows/28_fetch_basemaps.py
   role: true-colour imagery for the atlas; NDVI and NDSI surface layers
+  bib_author: "{European Space Agency}"   # author and year for the BibTeX entry (live service: year accessed)
+  bib_year: 2025
 
 christensen_1996:
   title: Christensen 1996, Poisson's ratio and crustal seismology, JGR 101(B2), 3139-3156
@@ -325,6 +342,8 @@ panga_gnss:
   license: open; acknowledge "GPS time series provided by the Pacific Northwest Geodetic Array, Central Washington University"
   verified: web-2026-09-24 (download; 188 sites in the network box, series to 2026-07-18)
   role: primary daily GNSS positions and published velocities (S17, S18 QC)
+  bib_author: "{Pacific Northwest Geodetic Array}"   # author and year for the BibTeX entry (live service: year accessed)
+  bib_year: 2026
 
 unr_ngl_gnss:
   title: Blewitt, Hammond & Kreemer 2018, Harnessing the GPS data explosion for interdisciplinary science, Eos 99; Nevada Geodetic Laboratory IGS20 daily positions (NA-fixed tenv3) and steps database
@@ -366,6 +385,9 @@ sentinel2_lai_2023:
   license: Copernicus open data (free, attribution "Contains modified Copernicus Sentinel data 2023"); access needs a CDSE account
   verified: "no"
   role: lai_sentinel2 surface layer (S19)
+  bib_author: "{European Space Agency}"   # author and year for the BibTeX entry (live service: year accessed)
+  bib_year: 2023
+  bib_url: "https://dataspace.copernicus.eu"
 
 gedi_l2b:
   title: Dubayah et al., GEDI L2B Canopy Cover and Vertical Profile Metrics, version 2 (GEDI02_B), NASA LP DAAC; footprints quality-filtered and gridded to 1 km (EPSG:6933) by the canopy-storage project
@@ -396,3 +418,141 @@ soil_map_image:
   verified: "no"
   role: soil_map image layer in the viewer (display only)
   redistribute_derived: false   # source and legend undocumented; not published until they are
+
+# ---- mass-movement catalogue (report section on landslides, lahars, debris flows and avalanches); DOIs resolved
+# at doi.org and metadata read from Crossref or DataCite on 2026-09-25
+wgs_landslide_inventory:
+  title: Washington Geological Survey, Washington State Landslide Inventory Database, Digital Data Series 29, v1.5 (2026); includes the Landslide Compilation layer with the NPS mapping of Riedel et al.
+  url: https://gis.dnr.wa.gov/site3/rest/services/Geology/Landslide_Inventory_Database/MapServer
+  license: not stated in the service metadata
+  verified: web-2026-09-25 (service queried; 57 compilation polygons in lon -122.00 to -121.44, lat 46.70 to 47.00)
+  role: landslide polygons (mass-movement catalogue)
+  bib_author: "{Washington Geological Survey}"   # author and year for the BibTeX entry (live service: year accessed)
+  bib_year: 2026
+
+usgs_landslide_inventory_v3:
+  title: Belair, Jones, Luna & Mirus 2025, U.S. Landslide Inventory, version 3.0, USGS data release
+  doi: 10.5066/P14AJF8I
+  license: CC0-1.0
+  verified: web-2026-09-25 (DataCite)
+  role: national landslide compilation (mass-movement catalogue)
+  bib_year: 2025
+
+mirus_2020:
+  title: Mirus, Jones, Baum, Godt, Slaughter, Crawford, Lancaster, Stanley, Pollock, Perkins, Schulz & Burns 2020, Landslides across the USA, occurrence, susceptibility, and data limitations, Landslides 17
+  doi: 10.1007/s10346-020-01424-4
+  verified: web-2026-09-25 (Crossref)
+  role: description of the U.S. Landslide Inventory
+
+hoblitt_1998:
+  title: Hoblitt, Walder, Driedger, Scott, Pringle & Vallance 1998, Volcano hazards from Mount Rainier, Washington, revised 1998, USGS Open-File Report 98-428
+  doi: 10.3133/ofr98428
+  verified: web-2026-09-25 (Crossref)
+  role: lahar history and hazard zones
+
+schilling_2008:
+  title: Schilling, Doelger, Hoblitt, Walder, Driedger, Scott, Pringle & Vallance 2008, Digital data for volcano hazards from Mount Rainier, Washington, revised 1998, USGS Open-File Report 2007-1220
+  doi: 10.3133/ofr20071220
+  verified: web-2026-09-25 (Crossref)
+  role: lahar inundation zones (shapefiles)
+
+scott_1995:
+  title: Scott, Vallance & Pringle 1995, Sedimentology, behavior, and hazards of debris flows at Mount Rainier, Washington, USGS Professional Paper 1547
+  doi: 10.3133/pp1547
+  verified: web-2026-09-25 (Crossref)
+  role: Holocene lahar inventory
+
+vallance_scott_1997:
+  title: Vallance & Scott 1997, The Osceola Mudflow from Mount Rainier, sedimentology and hazard implications of a huge clay-rich debris flow, GSA Bulletin 109(2)
+  doi: 10.1130/0016-7606(1997)109<0143:TOMFMR>2.3.CO;2
+  verified: web-2026-09-25 (Crossref)
+  role: Osceola Mudflow
+
+crandell_1971:
+  title: Crandell 1971, Postglacial lahars from Mount Rainier volcano, Washington, USGS Professional Paper 677
+  doi: 10.3133/pp677
+  verified: web-2026-09-25 (Crossref)
+  role: postglacial lahars
+
+crandell_fahnestock_1965:
+  title: Crandell & Fahnestock 1965, Rockfalls and avalanches from Little Tahoma Peak on Mount Rainier, Washington, USGS Bulletin 1221-A
+  doi: 10.3133/b1221A
+  verified: web-2026-09-25 (Crossref)
+  role: 1963 rock avalanches
+  bib_author: "Crandell, D. R. and Fahnestock, R. K."
+  bib_title: "Rockfalls and avalanches from Little Tahoma Peak on Mount Rainier, Washington, U.S. Geological Survey Bulletin 1221-A"
+
+walder_driedger_1994:
+  title: Walder & Driedger 1994, Rapid geomorphic change caused by glacial outburst floods and debris flows along Tahoma Creek, Mount Rainier, Washington, USGS Water-Resources Investigations Report 93-4093
+  doi: 10.3133/wri934093
+  verified: web-2026-09-25 (Crossref)
+  role: Tahoma Creek outburst floods and debris flows
+  bib_author: "Walder, J. S. and Driedger, C. L."
+  bib_title: "Rapid geomorphic change caused by glacial outburst floods and debris flows along Tahoma Creek, Mount Rainier, Washington, U.S. Geological Survey Water-Resources Investigations Report 93-4093"
+
+walder_driedger_1995:
+  title: Walder & Driedger 1995, Frequent outburst floods from South Tahoma Glacier, Mount Rainier, USA, relation to debris flows, meteorological origin and implications for subglacial hydrology, Journal of Glaciology 41(137)
+  doi: 10.3189/S0022143000017718
+  verified: web-2026-09-25 (Crossref)
+  role: outburst floods and debris flows
+
+legg_2014:
+  title: Legg, Meigs, Grant & Kennard 2014, Debris flow initiation in proglacial gullies on Mount Rainier, Washington, Geomorphology 226
+  doi: 10.1016/j.geomorph.2014.08.003
+  verified: web-2026-09-25 (Crossref)
+  role: 2006 debris-flow initiation
+
+anderson_pitlick_2014:
+  title: Anderson & Pitlick 2014, Using repeat lidar to estimate sediment transport in a steep stream, JGR Earth Surface 119
+  doi: 10.1002/2013JF002933
+  verified: web-2026-09-25 (Crossref)
+  role: river aggradation from repeat lidar
+
+allstadt_2018:
+  title: Allstadt, Matoza, Lockhart, Moran, Caplan-Auerbach, Haney, Thelen & Malone 2018, Seismic and acoustic signatures of surficial mass movements at volcanoes, JVGR 364
+  doi: 10.1016/j.jvolgeores.2018.09.007
+  verified: web-2026-09-25 (Crossref)
+  role: seismic detection of mass movements
+
+esec_v3:
+  title: Collins, Allstadt, Groult, Hibert, Malet, Toney & Jensen 2025, Seismogenic landslides and other mass movements (Exotic Seismic Events Catalog), version 3.0, USGS data release
+  doi: 10.5066/P90VGCSK
+  license: CC0-1.0
+  verified: web-2026-09-25 (DataCite)
+  role: seismogenic mass movements
+  bib_year: 2025
+
+allstadt_2017_esec:
+  title: Allstadt, McVey & Malone 2017, Seismogenic landslides, debris flows, and outburst floods in the western United States and Canada from 1977 to 2017, USGS data release
+  doi: 10.5066/F7251H3W
+  verified: web-2026-09-25 (DataCite)
+  role: seismogenic mass movements, PNSN region
+
+kramer_2024:
+  title: Kramer, Thelen, Iezzi, Moran & Pauk 2024, Recent expansion of the Cascades Volcano Observatory geophysical network at Mount Rainier for improved volcano and lahar monitoring, Seismological Research Letters
+  doi: 10.1785/0220240112
+  verified: web-2026-09-25 (Crossref)
+  role: lahar detection network
+
+kharita_2026:
+  title: Kharita, Denolle, Hutko, Hartog & Malone 2026, Exploration of machine learning methods to seismic event discrimination in the Pacific Northwest, Seismica 5(1)
+  doi: 10.26443/seismica.v5i1.2068
+  verified: web-2026-09-25 (Crossref)
+  role: classification of surface events in PNSN data
+
+riedel_dorsch_2016:
+  title: Riedel & Dorsch 2016, Geomorphology of Mount Rainier, landform mapping at Mount Rainier National Park, NPS/MORA/NRR-2016/1234
+  url: https://www.morageology.com/pubs/93.pdf
+  verified: web-2026-09-25 (report read; 448 mass movements over 37 km2)
+  role: park landslide inventory
+  bib_author: "Riedel, J. L. and Dorsch, S. J."   # author and year for the BibTeX entry (live service: year accessed)
+  bib_year: 2016
+
+nwac_observations:
+  title: Northwest Avalanche Center, avalanche observations
+  url: https://nwac.us/observations/
+  license: API on request for research partners
+  verified: web-2026-09-25 (site read)
+  role: snow-avalanche observations
+  bib_author: "{Northwest Avalanche Center}"   # author and year for the BibTeX entry (live service: year accessed)
+  bib_year: 2026

@@ -1,20 +1,21 @@
-"""S10: build the model report -> docs/report/rainier3d_subsurface_model.html (single self-contained file).
+"""S10: report figures from the built model -> docs/report/figures/ (committed).
 
-Figures are regenerated from the current model and outputs (S1-S9 must have run); the text lives in
-docs/report/subsurface_model.md; references come from docs/report/references_resolved.json.
-Use --figures-only / --html-only to redo one half. Figures 10-13 (calibration and validation) are
-written by S16 and S21.
+The figures need the model and outputs (S1-S9 and S17-S19 must have run). The calibration and validation
+figures (fig10-fig13) are written by S16 and S21, and the alteration maps by S22. The text is
+docs/report/rainier3d.md; S23 (pixi run -e paper report) builds the HTML page and the ESSD PDF from it
+without model data.
 """
 
 from __future__ import annotations
 
-import argparse
 import json
 import logging
 
+import xarray as xr
+import yaml
+
 from rainier3d.config.domain import REPO, load_domain
 from rainier3d.report import figures as F
-from rainier3d.report.render import render
 from rainier3d.sensors.inventory import das_channels
 from rainier3d.validate.pnsn import pnsn_1d
 
@@ -55,30 +56,28 @@ def figures(dom):
         F.fig_glaciers(out / "glacier_thickness_check.csv", FIG / "fig2_glaciers.png"),
         F.fig_surface_layers(tree, dom, FIG / "fig8_surface_layers.png"),
     ]
+    canopy = dom.path("processed") / "surface_canopy.zarr"
+    if canopy.exists():
+        made.append(
+            F.fig_canopy(xr.open_zarr(canopy, consolidated=False), tree, dom, FIG / "fig14_canopy.png")
+        )
+    load = dom.path("processed") / "edifice_load.zarr"
+    if load.exists():
+        gcfg = yaml.safe_load((REPO / "configs" / "gnss.yaml").read_text())
+        ltree = xr.open_datatree(load, engine="zarr", consolidated=False)
+        grid = dom.path("processed") / "gnss" / "strain_grid.nc"
+        made.append(
+            F.fig_strain(
+                grid, out / "gnss" / "velocities.csv", ltree, tree, dom, gcfg, FIG / "fig15_strain.png"
+            )
+        )
     for p in made:
         logging.info("figure %s", p.relative_to(REPO))
 
 
 def main():
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
-    ap = argparse.ArgumentParser()
-    ap.add_argument("--figures-only", action="store_true")
-    ap.add_argument("--html-only", action="store_true")
-    a = ap.parse_args()
-    dom = load_domain()
-    if not a.html_only:
-        figures(dom)
-    if not a.figures_only:
-        p = render(
-            DOCS / "subsurface_model.md",
-            DOCS / "rainier3d_subsurface_model.html",
-            DOCS / "references_resolved.json",
-            title="rainier3d: a geology-driven 3D velocity model of Mount Rainier",
-            description="How the rainier3d M1 subsurface model (Vp, Vs, density, Q) of Mount Rainier "
-            "and the West Rainier Seismic Zone was built, checked against PNSN travel times, "
-            "and how to extract it.",
-        )
-        logging.info("wrote %s (%.1f MB)", p.relative_to(REPO), p.stat().st_size / 1e6)
+    figures(load_domain())
 
 
 if __name__ == "__main__":
