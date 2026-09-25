@@ -78,3 +78,33 @@ def test_trajectory_removes_steps_and_references_epoch():
     f = trajectory(t, x, steps=[2020.3])
     assert abs(f["b"] - 0.003) < 1e-6 and abs(f["steps"][2020.3] + 0.015) < 1e-6
     assert np.allclose(f["corrected"], 0.003 * (t - 2015) + 0.002 * np.sin(2 * np.pi * t) - 0.0, atol=1e-6)
+
+
+def test_fetch_streams_and_manifest_is_relative(tmp_path, monkeypatch):
+    """fetch writes the streamed bytes, records the path relative to the manifest, and verify_manifest finds
+    the file from any working directory (and flags it once its bytes change)."""
+    from rainier3d.geodesy import archive as A
+
+    class Resp:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *a):
+            return False
+
+        def raise_for_status(self):
+            pass
+
+        def iter_content(self, n):
+            yield b"abc"
+            yield b"def"
+
+    monkeypatch.setattr(A.requests, "get", lambda *a, **k: Resp())
+    man = tmp_path / "gnss" / "manifest.csv"
+    p = A.fetch("https://example.org/x.txt", tmp_path / "gnss" / "unr" / "x.txt", "unr", man)
+    assert p.read_bytes() == b"abcdef" and not p.with_name("x.txt.part").exists()
+    assert "unr/x.txt" in man.read_text() and str(tmp_path) not in man.read_text()
+    monkeypatch.chdir(tmp_path.parent)
+    assert A.verify_manifest(man) == []
+    p.write_bytes(b"changed")
+    assert A.verify_manifest(man) == [str(p.resolve())]

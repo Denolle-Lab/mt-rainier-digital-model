@@ -1,7 +1,8 @@
 """Deterministic fetching of GNSS products from their original archives.
 
 Every download goes through :func:`fetch`: the file is cached under data/raw/gnss/<archive>/, and a line is
-added to data/raw/gnss/manifest.csv (archive, url, local path, retrieved UTC, bytes, sha256). A rebuild
+added to data/raw/gnss/manifest.csv (archive, url, path relative to the manifest, retrieved UTC, bytes,
+sha256). A rebuild
 reads the cache, so results depend only on the cached bytes; `verify_manifest` checks them. Parsers turn
 each archive's format into one table (see ``COLUMNS``) so the rest of the pipeline never sees archive
 specifics."""
@@ -12,6 +13,7 @@ import csv
 import datetime as dt
 import hashlib
 import logging
+import os
 import re
 from pathlib import Path
 
@@ -55,10 +57,14 @@ def fetch(
     """Download ``url`` to ``path`` once and record it in the manifest; later calls read the cache."""
     if path.exists() and not refresh:
         return path
-    r = requests.get(url, timeout=timeout, headers={"User-Agent": USER_AGENT})
-    r.raise_for_status()
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_bytes(r.content)
+    part = path.with_name(path.name + ".part")
+    with requests.get(url, timeout=timeout, headers={"User-Agent": USER_AGENT}, stream=True) as r:
+        r.raise_for_status()
+        with open(part, "wb") as f:
+            for chunk in r.iter_content(1 << 20):
+                f.write(chunk)
+    part.replace(path)  # a failed download never leaves a partial file at the cached path
     new = not manifest.exists()
     manifest.parent.mkdir(parents=True, exist_ok=True)
     with open(manifest, "a", newline="") as f:
@@ -69,7 +75,7 @@ def fetch(
             [
                 archive,
                 url,
-                str(path),
+                Path(os.path.relpath(path.resolve(), manifest.parent.resolve())).as_posix(),
                 dt.datetime.now(dt.UTC).isoformat(timespec="seconds"),
                 path.stat().st_size,
                 sha256(path),
@@ -80,12 +86,13 @@ def fetch(
 
 
 def verify_manifest(manifest: Path) -> list[str]:
-    """Files whose bytes no longer match the manifest (latest entry per path)."""
+    """Files whose bytes no longer match the manifest (latest entry per file). Relative paths are read from
+    the manifest's folder; absolute paths (older manifests) are used as they are."""
     latest = {}
     with open(manifest) as f:
         for row in csv.DictReader(f):
-            latest[row["path"]] = row
-    return [p for p, row in latest.items() if not Path(p).exists() or sha256(Path(p)) != row["sha256"]]
+            latest[(manifest.parent / row["path"]).resolve()] = row
+    return [str(p) for p, row in latest.items() if not p.exists() or sha256(p) != row["sha256"]]
 
 
 # ---------------------------------------------------------------- UNR (Nevada Geodetic Laboratory)

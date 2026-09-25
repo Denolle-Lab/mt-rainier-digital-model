@@ -1,10 +1,14 @@
-"""S18: GNSS velocities, surface strain, and stress from the edifice load (data/processed/gnss, outputs/gnss).
+"""S18: GNSS velocities, surface strain, and stress from the edifice load.
 
-  velocities.csv        MIDAS velocities per site (PANGA first, UNR where PANGA has no site), frame-aligned
-  strain_grid.nc        secular strain-rate components and the annual (seasonal) areal-strain amplitude/phase
-  strain_<region>.csv   daily uniform strain of the stations around each region (configs/gnss.yaml), with and
-                        without the secular trend
-  edifice_load.zarr     stress from the edifice weight on the model levels L1-L3 (Boussinesq half-space)
+  outputs/gnss/velocities.csv           MIDAS velocities per site (PANGA first, UNR where PANGA has no site),
+                                        frame-aligned, with QC flags
+  outputs/gnss/strain_<region>.csv      daily uniform strain of the stations around each region
+                                        (configs/gnss.yaml), with and without the secular trend
+  outputs/gnss/summary.json             frame fit, regional secular rates, QC flags, edifice-load totals
+  data/processed/gnss/strain_grid.nc    secular strain-rate components and the annual (seasonal) areal-strain
+                                        amplitude/phase
+  data/processed/edifice_load.zarr      stress from the edifice weight on the model levels L1-L3 (Boussinesq
+                                        half-space)
 
 Usage: pixi run s18
 """
@@ -24,6 +28,7 @@ from rainier3d.config.domain import REPO, load_domain
 from rainier3d.geodesy import load as LD
 from rainier3d.geodesy.strain import COMPONENTS, strain_grid, uniform_strain
 from rainier3d.geodesy.velocity import midas, trajectory
+from rainier3d.io import store
 from rainier3d.io.store import read_tree
 
 log = logging.getLogger("s18")
@@ -314,7 +319,7 @@ def main():
         "reference_plane_m": loads[3],
         "edifice_weight_N": float(loads[2].sum()),
     }
-    lt.to_zarr(dom.path("processed") / "edifice_load.zarr", mode="w", consolidated=False)
+    store.write(lt, dom.path("processed") / "edifice_load.zarr")
     summary["edifice_load"] = {
         "reference_plane_m": loads[3],
         "weight_N": float(loads[2].sum()),
