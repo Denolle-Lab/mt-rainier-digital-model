@@ -578,3 +578,71 @@ nwac_observations:
   role: snow-avalanche observations
   bib_author: "{Northwest Avalanche Center}"   # author and year for the BibTeX entry (live service: year accessed)
   bib_year: 2026
+
+# Publications cited in the paper that were not yet registry entries (their BibTeX keys used to be generated from
+# DOIs found elsewhere in the repository, and disappeared when those files were removed). DOIs resolved 2026-09-25.
+aagaard2021:
+  title: Aagaard & Hirakawa 2021, San Francisco Bay region 3D seismic velocity model v21.0, USGS data release
+  doi: 10.5066/P98CA3D5
+  verified: web-2026-09-25 (DOI resolved)
+  role: precedent for rule-based 3D geology columns (paper, three-dimensional geology)
+
+driedger1986:
+  title: Driedger & Kennard 1986, Ice volumes on Cascade volcanoes, Mount Rainier, Mount Hood, Three Sisters and Mount Shasta, USGS Professional Paper 1365
+  doi: 10.3133/pp1365
+  verified: web-2026-09-25 (DOI resolved)
+  role: 1981 radar glacier thicknesses (glacier check)
+
+flinders2017:
+  title: Flinders & Shen 2017, Seismic evidence for a possible deep crustal hot zone beneath southwest Washington, Scientific Reports 7
+  doi: 10.1038/s41598-017-07123-w
+  verified: web-2026-09-25 (DOI resolved)
+  role: Rainier-area Vs model for the deep calibration (limitations)
+
+frank1995:
+  title: Frank 1995, Surficial extent and conceptual model of hydrothermal system at Mount Rainier, Washington, Journal of Volcanology and Geothermal Research 65
+  doi: 10.1016/0377-0273(94)00081-Q
+  verified: web-2026-09-25 (DOI resolved)
+  role: surficial hydrothermal system (geohydrology)
+
+fuhrig2024:
+  title: Fuhrig, Long & Headman 2024, Evaluation of groundwater resources in the Upper White River Basin within Mount Rainier National Park, Washington State, 2020, USGS Scientific Investigations Report 2024-5015
+  doi: 10.3133/sir20245015
+  verified: web-2026-09-25 (DOI resolved)
+  role: park-scale groundwater assessment (geohydrology)
+
+heap2021:
+  title: Heap & Violay 2021, The mechanical behaviour and failure modes of volcanic rocks, a review, Bulletin of Volcanology 83
+  doi: 10.1007/s00445-021-01447-2
+  verified: web-2026-09-25 (DOI resolved)
+  role: ranges for the alteration factors on Vp, Vs and density; laboratory values (rock physics, limitations)
+
+ni2023:
+  title: Ni, Hutko, Skene, Denolle, Malone, Bodin, Hartog & Wright 2023, Curated Pacific Northwest AI-ready seismic dataset, Seismica 2(1)
+  doi: 10.26443/seismica.v2i1.368
+  verified: web-2026-09-25 (DOI resolved)
+  role: curated PNSN picks and waveforms (limitations, mass movements)
+
+obrebski2015:
+  title: Obrebski, Abers & Foster 2015, Magmatic arc structure around Mount Rainier, WA, from the joint inversion of receiver functions and surface wave dispersion, Geochemistry, Geophysics, Geosystems 16
+  doi: 10.1002/2014GC005581
+  verified: web-2026-09-25 (DOI resolved)
+  role: Rainier-area Vs model for the deep calibration (limitations)
+
+sisson2011:
+  title: Sisson, Robinson & Swinney 2011, Whole-edifice ice volume change A.D. 1970 to 2007/2008 at Mount Rainier, Washington, based on LiDAR surveying, Geology 39
+  doi: 10.1130/G31902.1
+  verified: web-2026-09-25 (DOI resolved)
+  role: glacier thinning since 1981; lidar-based ice volume (glacier check, limitations)
+
+stanley1996:
+  title: Stanley, Johnson, Qamar, Weaver & Williams 1996, Tectonics and seismicity of the southern Washington Cascade Range, BSSA 86(1A)
+  doi: 10.1785/BSSA08601A0001
+  verified: web-2026-09-25 (DOI resolved)
+  role: Southern Washington Cascades Conductor and WRSZ (limitations)
+
+watters2000:
+  title: Watters, Zimbelman, Bowman & Crowley 2000, Rock mass strength assessment and significance to edifice stability, Mount Rainier and Mount Hood, Cascade Range volcanoes, Pure and Applied Geophysics 157
+  doi: 10.1007/s000240050012
+  verified: web-2026-09-25 (DOI resolved)
+  role: laboratory and field rock properties of Cascade volcanic rocks (limitations)
