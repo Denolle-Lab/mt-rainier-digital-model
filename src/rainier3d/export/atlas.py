@@ -1066,3 +1066,63 @@ def append_mass_movements(atlas: Path, flows, events) -> dict:
     }
     (out / "mass_events.json").write_text(json.dumps(doc, separators=(",", ":")))
     return {"flows": int(len(g)), "events": len(rows), "counts": counts}
+
+
+# ---- relocated catalogue (S26) for the viewer's before/after earthquake layer ----
+RELOCATED_FIELDS = (
+    "x_cc",
+    "y_cc",
+    "z_cc",
+    "x_1d",
+    "y_1d",
+    "z_1d",
+    "x_3d",
+    "y_3d",
+    "z_3d",
+    "mag",
+    "quality",
+    "gap",
+)
+
+
+def export_relocated(atlas: Path, catalog_csv: Path, dom, summary: dict | None = None) -> dict:
+    """outputs/catalog/catalog_relocated.csv (S26) -> <atlas>/quakes_relocated.bin + .json.
+
+    One float32 record of len(RELOCATED_FIELDS) per event located in both models: scene x, y, z (km; y is
+    elevation) of the ComCat, PNSN-1D and rainier3d-3D locations, magnitude, quality (3 = A, 2 = B, 1 = C) and
+    the azimuthal gap of the 3D location. Scene frame as in export_volume (scene_frame)."""
+    import pandas as pd
+    from pyproj import Transformer
+
+    cat = pd.read_csv(catalog_csv, index_col=0)
+    cat = cat.dropna(subset=["x_pnsn1d", "x_rainier3d"])
+    fr = scene_frame(atlas)
+    tf = Transformer.from_crs(dom.crs, 4326, always_xy=True)
+    cols = {}
+    for src, tag in (("cc", "cc"), ("pnsn1d", "1d"), ("rainier3d", "3d")):
+        lon, lat = tf.transform(cat[f"x_{src}"].values, cat[f"y_{src}"].values)
+        cols[f"x_{tag}"] = (lon - fr["lon0"]) * fr["kx"]
+        cols[f"y_{tag}"] = cat[f"z_{src}"].values / 1e3
+        cols[f"z_{tag}"] = -(lat - fr["lat0"]) * fr["kz"]
+    cols["mag"] = cat["mag"].values
+    cols["quality"] = cat["quality"].map({"A": 3, "B": 2, "C": 1}).fillna(0).values
+    cols["gap"] = cat["gap_rainier3d"].values
+    rec = np.column_stack([cols[k] for k in RELOCATED_FIELDS]).astype("<f4")
+    rec.tofile(atlas / "quakes_relocated.bin")
+    meta = {
+        "count": int(len(rec)),
+        "fields": list(RELOCATED_FIELDS),
+        "catalogs": {
+            "cc": {"label": "ComCat (PNSN)", "color": "#9aa0a6"},
+            "1d": {"label": "NonLinLoc, PNSN 1D model", "color": "#e8a33d"},
+            "3d": {"label": "NonLinLoc, rainier3d 3D model", "color": "#4c9be8"},
+        },
+        "from": str(cat["origin_time"].min())[:10],
+        "to": str(cat["origin_time"].max())[:10],
+        "magMin": float(cat["mag"].min()),
+        "source": "S26: PNSN analyst picks (ComCat), relocated with NonLinLoc (Lomax et al. 2000) in the "
+        "PNSN 1D model and in rainier3d, same picks and settings, hypocentres kept below the ground",
+        "summary": summary or {},
+    }
+    (atlas / "quakes_relocated.json").write_text(json.dumps(meta, indent=1))
+    return meta

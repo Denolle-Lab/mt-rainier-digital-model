@@ -768,7 +768,7 @@ The inventory records a failure depth for every lidar-protocol deposit (453 depo
 
 : The mass-movement catalogue in the model box (S24, `outputs/mass_movements/summary.csv`, run of 2026-09-25). Seismic events are from @allstadt_2017_esec; mapped and recent events from @wgs_landslide_inventory. Of the 1,650 events, 377 are dated; 351 of these are landslides of the January 2009 storm in the compilation. {#tbl:mass-counts}
 
-![Mass movements and faults. (a) Lahar deposits and mapped debris flows, the case 1 lahar inundation zone of 1998 (dashed), and faults of the 1:100,000 map (thin) and of the Quaternary fault layer (thick). (b) Event points by class: landslides at their crown (dots) and seismically recorded events (stars).](figures/fig16_mass_movements.png){#fig:mass width=100%}
+![Mass movements and faults. (a) Lahar deposits and mapped debris flows, the case 1 lahar inundation zone of 1998 (dashed), and faults of the 1:100,000 map (thin) and of the Quaternary fault layer (thick). (b) Events by class, drawn as downward chevrons as in the viewer: landslides at their crown (small) and seismically recorded events (large, white rim).](figures/fig16_mass_movements.png){#fig:mass width=100%}
 
 **Other machine-readable sources.** The U.S. Landslide Inventory [@usgs_landslide_inventory_v3; @mirus_2020] compiles the same state data nationally, and the compilation layer includes the park-wide mapping of 448 mass movements over 37 km² by @riedel_dorsch_2016. PNSN classifies surface events in its own catalogue, but these classes are not in ComCat: within 25 km of the summit, ComCat lists 14,288 events and none of them is a surface event. The curated PNSN dataset of @ni2023 and the classifiers of @kharita_2026 give labelled waveforms for training detectors.
 
@@ -841,15 +841,44 @@ Resampled grids are interpolated linearly within each level. Cells above the gro
 
 : Export formats of `rainier3d export`. {#tbl:formats}
 
-## Locating earthquakes in the three-dimensional model
+## Locating earthquakes in the three-dimensional model {#sec:relocation}
 
-Of the 15,660 PNSN earthquakes since 1980 in the box, 500 have ComCat hypocentres at or above the ground surface, mostly shallow edifice events. Those events were located in one-dimensional models that know neither the topography nor the slow edifice. Locating them in the three-dimensional model, with the search restricted to rock, removes the problem at its source. With NonLinLoc [@lomax_2000]:
+Of the 15,660 PNSN earthquakes since 1980 in the box, 500 have ComCat hypocentres at or above the ground surface, mostly shallow edifice events. Those events were located in one-dimensional models that know neither the topography nor the slow edifice. Script S26 relocates the catalogue with NonLinLoc [@lomax_2000] twice: once in the PNSN 1D model and once in rainier3d. Both runs use the same picks, stations, grid geometry and settings, so the difference between the two catalogues isolates the velocity model. ComCat is kept as a third reference. The settings are:
 
-- **Grid spacing.** Use equal horizontal and vertical spacing: 250 m near the edifice or 500 m for the WRSZ.
-- **Keep hypocentres in rock.** Mask the search volume below a topography grid with `LOCTOPO_SURFACE`, and leave the exported velocities unchanged; air cells carry the rock velocity below them, so travel times are unbiased. Slow air above a rock skin is an alternative, but the skin must be at least two cells thick. With a one-cell 500 m skin, Grid2Time's finite-difference start box reaches the slow air around summit stations and delays P times at station OBSR by 0.41 s on average.
-- **Stations.** Give stations in the same UTM kilometre frame, with depth = −elevation/1000 (`GTSRCE <sta> XYZ <x_km> <y_km> <−elev_km> 0.0`).
-- **Travel times and location.** Compute times with `GTMODE GRID3D ANGLES_NO`, and locate with the equal-differential-time likelihood and oct-tree search. Model errors should grow with travel time (`LOCGAU2 0.02 0.05 0.5`).
-- **Depths.** NonLinLoc reports depths below sea level. Depth below the ground follows from `surface_elevation` in the netCDF export.
+- **Grids.** Equal spacing in all directions (500 m here; 250 m is practical near the edifice). The 1D model is written on the same grid as the 3D model.
+- **Keep hypocentres in rock.** The search volume is masked below the ground with `LOCTOPO_SURFACE`, reading an ASCII GMT grid of the DEM in kilometres on the UTM frame. With `TRANS NONE`, NonLinLoc compares −z with that grid. The exported velocities are left unchanged, and air cells carry the rock velocity below them, so travel times are unbiased. Slow air above a rock skin is an alternative, but the skin must be at least two cells thick: with a one-cell 500 m skin, Grid2Time's finite-difference start box reaches the slow air around summit stations and delays P times at station OBSR by 0.41 s on average.
+- **Stations.** In the UTM kilometre frame, with depth = −elevation/1000 (`GTSRCE <sta> XYZ <x_km> <y_km> <−elev_km> 0.0`).
+- **Travel times and location.** `GTMODE GRID3D ANGLES_NO`; the equal-differential-time likelihood and oct-tree search. Gaussian pick errors are 0.14 s for P and 0.23 s for S, as in the calibration, and model errors grow with travel time (`LOCGAU2 0.02 0.05 0.5`).
+- **Quality.** Grade A: gap < 180°, at least eight phases and depth standard deviation < 2 km. Grade B: gap < 250° and at least six phases. Grade C: the rest.
+
+**The 2023–2025 catalogue.** We applied S26 to the 371 PNSN earthquakes of magnitude 1 or larger in the box from 2023 to 2025. They carry 20,425 analyst picks (12,546 P and 7,879 S) at 45 stations inside the box, and 370 have at least six picks. NonLinLoc locates 347 events in the 1D model and 353 in rainier3d. The others are rejected because their most likely location lies on the edge of the search volume ([@tbl:relocation]):
+
+- in rainier3d, 12 rejected events lie at its base, at 18.7 km below sea level, the deepest level searched;
+- the remaining rejections, in either model, are epicentres at the edge of the box, beyond which there are few stations.
+
+| | ComCat | NonLinLoc, PNSN 1D | NonLinLoc, rainier3d |
+|---|---|---|---|
+| Located (of 370) | – | 347 | 353 |
+| Rejected: base of the volume / side | – | 3 / 20 | 12 / 5 |
+| Median RMS, grade A and B (s) | – | 0.119 | 0.109 |
+| Median depth sd; largest horizontal uncertainty (km) | – | 0.61; 0.61 | 0.68; 0.57 |
+| Above the ground | 1 | 4, pinned at the mask | 0 |
+| Summit (165 events): median elevation; 5–95% range (km) | −0.31; −1.29 to 2.18 | −0.28; −0.90 to 0.77 | −0.91; −1.82 to 0.65 |
+| WRSZ (129 events): median elevation; 5–95% range (km) | −8.8; −14.7 to −3.7 | −9.6; −16.0 to −3.4 | −9.5; −15.2 to −4.5 |
+
+: Relocation of the 2023–2025 PNSN catalogue, magnitude ≥ 1 (S26, `outputs/catalog/summary.json` and `catalog_relocated.csv`). Rows below "Located" are for the 340 grade A and B events located in both models. Summit events lie within 3 km of the summit and WRSZ events 8–25 km west of it, both by ComCat epicentre. {#tbl:relocation}
+
+**What changes.** The residuals fall by 8% in rainier3d (median RMS 0.109 against 0.119 s). The events move a median 0.6 km horizontally and 0.44 km deeper than in the 1D model (10th–90th percentile −0.55 to +1.46 km).
+
+- **Summit.** The largest change is under the summit. The 1D model gathers the events near sea level, over 1.7 km (5–95%). rainier3d places them 0.76 km deeper (median) and spreads them over 2.5 km. In the 1D model, four events rise until they meet the topography mask: ComCat places them 2.8–7.1 km below sea level, and rainier3d 1.2–9.9 km below it.
+- **WRSZ.** The median depth changes little (−0.16 km), and the depth range narrows from 12.6 to 10.7 km.
+- **Edges.** Epicentres near the northwestern and southeastern edges of the box shift outward in both models, where the station coverage ends.
+
+In this period ComCat places one event above the ground. The problem of the 500 above-ground events therefore lies in the older part of the catalogue, which S26 can relocate once its picks are cached ([@sec:limits]).
+
+![The 2023–2025 PNSN catalogue (magnitude ≥ 1; the 344 events graded A or B in rainier3d) as located by ComCat, by NonLinLoc in the PNSN 1D model and by NonLinLoc in rainier3d. Top: epicentres over elevation contours. Bottom: west–east sections within 5 km of the summit, with the ground profile, and the number of events above the ground.](figures/fig19_relocated_catalogs.png){#fig:relocated width=100%}
+
+![(a) Depth change of each event between rainier3d and the 1D model (filled) and between rainier3d and ComCat (outline). (b) Epicentre shifts from the 1D to the 3D location.](figures/fig20_relocated_shifts.png){#fig:relshift width=100%}
 
 ## The three-dimensional viewer
 
@@ -860,7 +889,7 @@ The viewer runs in a web browser, including on phones. It is a React and three.j
 - the PNSN seismicity;
 - the mass movements of [@sec:mass]: the flow deposits as a draped layer and the events as points on the ground, filtered by class and date from the legend.
 
-Below the ground it shows Vs, Vp, Vp/Vs, density, units, alteration and the strain fields of [@sec:strain3d], on a vertical section along the terrain cut and on a horizontal depth slice. For the strain fields, the depth slice also carries their orientation bars. Its map data are built by scripts S8, S11, S24 and S25 and published as a release asset named in `web/viewer/DATA_RELEASE`.
+Below the ground it shows Vs, Vp, Vp/Vs, density, units, alteration and the strain fields of [@sec:strain3d], on a vertical section along the terrain cut and on a horizontal depth slice. For the strain fields, the depth slice also carries their orientation bars. A panel under the subsurface controls shows the relocated catalogue of [@sec:relocation], as located by ComCat, in the 1D model and in rainier3d, with optional lines from each 1D location to its 3D location. Its map data are built by scripts S8, S11, S24, S25 and S26 and published as a release asset named in `web/viewer/DATA_RELEASE`.
 
 # Limitations {#sec:limits}
 
