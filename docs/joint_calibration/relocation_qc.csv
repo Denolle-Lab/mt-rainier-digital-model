@@ -1,0 +1,6 @@
+model,events,above_ground,at_grid_top,depth_change_gt_5km,events_depth_change_gt_5km
+PNSN 1D,88,10,0,6,uw62230362 uw62216121 uw61982146 uw61417481 uw61293861 uw61044377
+"3D, uncalibrated",88,1,0,2,uw61696206 uw61044377
+"3D, Vs only (S12)",88,3,0,3,uw61696206 uw61417481 uw61280162
+"3D, depth factors (S13 v1)",88,2,0,1,uw61696206
+"3D, geology + bias (S13 v2)",88,2,0,4,uw61696206 uw61417481 uw61368441 uw61143812
