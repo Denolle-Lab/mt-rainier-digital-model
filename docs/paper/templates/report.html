@@ -54,7 +54,7 @@ footer { border-top: 1px solid var(--line); margin-top: 48px; padding-top: 14px;
 <header class="title">
 <div class="kicker">$kicker$</div>
 <h1>$title$</h1>
-<div class="byline">$for(essd-authors)$$essd-authors.given$ $essd-authors.family$<sup>$essd-authors.affil$</sup>$if(essd-authors.orcid)$ <a class="orcid" href="https://orcid.org/$essd-authors.orcid$" title="ORCID $essd-authors.orcid$">iD</a>$endif$$sep$, $endfor$<br>
+<div class="byline">$for(essd-authors)$$essd-authors.given$ $essd-authors.family$<sup>$essd-authors.affil$</sup>$if(essd-authors.orcid)$ <a class="orcid" href="https://orcid.org/$essd-authors.orcid$" title="ORCID $essd-authors.orcid$" aria-label="ORCID of $essd-authors.given$ $essd-authors.family$">iD</a>$endif$$sep$, $endfor$<br>
 $for(essd-affiliations)$<sup>$essd-affiliations.id$</sup> $essd-affiliations.name$$sep$; $endfor$<br>
 Code and data: <a href="$repository$">$repository$</a> · 3D viewer: <a href="$viewer$">$viewer$</a></div>
 </header>
