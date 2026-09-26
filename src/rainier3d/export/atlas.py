@@ -501,9 +501,12 @@ def short_license(text: str | None) -> str:
 
 
 def _src(reg: dict, key: str) -> dict:
-    """A layer source for the viewer: key, title, link, licence (short and full) and attribution text."""
-    rec = reg.get(key, {})
-    out = {"key": key, "title": rec.get("title", key), "link": _link(rec) if rec else ""}
+    """A layer source for the viewer: key, title, link, licence (short and full) and attribution text. A key
+    missing from configs/sources.yaml is an error, as in rainier3d.io.store.provenance."""
+    if key not in reg:
+        raise KeyError(f"source key {key!r} is not in configs/sources.yaml")
+    rec = reg[key]
+    out = {"key": key, "title": rec.get("title", key), "link": _link(rec)}
     if rec.get("license"):
         out["license"] = short_license(rec["license"])
         out["licenseText"] = str(rec["license"])
