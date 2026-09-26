@@ -355,7 +355,7 @@ def export_layers(tree: xr.DataTree, dom, manifest: dict, out: Path, flowlines=N
                     "nodata": 65535,
                 },
                 "legend": {k: v for k, v in legend.items() if k != "cmap"},
-                "sources": [{"key": k, "title": reg[k].get("title", k), "link": _link(reg[k])} for k in keys],
+                "sources": [_src(reg, k) for k in keys],
             }
         )
 
@@ -484,6 +484,51 @@ def _link(rec: dict) -> str:
     if rec.get("doi"):
         return f"https://doi.org/{rec['doi']}"
     return rec.get("url", "")
+
+
+def short_license(text: str | None) -> str:
+    """A short label of a registry licence for the legend: the SPDX-like id, "public domain", or the phrase
+    before the first colon, semicolon or parenthesis (at most 48 characters); empty without a licence."""
+    if not text:
+        return ""
+    t = str(text).strip()
+    for tag in ("CC-BY-NC-ND-4.0", "CC-BY-4.0", "CC0", "public domain", "ODbL"):
+        if t.lower().startswith(tag.lower()):
+            return tag
+    for sep in (":", ";", " ("):
+        t = t.split(sep)[0]
+    return t.strip()[:48]
+
+
+def _src(reg: dict, key: str) -> dict:
+    """A layer source for the viewer: key, title, link, licence (short and full) and attribution text."""
+    rec = reg.get(key, {})
+    out = {"key": key, "title": rec.get("title", key), "link": _link(rec) if rec else ""}
+    if rec.get("license"):
+        out["license"] = short_license(rec["license"])
+        out["licenseText"] = str(rec["license"])
+    if rec.get("license_url"):
+        out["licenseUrl"] = rec["license_url"]
+    if rec.get("attribution"):
+        out["attribution"] = rec["attribution"]
+    return out
+
+
+def tag_licences(atlas: Path) -> int:
+    """Refresh the licence and attribution of every layer source in an existing bundle's model/layers.json
+    from configs/sources.yaml (keeps each source's title and link). Returns the number of sources updated."""
+    reg = _sources()
+    p = atlas / "model" / "layers.json"
+    meta = json.loads(p.read_text())
+    n = 0
+    for layer in meta["layers"]:
+        for i, src in enumerate(layer.get("sources", [])):
+            new = _src(reg, src["key"])
+            new["title"], new["link"] = src.get("title", new["title"]), src.get("link") or new["link"]
+            layer["sources"][i] = new
+            n += 1
+    p.write_text(json.dumps(meta, indent=1))
+    return n
 
 
 # ---- subsurface volume for the viewer's section and depth slice ----
@@ -988,7 +1033,7 @@ def append_canopy_layers(atlas: Path, dom, ds: xr.Dataset, cfg: dict, keys=None)
                     "nodata": 65535,
                 },
                 "legend": {"min": vmin, "max": vmax, "log": False, "ramp": _ramp(cm)},
-                "sources": [{"key": sk, "title": reg[sk]["title"], "link": _link(reg[sk])}],
+                "sources": [_src(reg, sk)],
             }
         )
     for im in cfg.get("images", []):
@@ -1090,7 +1135,7 @@ def append_mass_movements(atlas: Path, flows, events) -> dict:
         "legend": {
             "classes": [{"value": k, "label": lb, "color": c} for k, lb, c in FLOW_CLASSES if k in present]
         },
-        "sources": [{"key": k, "title": reg[k]["title"], "link": _link(reg[k])} for k in keys],
+        "sources": [_src(reg, k) for k in keys],
     }
     meta = json.loads((out / "layers.json").read_text())
     meta["layers"] = [x for x in meta["layers"] if x["key"] != "mass_flows"] + [entry]

@@ -67,7 +67,7 @@
       "excluded": [],
       "file": "rainier3d_mass_movements.zip",
       "description": "Mass-movement catalogue of the model box (S24): events (landslides, lahars, debris flows, seismically recorded mass movements), flow deposits, faults, 1998 lahar hazard zones and a summary (GeoPackage and CSV)",
-      "license": "CC-BY-4.0 for the compilation; the Washington landslide inventory states no licence (see docs/data_policy.md)",
+      "license": "CC-BY-4.0 for the compilation; the Washington Geological Survey layers are free to use with citation (WGS Disclaimers and Citation Guidelines; see docs/data_policy.md)",
       "cite": "as model; the sources listed in docs/mass_movements.md"
     },
     "gnss": {
