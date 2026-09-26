@@ -660,7 +660,7 @@ usgs_nwis_iv:
   title: USGS National Water Information System, instantaneous values service, discharge (parameter 00060)
   url: https://waterservices.usgs.gov/nwis/iv/
   license: public domain (USGS)
-  verified: web-2026-09-25 (12 gauges with discharge in the domain box, 2025-12-05 to 2025-12-14)
+  verified: web-2026-09-25 (15 gauges with discharge in the domain box, 2025-12-05 to 2025-12-14; S29 run)
   role: river gauges of the event (S29, viewer Events panel)
   redistribute_derived: true
   bib_author: "{U.S. Geological Survey}"
