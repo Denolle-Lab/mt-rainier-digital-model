@@ -148,7 +148,8 @@ hydrothermal system.
 SHmax of the load is tangential (circumferential) around the summit at and above sea level, and radial at
 5 km below sea level and deeper (Fig. 18 of the paper). The horizontal shear strain of the load is
 1–30 microstrain within 20 km of the summit. That is the strain the GNSS rates would accumulate in
-10³–10⁴ years.
+10²–10³ years (per-cell ratio within 20 km of the summit: 97, 377 and 1445 years at the 5th, 50th and
+95th percentiles, `strain_3d.zarr`).
 
 **For shear-wave splitting.** `strain_orientation.csv` lists, at elevations 1.5, 1, 0, −2, −5, −10 and −15 km:
 - the GNSS shortening axis, every 5 km;

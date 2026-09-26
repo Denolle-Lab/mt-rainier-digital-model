@@ -43,6 +43,11 @@ COPERNICUS_FILES = ("copernicus.cls", "copernicus.cfg", "copernicus.bst", "pdfsc
 # text characters -> LaTeX for the 8-bit fonts of the class (also valid under pdfLaTeX + newunicodechar)
 UNICODE = {
     "−": r"\ensuremath{-}",
+    "₂": r"\ensuremath{_2}",
+    "⁹": r"\ensuremath{^9}",
+    "⁷": r"\ensuremath{^7}",
+    "⁶": r"\ensuremath{^6}",
+    "⁰": r"\ensuremath{^0}",
     "ě": r"\v{e}",
     "×": r"\ensuremath{\times}",
     "∇": r"\ensuremath{\nabla}",

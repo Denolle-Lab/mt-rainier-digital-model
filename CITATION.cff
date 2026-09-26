@@ -9,22 +9,27 @@ repository-code: "https://github.com/Denolle-Lab/mt-rainier-digital-model"
 url: "https://denolle-lab.github.io/mt-rainier-digital-model/paper/"
 authors:
   - family-names: Denolle
+    orcid: "https://orcid.org/0000-0002-1610-2250"
     given-names: Marine
     email: mdenolle@uw.edu
     affiliation: "Department of Earth and Space Sciences, University of Washington"
   - family-names: Yao
+    orcid: "https://orcid.org/0009-0003-2417-7062"
     given-names: Derek
     affiliation: "Computer Science and Art, University of Washington"
   - family-names: Hemmett
+    orcid: "https://orcid.org/0009-0007-9810-8800"
     given-names: Michael
     affiliation: "Department of Earth and Space Sciences, University of Washington"
   - family-names: Köpfli
+    orcid: "https://orcid.org/0000-0002-4678-730X"
     given-names: Manuela
     affiliation: "Department of Earth and Space Sciences, University of Washington"
   - family-names: Han
     given-names: Sangwoo
     affiliation: "Department of Earth and Space Sciences, University of Washington"
   - family-names: Kidiwela
+    orcid: "https://orcid.org/0000-0002-3040-5469"
     given-names: Maleen
     affiliation: "Department of Earth and Space Sciences, University of Washington"
 keywords:
