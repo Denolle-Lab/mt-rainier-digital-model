@@ -127,6 +127,7 @@ of the layers you use; the Zenodo DOI plan is in `docs/doi.md`.
 | S27 Zenodo deposit | `scripts/27_zenodo_deposit.py` | a draft version of the software or data record on Zenodo (`docs/doi.md`) |
 | S28 canopy-storage pipeline | `scripts/28_canopy_pipeline.py` | `data/raw/canopy_storage/`: GEDI L3 canopy height, GEDI L2B footprints and grids, Sentinel-2 LAI, from the vendored code of `third_party/canopy-storage_seismic` (MIT); read by S19 (`docs/canopy_pipeline.md`; `pixi run -e canopy canopy`) |
 | S29 events | `scripts/29_flood_event.py` | `data/processed/events/<key>.zarr` (hourly MRMS precipitation on the 1 km domain grid, USGS discharge, seismic virtual discharge), `outputs/events/<key>/` (`peaks.csv`, `rain.csv`, `summary.json`), `fig21_flood_event.png`, the viewer Storms panel (`configs/events.yaml`, `docs/events.md`) |
+| S30 terrain geometry | `scripts/30_terrain_geometry.py` | `data/processed/terrain_geometry.zarr`: surface and bedrock slope, local relief, valley depth on a 30 m grid (specification of S. Han, `configs/terrain.yaml`); `outputs/terrain/mass_movement_terrain.csv` (the layers at the S24 mass movements); `fig22_terrain_geometry.png`; viewer layers (group "Terrain geometry") |
 
 `docs/eikonal_benchmark.md` compares the eikonal solvers (`scripts/bench_eikonal.py`).
 

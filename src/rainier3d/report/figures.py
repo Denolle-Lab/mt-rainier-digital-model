@@ -1140,3 +1140,57 @@ def fig_flood_event(surface, rain, gauges, virtual, windows, summary, path):
     fig.savefig(path)
     plt.close(fig)
     return path
+
+
+def fig_terrain_geometry(ds, dom, cfg, path):
+    """S30: (a) surface slope, (b) bedrock slope, (c) local relief, (d) valley depth over a hillshade, in a
+    square window centred on the summit, with the outline of ice thicker than ``cfg['ice']['outline_m']``."""
+    from matplotlib.colors import Normalize
+
+    f = cfg["figure"]
+    sx, sy = dom.summit_xy
+    h = f["half_width_km"] * 1e3
+    w = ds.sel(x=slice(sx - h, sx + h), y=slice(sy - h, sy + h))
+    xk, yk = (w.x.values - sx) / 1e3, (w.y.values - sy) / 1e3
+    dx = float(ds.attrs["res_m"])
+    ext = [xk[0] - dx / 2e3, xk[-1] + dx / 2e3, yk[0] - dx / 2e3, yk[-1] + dx / 2e3]
+    hs = LightSource(315, 40).hillshade(w["elevation"].values, vert_exag=1.0, dx=dx, dy=dx)
+    rr, rv = ds.attrs["local_relief_radius_m"], ds.attrs["valley_depth_radius_m"]
+    panels = [
+        ("surface_slope", "(a) Surface slope (°)", "Reds", f["slope_deg"]),
+        ("bedrock_slope", "(b) Bedrock slope (°)", "Reds", f["slope_deg"]),
+        ("local_relief", f"(c) Local relief, r = {rr:g} m (m)", "Purples", f["local_relief_m"]),
+        ("valley_depth", f"(d) Valley depth, r = {rv:g} m (m)", "Blues", f["valley_depth_m"]),
+    ]
+    fig, axs = plt.subplots(2, 2, figsize=(7.2, 7.6), constrained_layout=True, sharex=True, sharey=True)
+    for ax, (var, title, cmap, lim) in zip(axs.flat, panels, strict=True):
+        ax.imshow(hs, cmap="gray", origin="lower", extent=ext, vmin=0, vmax=1.2)
+        im = ax.imshow(
+            w[var].values,
+            cmap=cmap,
+            norm=Normalize(*lim),
+            origin="lower",
+            extent=ext,
+            alpha=0.8,
+            interpolation="nearest",
+        )
+        ax.contour(
+            xk,
+            yk,
+            w["ice_thickness"].values,
+            levels=[cfg["ice"]["outline_m"]],
+            colors="#1f5fa8",
+            linewidths=0.5,
+        )
+        ax.plot(0, 0, marker="^", color="k", ms=5, mec="w", mew=0.6)
+        fig.colorbar(im, ax=ax, orientation="horizontal", shrink=0.8, pad=0.02, aspect=30, extend="max")
+        ax.set_title(title, fontsize=8, loc="left")
+        ax.set_aspect("equal")
+        ax.set_xlim(-f["half_width_km"], f["half_width_km"])
+        ax.set_ylim(-f["half_width_km"], f["half_width_km"])
+    for ax in axs[:, 0]:
+        ax.set_ylabel("km north of summit")
+    fig.supxlabel("km east of summit", fontsize=8.5)
+    fig.savefig(path)
+    plt.close(fig)
+    return path

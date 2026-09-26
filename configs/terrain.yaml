@@ -1,0 +1,44 @@
+# Terrain geometry that controls surface instability (S30, scripts/30_terrain_geometry.py,
+# rainier3d.surface.terrain). Layers, operators and radii follow the specification of S. Han (2026),
+# registered as han_terrain_2026 in configs/sources.yaml. The grid CRS and extent come from the domain.
+
+grid:
+  res_m: 30                  # source: han_terrain_2026; whole 30 m cells from the domain's SW corner
+  source: han_terrain_2026
+
+elevation:
+  source: usgs_3dep
+  fetch_res_m: 30            # py3dep request resolution (rainier3d.surface.dem.fetch_3dep); block-averaged
+
+ice:
+  source: iceboost_v2        # ice_thickness of the model surface node (100 m), bilinear onto the 30 m grid
+  outline_m: 10              # source: han_terrain_2026; glacier outline drawn where ice is thicker than this
+
+slope:
+  source: han_terrain_2026   # arctan |grad z|, central differences between adjacent cells (60 m baseline)
+
+local_relief:
+  radius_m: 510              # source: han_terrain_2026; disk of 17 cells
+  source: han_terrain_2026
+
+valley_depth:
+  radius_m: 990              # source: han_terrain_2026; disk of 33 cells, closing minus elevation
+  source: han_terrain_2026
+
+edges: reflect               # source: han_terrain_2026; every filter mirror-reflects at the grid edges
+
+figure:
+  source: han_terrain_2026
+  half_width_km: 20          # 40 x 40 km centred on the summit (domain summit_lonlat)
+  slope_deg: [0, 60]
+  local_relief_m: [0, 900]
+  valley_depth_m: [0, 500]
+
+# Thresholds for the fraction of mass-movement sites above a value (outputs/terrain/mass_movement_terrain.csv).
+# Author judgement for the comparison, not from the literature.
+thresholds:
+  source: m1_placeholder
+  surface_slope: 30          # degrees
+  bedrock_slope: 30          # degrees
+  local_relief: 300          # m
+  valley_depth: 50           # m

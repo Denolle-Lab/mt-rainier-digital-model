@@ -45,6 +45,7 @@ UNICODE = {
     "−": r"\ensuremath{-}",
     "ě": r"\v{e}",
     "×": r"\ensuremath{\times}",
+    "∇": r"\ensuremath{\nabla}",
     "≥": r"\ensuremath{\geq}",
     "≤": r"\ensuremath{\leq}",
     "≈": r"\ensuremath{\approx}",

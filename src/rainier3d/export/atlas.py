@@ -200,8 +200,11 @@ def overview_grid(manifest: dict, width: int) -> tuple[Affine, int, int]:
     return Affine(deg, 0, b["west"], 0, -deg, b["north"]), width, height
 
 
-def to_lonlat(a: np.ndarray, dom, manifest: dict, width: int, categorical: bool) -> np.ndarray:
-    """Model surface array (rows south->north) -> overview lon/lat grid (rows north->south), NaN/0 outside."""
+def to_lonlat(
+    a: np.ndarray, dom, manifest: dict, width: int, categorical: bool, src_transform: Affine | None = None
+) -> np.ndarray:
+    """Model surface array (rows south->north) -> overview lon/lat grid (rows north->south), NaN/0 outside.
+    ``src_transform`` (north-up) places an array on another grid than the model surface grid."""
     r = dom.surface_res_m
     x0, _, _, y1 = dom.bounds
     src = np.ascontiguousarray(a[::-1]).astype("float32")
@@ -210,7 +213,7 @@ def to_lonlat(a: np.ndarray, dom, manifest: dict, width: int, categorical: bool)
     reproject(
         src,
         dst,
-        src_transform=Affine(r, 0, x0, 0, -r, y1),
+        src_transform=src_transform or Affine(r, 0, x0, 0, -r, y1),
         src_crs=dom.crs,
         src_nodata=np.nan,
         dst_transform=dst_t,
@@ -1120,6 +1123,68 @@ def append_mass_movements(atlas: Path, flows, events) -> dict:
     }
     (out / "mass_events.json").write_text(json.dumps(doc, separators=(",", ":")))
     return {"flows": int(len(g)), "events": len(rows), "counts": counts}
+
+
+# ---- terrain geometry (S30), on its own 30 m grid ----
+# key: (label, vmin, vmax, colormap, note); the ranges are those of the paper figure (configs/terrain.yaml)
+TERRAIN_STYLE = {
+    "surface_slope": ("Surface slope", 0, 60, "Reds", "arctan |grad z|, 60 m central differences"),
+    "bedrock_slope": ("Bedrock slope", 0, 60, "Reds", "the same on elevation minus ice thickness"),
+    "local_relief": ("Local relief", 0, 900, "Purples", "max - min elevation in a {rr:g} m disk"),
+    "valley_depth": ("Valley depth", 0, 500, "Blues", "closing with a {rv:g} m disk, minus elevation"),
+}
+
+
+def append_terrain_layers(atlas: Path, dom, ds: xr.Dataset) -> list[str]:
+    """Add the S30 layers (rainier3d.surface.terrain) to <atlas>/model/layers.json under the group
+    "Terrain geometry", replacing same-key entries. ``ds`` is data/processed/terrain_geometry.zarr."""
+    out = atlas / "model"
+    manifest = json.loads((atlas / "manifest.json").read_text())
+    meta = json.loads((out / "layers.json").read_text())
+    reg = _sources()
+    dx = float(ds.x[1] - ds.x[0])
+    t = Affine(dx, 0, float(ds.x[0]) - dx / 2, 0, -dx, float(ds.y[-1]) + dx / 2)
+    rr, rv = ds.attrs.get("local_relief_radius_m", 0), ds.attrs.get("valley_depth_radius_m", 0)
+    new = []
+    for key, (label, vmin, vmax, cmap, note) in TERRAIN_STYLE.items():
+        if key not in ds:
+            continue
+        a = ds[key].values.astype("float32")
+        tex = to_lonlat(a, dom, manifest, TEX_WIDTH, False, src_transform=t)
+        val = to_lonlat(a, dom, manifest, VAL_WIDTH, False, src_transform=t)
+        cm = _cmap(cmap)
+        rgba = (cm(np.nan_to_num(_norm(tex, vmin, vmax, False))) * 255).astype("uint8")
+        rgba[..., 3] = np.where(np.isfinite(tex), 255, 0)
+        tname = _save_texture(rgba, out / key, False)
+        q, scale, offset = _values_u16(val, False, vmin, vmax)
+        q.tofile(out / f"{key}.u16.bin")
+        keys = [k for k in ds[key].attrs.get("gaia:source_keys", "").split(",") if k]
+        new.append(
+            {
+                "key": key,
+                "label": label,
+                "group": "Terrain geometry",
+                "kind": "continuous",
+                "units": "°" if ds[key].attrs.get("units") == "degree" else ds[key].attrs.get("units", ""),
+                "note": note.format(rr=rr, rv=rv),
+                "grid": f"{dx:g} m grid (S30), resampled to the drape",
+                "texture": tname,
+                "values": {
+                    "file": f"{key}.u16.bin",
+                    "width": q.shape[1],
+                    "height": q.shape[0],
+                    "scale": scale,
+                    "offset": offset,
+                    "nodata": 65535,
+                },
+                "legend": {"min": vmin, "max": vmax, "log": False, "ramp": _ramp(cm), "saturates": True},
+                "sources": [{"key": k, "title": reg[k]["title"], "link": _link(reg[k])} for k in keys],
+            }
+        )
+    done = {n["key"] for n in new}
+    meta["layers"] = [x for x in meta["layers"] if x["key"] not in done] + new
+    (out / "layers.json").write_text(json.dumps(meta, indent=1))
+    return [n["key"] for n in new]
 
 
 # ---- relocated catalogue (S26) for the viewer's before/after earthquake layer ----
