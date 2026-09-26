@@ -18,7 +18,10 @@ Parameters are in configs/terrain.yaml.
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import numpy as np
+import rioxarray  # noqa: F401  registers the .rio accessor used by dem_on
 import xarray as xr
 import yaml
 from affine import Affine
@@ -32,7 +35,7 @@ LAYERS = ("surface_slope", "bedrock_slope", "local_relief", "valley_depth")
 
 
 def load_config(path=CONFIG) -> dict:
-    return yaml.safe_load(open(path).read())
+    return yaml.safe_load(Path(path).read_text())
 
 
 # ---- grid ----
