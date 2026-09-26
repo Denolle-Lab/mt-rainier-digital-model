@@ -1,7 +1,8 @@
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { approach, ease, isMoveKey, motionDuration, moveStep, orbitPose } from "./cameraMath.js";
-import { gridGeometry } from "./gridGeometry.js";
+import { decimate, gridGeometry } from "./gridGeometry.js";
+import { deviceProfile } from "./device.js";
 import { cutUniform, isUnder, terrainOrder } from "./groundControls.js";
 import { makeGround } from "./ground.js";
 import { PLACES, placePose, stationPose } from "./stationPose.js";
@@ -11,16 +12,35 @@ import { terrainMaterial } from "./terrainMaterial.js";
 const STYLE = { photo: 0, mono: 1, contours: 2 };
 const BLANK = new THREE.DataTexture(new Uint8Array(4), 1, 1); BLANK.needsUpdate = true;
 
+// Draw a loaded texture's image at most maxWidth wide (the phone profile's drape); returns the texture, unchanged
+// when the browser has no 2D canvas or cannot draw the image (a larger drape beats no scene).
+export function shrink(tex, maxWidth, doc = typeof document === "undefined" ? undefined : document) {
+  const im = tex.image;
+  if (!im || !(im.width > maxWidth) || !doc) return tex;
+  try {
+    const c = doc.createElement("canvas");
+    c.width = maxWidth; c.height = Math.round((im.height * maxWidth) / im.width);
+    const ctx = c.getContext("2d");
+    if (!ctx) return tex;
+    ctx.drawImage(im, 0, 0, c.width, c.height);
+    tex.image = c; tex.needsUpdate = true;
+  } catch {
+    /* keep the full-size image */
+  }
+  return tex;
+}
+
 export class RainierScene {
   static async create(canvas, bundle) {
-    const photo = await new THREE.TextureLoader().loadAsync(bundle.terrain.imageUrl);
-    return new RainierScene(canvas, bundle, photo);
+    const profile = deviceProfile();
+    const photo = shrink(await new THREE.TextureLoader().loadAsync(bundle.terrain.imageUrl), profile.photoMaxWidth);
+    return new RainierScene(canvas, bundle, photo, profile);
   }
 
-  constructor(canvas, bundle, photo) {
-    this.bundle = bundle; this.held = new Set(); this.flight = null; this.materials = [];
-    const r = (this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true, preserveDrawingBuffer: true }));
-    r.setPixelRatio(Math.min(devicePixelRatio, 2)); r.setSize(innerWidth, innerHeight);
+  constructor(canvas, bundle, photo, profile = deviceProfile()) {
+    this.bundle = bundle; this.held = new Set(); this.flight = null; this.materials = []; this.profile = profile;
+    const r = (this.renderer = new THREE.WebGLRenderer({ canvas, antialias: profile.antialias, preserveDrawingBuffer: true }));
+    r.setPixelRatio(Math.min(devicePixelRatio, profile.maxPixelRatio)); r.setSize(innerWidth, innerHeight);
     this.scene = new THREE.Scene(); this.scene.background = new THREE.Color("#121211");
     this.camera = new THREE.PerspectiveCamera(32, innerWidth / innerHeight, 0.1, 2000);
     this.scene.add(new THREE.HemisphereLight(0xdfe6ee, 0x2a2a28, 1.7));
@@ -40,8 +60,10 @@ export class RainierScene {
 
     photo.flipY = false; photo.colorSpace = THREE.NoColorSpace; photo.anisotropy = r.capabilities.getMaxAnisotropy(); photo.needsUpdate = true;
     const km = new Float32Array(heights.length); for (let i = 0; i < km.length; i++) km[i] = heights[i] / 1000;
-    const g = gridGeometry(meta.cols, meta.rows, (c, rr) => [meta.x0 + (c + 0.5) * meta.dx, meta.z0 + (rr + 0.5) * meta.dz, meta.dx, meta.dz], km,
-      (c, rr) => [(c + 0.5) / meta.cols, (rr + 0.5) / meta.rows]);
+    // the mesh may use every s-th sample (phones); heights for placing things on the ground stay full (this.ground)
+    const d = decimate(km, meta.cols, meta.rows, profile.terrainStride), s = d.s;
+    const g = gridGeometry(d.n, d.m, (c, rr) => [meta.x0 + (c * s + 0.5) * meta.dx, meta.z0 + (rr * s + 0.5) * meta.dz, meta.dx * s, meta.dz * s], d.heights,
+      (c, rr) => [(c * s + 0.5) / meta.cols, (rr * s + 0.5) / meta.rows]);
     this.baseTerrain = new THREE.Mesh(g, this._material(photo, true));
     this.baseTerrain.frustumCulled = false;   // heights flatten in the shader for 2D
     this.scene.add(this.baseTerrain);
@@ -50,7 +72,9 @@ export class RainierScene {
     // the overview keeps 20 m under the summit tiles' edges, so no raster crack opens between the two meshes
     this.U.hole.value.set(p.west_km + 0.02, p.west_km + p.width_km - 0.02, p.north_km + 0.02, p.north_km + p.height_km - 0.02);
     this.summitGroup = new THREE.Group(); this.scene.add(this.summitGroup);
-    this.lod = new SummitLod(bundle.summit, bundle.base, tex => this._material(tex, false), this.summitGroup);
+    this.lod = new SummitLod(bundle.summit, bundle.base, tex => this._material(tex, false), this.summitGroup,
+      { inflight: profile.summitInflight, cap: profile.summitCap, stride: profile.summitStride,
+        refine: profile.summitRefine, maxLevel: profile.summitMaxLevel });
 
     // Navigation, copied from the Cascadia atlas: drag moves; Ctrl/Cmd/Shift-drag rotates (OrbitControls swaps
     // PAN→ROTATE with a modifier); right-drag rotates. Rainier lets the camera go below the ground.

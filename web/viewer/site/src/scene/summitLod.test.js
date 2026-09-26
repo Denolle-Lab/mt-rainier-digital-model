@@ -33,6 +33,14 @@ describe("selectTiles", () => {
     expect(s.show).toContain("0/0_0");
     expect(s.want).toEqual(expect.arrayContaining(kids(0, 0)));
   });
+  it("maxLevel stops the refinement; a smaller refine distance refines later", () => {
+    const all = () => "ready", cam = [0.5, 0.01, 0.5];
+    expect(Math.max(...selectTiles(index, cam, all, flat).show.map(id => +id[0]))).toBe(2);
+    expect(Math.max(...selectTiles(index, cam, all, flat, { maxLevel: 1 }).show.map(id => +id[0]))).toBe(1);
+    const far = [0.5, 1.5, 0.5];   // 1.5 km above a 1 km root: within 2.5 root widths, beyond 1.25
+    expect(selectTiles(index, far, all, flat).show.some(id => id.startsWith("1/"))).toBe(true);
+    expect(selectTiles(index, far, all, flat, { refine: 1.25 }).show.every(id => id.startsWith("0/"))).toBe(true);
+  });
   it("a failed child keeps the parent", () => {
     const st = { "0/0_0": "ready", "0/0_1": "ready", "1/0_0": "failed", "1/0_1": "ready", "1/1_0": "ready", "1/1_1": "ready" };
     expect(selectTiles(index, [0.5, 0.5, 0.5], k => st[k], flat).show).toContain("0/0_0");

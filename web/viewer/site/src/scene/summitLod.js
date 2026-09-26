@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { gridGeometry } from "./gridGeometry.js";
+import { decimate, gridGeometry } from "./gridGeometry.js";
 
 // Summit terrain in detail levels (8, 4, 2, 1 m). A tile splits into its four children when the camera is closer
 // than REFINE tile widths; the parent stays until all four children are ready, so the view never has a hole.
@@ -20,13 +20,14 @@ function distance(index, k, ty, tx, cam, [lo, hi]) {
 }
 
 // Pure: which tiles to draw now (show) and which to have loaded (want).
-export function selectTiles(index, cam, state, heightRange) {
-  const max = index.levels.length - 1, show = [], want = [];
+// `refine` (tile widths) and `maxLevel` bound the detail: the phone profile refines later and stops at 2 m.
+export function selectTiles(index, cam, state, heightRange, { refine = REFINE, maxLevel = Infinity } = {}) {
+  const max = Math.min(index.levels.length - 1, maxLevel), show = [], want = [];
   const visit = (k, ty, tx) => {
     const id = key(k, ty, tx);
     want.push(id);
     const L = index.levels[k];
-    if (k < max && distance(index, k, ty, tx, cam, heightRange(k, ty, tx)) < Math.max(L.cell_x_km, L.cell_z_km) * index.tile * REFINE) {
+    if (k < max && distance(index, k, ty, tx, cam, heightRange(k, ty, tx)) < Math.max(L.cell_x_km, L.cell_z_km) * index.tile * refine) {
       const kids = [];
       for (let i = 0; i < 2; i++) for (let j = 0; j < 2; j++) kids.push([k + 1, ty * 2 + i, tx * 2 + j]);
       kids.forEach(c => want.push(key(...c)));
@@ -55,8 +56,8 @@ export function evictable(tiles, shown, frame, cap, maxAge) {
 }
 
 export class SummitLod {
-  constructor(index, base, makeMaterial, group, { inflight = 6, cap = 360 } = {}) {
-    Object.assign(this, { index, base, makeMaterial, group, maxInflight: inflight, cap });
+  constructor(index, base, makeMaterial, group, { inflight = 6, cap = 360, stride = 1, refine = REFINE, maxLevel = Infinity } = {}) {
+    Object.assign(this, { index, base, makeMaterial, group, maxInflight: inflight, cap, stride, refine, maxLevel });
     this.tiles = new Map(); this.chunks = new Map(); this.inflight = 0; this.frameNo = 0; this.finest = -1; this.failures = 0;
     this.allRootsReady = false;
   }
@@ -90,8 +91,9 @@ export class SummitLod {
         for (let i = 0; i < q.length; i++) { h[i] = q[i] / 10000; lo = Math.min(lo, h[i]); hi = Math.max(hi, h[i]); }
         t.range = [lo, hi];
         const { x0, z0 } = tileBounds(this.index, k, ty, tx), sx = L.cell_x_km, sz = L.cell_z_km;
-        const g = gridGeometry(n, n, (c, r) => [x0 + (c + 0.5) * sx, z0 + (r + 0.5) * sz, sx, sz], h,
-          (c, r) => [((tx * T + c + 0.5) - ch.c * L.chunk_w) / L.chunk_w, ((ty * T + r + 0.5) - ch.r * L.chunk_h) / L.chunk_h], 12 * sz);
+        const d = decimate(h, n, n, this.stride), s = d.s;   // tile = 256 cells: stride 2 keeps both edges
+        const g = gridGeometry(d.n, d.m, (c, r) => [x0 + (c * s + 0.5) * sx, z0 + (r * s + 0.5) * sz, sx * s, sz * s], d.heights,
+          (c, r) => [((tx * T + c * s + 0.5) - ch.c * L.chunk_w) / L.chunk_w, ((ty * T + r * s + 0.5) - ch.r * L.chunk_h) / L.chunk_h], 12 * sz);
         t.mesh = new THREE.Mesh(g, ch.mat); t.mesh.visible = false;
         t.mesh.frustumCulled = false;   // 2D flattens heights in the shader, so the geometry's bounds are wrong
         this.group.add(t.mesh); t.state = "ready";
@@ -104,7 +106,7 @@ export class SummitLod {
     this.frameNo++;
     const cam = camera.position.toArray();
     const range = (k, ty, tx) => this._range(k, ty, tx).map(h => h * (1 - flat));
-    const { show, want } = selectTiles(this.index, cam, this._state, range);
+    const { show, want } = selectTiles(this.index, cam, this._state, range, { refine: this.refine, maxLevel: this.maxLevel });
     for (const id of want) {
       let t = this.tiles.get(id);
       if (!t) { t = { k: parse(id)[0], state: "queued", used: this.frameNo }; this.tiles.set(id, t); }

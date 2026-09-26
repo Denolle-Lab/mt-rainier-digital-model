@@ -17,10 +17,13 @@ export function gridArrays(n, m, posAt, heights, uvAt, skirtKm = 0) {
     const l = Math.hypot(gx, 1, gz);
     normal[i * 3] = -gx / l; normal[i * 3 + 1] = 1 / l; normal[i * 3 + 2] = -gz / l;
   }
-  const index = [];
+  // typed from the start: a plain array of 13 M indices for the overview costs ~100 MB before the copy
+  const nRing = skirtKm ? 2 * (n + m) - 4 : 0;
+  const index = new (count > 65535 ? Uint32Array : Uint16Array)(6 * ((n - 1) * (m - 1) + nRing));
+  let q = 0;
   for (let r = 0; r < m - 1; r++) for (let c = 0; c < n - 1; c++) {
     const a = r * n + c, b = a + 1, d = a + n, e = d + 1;
-    index.push(a, d, b, b, d, e);
+    index[q++] = a; index[q++] = d; index[q++] = b; index[q++] = b; index[q++] = d; index[q++] = e;
   }
   if (skirtKm) {
     const ring = [];
@@ -38,10 +41,20 @@ export function gridArrays(n, m, posAt, heights, uvAt, skirtKm = 0) {
     });
     for (let k = 0; k < ring.length; k++) {
       const a = ring[k], b = ring[(k + 1) % ring.length], a2 = base + k, b2 = base + ((k + 1) % ring.length);
-      index.push(a, b, a2, b, b2, a2);
+      index[q++] = a; index[q++] = b; index[q++] = a2; index[q++] = b; index[q++] = b2; index[q++] = a2;
     }
   }
-  return { position, uv, normal, skirt, index: count > 65535 ? new Uint32Array(index) : new Uint16Array(index) };
+  return { position, uv, normal, skirt, index };
+}
+
+// Every s-th sample of an n × m height grid (rows of n), keeping the last row and column when (n - 1) is a
+// multiple of s. Returns { heights, n, m, s }: the smaller grid, its size and the stride (sample c of the new
+// grid is sample c * s of the old).
+export function decimate(heights, n, m, s) {
+  if (s <= 1) return { heights, n, m, s: 1 };
+  const n2 = Math.floor((n - 1) / s) + 1, m2 = Math.floor((m - 1) / s) + 1, h = new Float32Array(n2 * m2);
+  for (let r = 0; r < m2; r++) for (let c = 0; c < n2; c++) h[r * n2 + c] = heights[r * s * n + c * s];
+  return { heights: h, n: n2, m: m2, s };
 }
 
 export function gridGeometry(...args) {
