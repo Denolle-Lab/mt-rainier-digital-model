@@ -814,7 +814,7 @@ The archives need no software from this project. The subsurface model is downloa
 ```bash
 B=https://github.com/Denolle-Lab/mt-rainier-digital-model/releases/download/products-v1.0.0
 curl -LO $B/SHA256SUMS -LO $B/rainier3d_model.zarr.zip -LO $B/rainier3d_grids.zip
-shasum -a 256 -c SHA256SUMS --ignore-missing
+sha256sum -c SHA256SUMS --ignore-missing     # or: shasum -a 256 -c (macOS)
 unzip rainier3d_model.zarr.zip && unzip rainier3d_grids.zip
 ```
 

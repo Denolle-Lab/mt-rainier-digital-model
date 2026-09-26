@@ -37,7 +37,7 @@ CC-BY 4.0. Every archive is listed with its SHA-256 in the release file `SHA256S
 ```bash
 B=https://github.com/Denolle-Lab/mt-rainier-digital-model/releases/download/products-v1.0.0
 curl -LO $B/SHA256SUMS -LO $B/rainier3d_model.zarr.zip -LO $B/rainier3d_grids.zip
-shasum -a 256 -c SHA256SUMS --ignore-missing       # Linux: sha256sum -c SHA256SUMS --ignore-missing
+sha256sum -c SHA256SUMS --ignore-missing            # macOS: shasum -a 256 -c SHA256SUMS --ignore-missing
 unzip rainier3d_model.zarr.zip                      # -> model.zarr/{surface,L1,L2,L3}
 unzip rainier3d_grids.zip                           # -> grids/rainier3d_fused_500m.nc, grids/rainier3d_emc.nc, grids/nll/
 ```
