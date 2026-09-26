@@ -13,6 +13,7 @@ Writes:
   outputs/events/<key>/rain.csv      domain-mean rain per hour (mm)
   outputs/events/<key>/summary.json  the numbers quoted in the report: totals, AR windows, rain by elevation
                                      band and on glaciers (needs --model or data/processed/model.zarr), lags
+  docs/paper/figures/fig21_flood_event.png (with the model surface)
   <atlas>/events/<key>/rain.u8.bin, event.json and <atlas>/events/index.json, if the viewer bundle exists
 
 This is the scaffold of the time-dependent model: the forcing and the river response are stored on the domain,
@@ -34,6 +35,8 @@ import xarray as xr
 from rainier3d.config.domain import REPO, load_domain
 from rainier3d.hydromet import events as E
 from rainier3d.io.store import provenance, write
+
+FIG = REPO / "docs" / "paper" / "figures" / "fig21_flood_event.png"
 
 
 def main():
@@ -80,6 +83,11 @@ def main():
         logging.info("no model at %s: summary without the elevation and glacier numbers", mp)
     summ = E.summary(rain, gauges, files["ar_windows"], surface)
     (out / "summary.json").write_text(json.dumps(summ, indent=1))
+    if surface is not None:
+        from rainier3d.report.figures import fig_flood_event
+
+        fig_flood_event(surface, rain, gauges, virtual, files["ar_windows"], summ, FIG)
+        logging.info("wrote %s", FIG.relative_to(REPO))
     total = rain.sum("time")
     logging.info(
         "rain: %d h, domain-mean total %.0f mm, cell maximum %.0f mm, hourly maximum %.1f mm",

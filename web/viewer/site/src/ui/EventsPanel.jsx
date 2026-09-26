@@ -27,14 +27,19 @@ function Series({ values, k, kind, windows, doc, label, unit }) {
 }
 
 // Events: one storm replayed hour by hour. Observed forcing and river response only; nothing responds to the rain.
-export default function EventsPanel({ event }) {
+// `active`: its dock panel or phone sheet is open; panels stay mounted while closed, so the rain and bars follow it.
+export default function EventsPanel({ event, active = true }) {
   const { doc } = event;
   const [k, setK] = useState(() => doc.rain.domainMean.indexOf(Math.max(...doc.rain.domainMean.filter(v => v != null))));
   const [play, setPlay] = useState(false), [rain, setRain] = useState(true), [gauges, setGauges] = useState(true);
   const sites = useMemo(() => [...doc.gauges, ...doc.virtual].sort((a, b) => b.peak.q - a.peak.q), [doc]);
   const [sel, setSel] = useState(() => (doc.gauges.find(g => g.onMap) ?? sites[0])?.id);
   useEffect(() => { event.setFrame(k); }, [event, k]);
-  useEffect(() => { event.show({ rain, gauges }); return () => event.hide(); }, [event, rain, gauges]);
+  useEffect(() => {
+    if (active) event.show({ rain, gauges }); else event.hide();
+    return () => event.hide();
+  }, [event, rain, gauges, active]);
+  useEffect(() => { if (!active) setPlay(false); }, [active]);
   useEffect(() => {
     if (!play) return undefined;
     const id = setInterval(() => setK(i => (i + 1) % event.count), 180);
@@ -43,7 +48,7 @@ export default function EventsPanel({ event }) {
   const t = frameTime(doc, k), { utc, pst } = timeLabels(t), win = windowAt(doc, t);
   const site = sites.find(s => s.id === sel);
   return (
-    <div className="panel events-panel" aria-label="Events">
+    <div className="panel events-panel" aria-label="Storms and floods">
       <div className="eyebrow">{doc.title}</div>
       <div className="ev-time">
         <button className="ev-play" aria-label={play ? "Pause" : "Play"} aria-pressed={play} onClick={() => setPlay(p => !p)}>{play ? "❚❚" : "▶"}</button>

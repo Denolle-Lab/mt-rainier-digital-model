@@ -168,7 +168,7 @@ function Atlas({ bundle, onError }) {
                 <ModelLegend layer={modelLayer} />
                 {volume && <SubsurfacePanel volume={volume} scene={scene} />}
               </div>) }] : []),
-            ...(event ? [{ key: "events", label: "Events", icon: "rain", node: <EventsPanel event={event} /> }] : []),
+            ...(event ? [{ key: "events", label: "Storms", icon: "rain", node: <EventsPanel event={event} active={dock.has("events") || sheet === "events"} /> }] : []),
             { key: "help", label: "Help", icon: "help", node: (
               <HelpPanel bundle={bundle}><Attribution bundle={bundle} sensors={!!sensorLegend} mass={!!mass} reloc={!!reloc} /></HelpPanel>) },
           ]} />

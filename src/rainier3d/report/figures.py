@@ -1026,3 +1026,117 @@ def fig_mass_movements(tree, flows, events, faults, zones, path):
     fig.savefig(path, dpi=200)
     plt.close(fig)
     return path
+
+
+# gauges drawn in the event hydrograph panel, in this order and colour (Okabe-Ito): small to large basins
+EVENT_GAUGES = (
+    ("12094000", "Carbon", "#009E73"),
+    ("12092000", "Puyallup, Electron", "#0072B2"),
+    ("12082500", "Nisqually, National", "#D55E00"),
+    ("14226500", "Cowlitz, Packwood", "#CC79A7"),
+)
+
+
+def fig_flood_event(surface, rain, gauges, virtual, windows, summary, path):
+    """S29: (a) event precipitation over a hillshade with the gauges; (b) domain-mean hourly precipitation
+    with the AR windows; (c) discharge / event peak at four gauges and one seismic virtual gauge;
+    (d) precipitation by elevation band."""
+    s = surface.sortby("y")
+    x, y = s.x.values / 1e3, s.y.values / 1e3
+    hs = LightSource(azdeg=315, altdeg=40).hillshade(s["elevation"].values, vert_exag=1.5, dx=100, dy=100)
+    ext = [x[0] - 0.05, x[-1] + 0.05, y[0] - 0.05, y[-1] + 0.05]
+    total = rain.sum("time", min_count=1)
+    g = float(rain.x[1] - rain.x[0]) / 1e3
+    rext = [
+        float(rain.x[0]) / 1e3 - g / 2,
+        float(rain.x[-1]) / 1e3 + g / 2,
+        float(rain.y[0]) / 1e3 - g / 2,
+        float(rain.y[-1]) / 1e3 + g / 2,
+    ]
+    tf = Transformer.from_crs(4326, 32610, always_xy=True)
+    fig = plt.figure(figsize=(7.2, 6.4), constrained_layout=True)
+    gs = fig.add_gridspec(3, 2, width_ratios=[1.05, 1], height_ratios=[1, 1, 0.9])
+    ax = fig.add_subplot(gs[0:2, 0])
+    ax.imshow(0.35 + 0.6 * hs, origin="lower", extent=ext, cmap="gray", vmin=0, vmax=1)
+    im = ax.imshow(total.values, origin="lower", extent=rext, cmap=cmc.devon_r, vmin=0, vmax=600, alpha=0.75)
+    for ds, mk, c in ((gauges, "o", "#0072B2"), (virtual, "D", "#E69F00")):
+        ex, ny = tf.transform(ds.lon.values, ds.lat.values)
+        ax.scatter(ex / 1e3, ny / 1e3, marker=mk, s=16, color=c, edgecolor="w", lw=0.6, zorder=4)
+    ax.set_xlim(ext[:2])
+    ax.set_ylim(ext[2:])
+    ax.set_aspect("equal")
+    ax.set_xlabel("UTM 10N easting (km)")
+    ax.set_ylabel("UTM 10N northing (km)")
+    ax.set_title("(a) Precipitation, 5-13 Dec 2025 (MRMS)")
+    cb = fig.colorbar(im, ax=ax, orientation="horizontal", shrink=0.8, pad=0.02, extend="max")
+    cb.set_label("mm (liquid equivalent); ○ USGS gauge, ◇ seismic virtual gauge")
+
+    t = pd.DatetimeIndex(rain.time.values)
+    t0 = pd.Timestamp(windows[0]["start"]).tz_convert(None) - pd.Timedelta("3D")
+
+    def shade(a):
+        for i, w in enumerate(windows):
+            a0, a1 = pd.Timestamp(w["start"]).tz_convert(None), pd.Timestamp(w["end"]).tz_convert(None)
+            a.axvspan(a0, a1, color="0.93" if i % 2 else "0.85", lw=0, zorder=0)
+            a.text(
+                a0 + (a1 - a0) / 2,
+                1.0,
+                w["label"],
+                transform=a.get_xaxis_transform(),
+                ha="center",
+                va="bottom",
+                fontsize=6.5,
+                color=MUTED,
+            )
+        a.set_xlim(max(t0, t[0] - pd.Timedelta("1h")), t[-1])
+        a.xaxis.set_major_formatter(matplotlib.dates.DateFormatter("%d"))
+
+    ax = fig.add_subplot(gs[0, 1])
+    ax.bar(t - pd.Timedelta("30min"), rain.mean(("y", "x")).values, width=1 / 24, color="#4c7fb5", lw=0)
+    shade(ax)
+    ax.set_ylabel("mm per hour")
+    ax.set_title("(b) Domain-mean precipitation", pad=12)
+    ax = fig.add_subplot(gs[1, 1], sharex=ax)
+    for sid, label, c in EVENT_GAUGES:
+        if sid in gauges.site.values:
+            q = gauges.discharge.sel(site=sid)
+            ax.plot(gauges.time.values, q / q.max(), color=c, lw=1.1, label=f"{label} ({float(q.max()):.0f})")
+    if "CC.PR03" in virtual.site.values:
+        q = virtual.discharge.sel(site="CC.PR03")
+        ax.plot(
+            q.time.values,
+            q / q.max(),
+            color="#0072B2",
+            lw=0.9,
+            ls=(0, (2, 1.5)),
+            label=f"virtual PR03 ({float(q.max()):.0f})",
+        )
+    shade(ax)
+    ax.set_ylim(0, 1.05)
+    ax.set_ylabel("discharge / event peak")
+    ax.set_xlabel("December 2025 (UTC)")
+    ax.legend(fontsize=5.8, loc="upper left", title="peak, m³/s", title_fontsize=5.8, handlelength=1.4)
+    ax.set_title("(c) River response", pad=12)
+    ax = fig.add_subplot(gs[2, :])
+    bands = summary.get("elevation_bands", [])
+    lab = [f"{b['band_m'][0]}-{b['band_m'][1]} m\n({b['cells']} km²)" for b in bands]
+    ax.bar(range(len(bands)), [b["mean_total_mm"] for b in bands], color="#4c7fb5", width=0.7)
+    for i, b in enumerate(bands):
+        ax.text(i, b["mean_total_mm"] + 8, f"{b['mean_total_mm']:.0f}", ha="center", fontsize=7, color=INK)
+    if summary.get("glacier_mean_total_mm"):
+        ax.axhline(summary["glacier_mean_total_mm"], color="#56B4E9", lw=1, ls="--")
+        ax.text(
+            -0.4,
+            summary["glacier_mean_total_mm"] + 8,
+            f"cells at least half glacier ({summary['glacier_cells']} km²): "
+            f"{summary['glacier_mean_total_mm']:.0f} mm",
+            ha="left",
+            fontsize=7,
+            color="#1f6f9a",
+        )
+    ax.set_xticks(range(len(bands)), lab, fontsize=7)
+    ax.set_ylabel("mean event total (mm)")
+    ax.set_title("(d) Precipitation by ground elevation (1 km cells)")
+    fig.savefig(path)
+    plt.close(fig)
+    return path

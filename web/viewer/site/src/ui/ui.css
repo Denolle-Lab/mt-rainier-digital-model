@@ -229,3 +229,4 @@ input[type=range]:disabled { opacity: 0.35; }
 .ev-site .mono { text-align: right; }
 .ev-dot { width: 8px; height: 8px; border-radius: 4px; background: #4c9be8; }
 .ev-dot.virtual { background: #e8a33d; }
+.events-panel a, .msrc a { color: #9cc4ee; }
