@@ -26,7 +26,7 @@ abstract: |
 
   The subsurface model holds P- and S-wave speed, density and attenuation on three stacked grids whose spacing coarsens with depth, from 250 m × 50 m to 1 km. Mapped geology is extended to depth by explicit rules. Near-surface hydrothermal alteration is mapped from a helicopter electromagnetic survey. A pressure-dependent rock-physics law converts the units to seismic properties, and the result is merged with the USGS Cascadia velocity model v1.7 and CRESCENT Gen0 in the wavenumber domain.
 
-  The model is calibrated on 1823 P and 1280 S analyst picks from 88 Pacific Northwest Seismic Network (PNSN) earthquakes. Each event is relocated in 3D in every trial model, with topography honoured. Three rock-physics multipliers and a depth-dependent correction of the regional models are fitted by Gauss–Newton iterations on P, S and S−P residuals. On held-out events the root-mean-square (RMS) residual falls from 0.121 to 0.093 s for P and from 0.317 to 0.188 s for S. An independent local-earthquake tomography confirms the Vs correction beneath Rainier.
+  The model is calibrated on 1823 P and 1280 S analyst picks from 88 Pacific Northwest Seismic Network (PNSN) earthquakes. Each event is relocated in 3D in every trial model, with topography honoured. Three rock-physics multipliers and a depth-dependent correction of the regional models are fitted by Gauss–Newton iterations on P, S and S−P residuals. On the 44 held-out events, relocated in the published model, the root-mean-square (RMS) residual is 0.093 s for P and 0.188 s for S, against 0.131 and 0.263 s in the PNSN 1D model and 0.121 and 0.317 s before calibration. An independent local-earthquake tomography confirms the Vs correction beneath Rainier.
 
   Relocated with NonLinLoc in the same way in both models, the 371 PNSN earthquakes of magnitude 1 or larger from 2023 to 2025 fit better in rainier3d than in the PNSN one-dimensional model (median RMS 0.109 against 0.119 s for the 340 well-located events), and none is placed above the ground, against four in the one-dimensional model.
 
@@ -449,9 +449,9 @@ The fit is resolved as follows ([@tbl:multipliers], [@tbl:bias], [@fig:calibrati
 
 ## Validation {#sec:validation}
 
-**Held-out events.** On the 44 events not used in the fit, relocated in each model, the RMS falls from 0.121 to 0.093 s for P and from 0.317 to 0.188 s for S. The fitting half ends at 0.097 and 0.192 s, so the fit does not overfit.
+**Held-out events.** On the 44 events not used in the fit, relocated in each model, the RMS falls from 0.121 to 0.093 s for P and from 0.317 to 0.188 s for S during the calibration (S13, [@tbl:iterations]). The fitting half ends at 0.097 and 0.192 s, so the fit does not overfit. Relocating the same held-out events in the published model (EM-based alteration, `data/processed/model.zarr`) with S14 gives 0.093 s for P (949 picks) and 0.188 s for S (655 picks), against 0.131 and 0.263 s in the PNSN 1D model on the same events (`outputs/relocation/heldout_published.json`; split as in S13, event identifiers in origin-time order, every second one held out).
 
-**All models scored the same way.** [@tbl:models] relocates all 88 events in each model with the same locator and topography. Relocation alone does not rescue the uncalibrated three-dimensional model: its S residuals stay larger than those of the 1D model. The S−P misfit therefore lies in the velocity model, not in the catalogue hypocentres. With the ground bound, no event is placed at the top of the grid, and three of the 88 events end at 50.01–50.03 m above the ground, at the limit of the ground penalty (`outputs/relocation/fused_joint/stats.json`, `above_ground_gt_50m` = 3).
+**All models scored the same way.** [@tbl:models] relocates all 88 events in each model with the same locator and topography. Relocation alone does not rescue the uncalibrated three-dimensional model: its S residuals stay larger than those of the 1D model. The S−P misfit therefore lies in the velocity model, not in the catalogue hypocentres. With the ground bound, no event is placed at the top of the grid, and one of the 88 events ends more than 50 m above the ground in the published model, at the limit of the ground penalty (`outputs/relocation/published/stats.json`, `above_ground_gt_50m` = 1; three in the conduit-alteration run).
 
 | Model | P RMS (s) | S RMS (s) | Epicentre shift from ComCat, median (m) | Depth shift, median (m) |
 |------------------|----|----|------|------|
@@ -459,7 +459,8 @@ The fit is resolved as follows ([@tbl:multipliers], [@tbl:bias], [@fig:calibrati
 | 3D, uncalibrated | 0.122 | 0.316 | 1285 | +257 |
 | 3D, Vs-only depth factor¹ | 0.102 | 0.190 | 847 | +306 |
 | 3D, depth factors on regional Vp and Vs¹ | 0.094 | 0.190 | 835 | +727 |
-| 3D, geology multipliers and regional correction (adopted)¹ | 0.095 | 0.190 | 856 | +852 |
+| 3D, geology multipliers and regional correction, conduit-centred alteration¹ | 0.095 | 0.190 | 856 | +852 |
+| 3D, published model: the same calibration with the EM-based alteration¹ | 0.093 | 0.190 | 850 | +855 |
 
 : Residuals after relocating all 88 events in each model (S14, `outputs/relocation/<model>/stats.json`). Depth shifts are relocated minus ComCat, positive deeper. ¹ Fitted on these events; the held-out scores are the fair measure. {#tbl:models}
 
@@ -1100,7 +1101,7 @@ The code and this paper were written with an AI coding assistant (Claude, Anthro
 
 # Author contributions {.authorcontribution .unnumbered}
 
-MD conceived the project, designed the model, its pipeline (scripts S0–S29), the calibration and the validation, directed the development of the code and wrote the paper. DY designed and built the three-dimensional viewer (`web/viewer/`). MKö produced the vegetation products of the canopy-storage project (lidar canopy height and cover, Sentinel-2 leaf area index and the gridded GEDI products) and wrote their download and gridding code, vendored in `third_party/canopy-storage_seismic`. MH [TODO: contribution]. SH [TODO: contribution]. MKi [TODO: contribution]. [TODO: confirm that all authors reviewed and edited the manuscript.]
+MD conceived the project, designed the model, its pipeline (scripts S0–S29), the calibration and the validation, directed the development of the code and wrote the paper. DY designed and built the three-dimensional viewer (`web/viewer/`). MKö produced the vegetation products of the canopy-storage project (lidar canopy height and cover, Sentinel-2 leaf area index and the gridded GEDI products) and wrote their download and gridding code, vendored in `third_party/canopy-storage_seismic`. MH, SH and MKi contributed to the design of the model and the interpretation of its results through discussions in person and on Slack; SH also specified the terrain-geometry layers (surface and bedrock slope, local relief and valley depth) and their comparison with the mass-movement catalogue. [TODO: confirm that all authors reviewed and edited the manuscript.]
 
 # Competing interests {.competinginterests .unnumbered}
 
