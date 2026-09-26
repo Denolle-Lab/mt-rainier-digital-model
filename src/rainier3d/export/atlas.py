@@ -19,6 +19,7 @@ from pathlib import Path
 
 import matplotlib
 import numpy as np
+import pandas as pd
 import xarray as xr
 from affine import Affine
 from PIL import Image, ImageDraw
@@ -495,6 +496,44 @@ VOLUME_VARS = {
     "alteration": ("Hydrothermal alteration", "0-1", 0, 1, "cmc.bilbao_r"),
     "unit": ("Model units", "", 0, 0, None),
 }
+# Colour scale of these properties: stretched over the given percentiles of the rock cells and rounded
+# outward to `step`, so depth and lateral contrasts use the whole ramp; values beyond saturate. The bytes
+# keep vmin-vmax.
+VOLUME_STRETCH = {"vp": ((2, 98), 50.0), "vs": ((2, 98), 50.0), "rho": ((2, 98), 10.0)}
+
+
+def _stretch(q: np.ndarray, vmin: float, vmax: float, cmap: str, pct, step: float):
+    """uint8 cube (255 = air) quantized over vmin-vmax -> (lut, lo, hi): a 256-entry colour table whose
+    colours span lo-hi, the percentiles of the rock values rounded outward to step."""
+    v = vmin + q[q < 255].astype("float64") * (vmax - vmin) / 254
+    lo, hi = np.percentile(v, pct)
+    lo, hi = float(np.floor(lo / step) * step), float(np.ceil(hi / step) * step)
+    t = np.clip((vmin + np.arange(256) * (vmax - vmin) / 254 - lo) / (hi - lo), 0, 1)
+    cm = _cmap(cmap)
+    return [[int(c * 255) for c in cm(x)[:3]] for x in t], lo, hi
+
+
+def stretch_note(pct) -> str:
+    return f"Colours span the {pct[0]}th to {pct[1]}th percentile of the rock cells; values beyond saturate."
+
+
+def restretch_volume(atlas: Path) -> dict:
+    """Apply VOLUME_STRETCH to an existing bundle's volume.json from its own byte cubes (no model needed)."""
+    p = atlas / "model" / "volume.json"
+    meta = json.loads(p.read_text())
+    out = {}
+    for key, (pct, step) in VOLUME_STRETCH.items():
+        v = meta["vars"].get(key)
+        if not v:
+            continue
+        q = np.fromfile(atlas / "model" / v["file"], np.uint8)
+        cmap = VOLUME_VARS[key][4]
+        v["lut"], lo, hi = _stretch(q, v["vmin"], v["vmax"], cmap, pct, step)
+        v["legend"] = {"min": lo, "max": hi, "log": False, "ramp": _ramp(_cmap(cmap)), "saturates": True}
+        v["note"] = stretch_note(pct)
+        out[key] = (lo, hi)
+    p.write_text(json.dumps(meta))
+    return out
 
 
 def scene_frame(atlas: Path) -> dict:
@@ -588,8 +627,13 @@ def export_volume(tree: xr.DataTree, dom, atlas: Path, dx: float = 500.0, dz: fl
             q = np.where(~np.isfinite(v), 255, np.clip(np.rint(254 * (v - vmin) / (vmax - vmin)), 0, 254))
             q = q.astype(np.uint8)
             cm = _cmap(cmap)
-            lut = [[int(c * 255) for c in cm(min(i, 254) / 254)[:3]] for i in range(256)]
-            legend = {"min": vmin, "max": vmax, "log": False, "ramp": _ramp(cm)}
+            if key in VOLUME_STRETCH:
+                pct, step = VOLUME_STRETCH[key]
+                lut, lo, hi = _stretch(q, vmin, vmax, cmap, pct, step)
+                legend = {"min": lo, "max": hi, "log": False, "ramp": _ramp(cm), "saturates": True}
+            else:
+                lut = [[int(c * 255) for c in cm(min(i, 254) / 254)[:3]] for i in range(256)]
+                legend = {"min": vmin, "max": vmax, "log": False, "ramp": _ramp(cm)}
         q.tofile(out / f"{key}.u8")
         meta["vars"][key] = {
             "label": label,
@@ -601,6 +645,8 @@ def export_volume(tree: xr.DataTree, dom, atlas: Path, dx: float = 500.0, dz: fl
             "vmin": vmin,
             "vmax": vmax,
         }
+        if key in VOLUME_STRETCH:
+            meta["vars"][key]["note"] = stretch_note(VOLUME_STRETCH[key][0])
     (out.parent / "volume.json").write_text(json.dumps(meta))
     return meta
 
@@ -1126,3 +1172,154 @@ def export_relocated(atlas: Path, catalog_csv: Path, dom, summary: dict | None =
     }
     (atlas / "quakes_relocated.json").write_text(json.dumps(meta, indent=1))
     return meta
+
+
+# ---- events (S29): hourly rain and river discharge for the viewer's Events panel ----
+RAIN_SCALE = 0.25  # mm per step of the uint8 rain frames; 254 steps = 63.5 mm/h, 255 = no data
+RAIN_DEG = 0.01  # rain texture pixel (degrees): the MRMS grid spacing
+
+
+def _hourly(ds: xr.Dataset, times: np.ndarray) -> np.ndarray:
+    """Discharge (site, time) -> mean over each frame hour (t - 1 h, t], NaN where no sample."""
+    q = ds.discharge.to_series().unstack("site")
+    h = q.resample("1h", label="right", closed="right").mean()
+    return h.reindex(pd.DatetimeIndex(times))[list(ds.site.values)].to_numpy().T
+
+
+def _site_name(name: str) -> str:
+    """USGS names are upper case ("NISQUALLY RIVER NEAR NATIONAL, WA"): title case, no state."""
+    if name != name.upper():
+        return name.removesuffix(", WA")
+    small = {
+        "Near": "near",
+        "Nr": "nr",
+        "At": "at",
+        "Below": "below",
+        "Bl": "bl",
+        "Above": "above",
+        "Of": "of",
+    }
+    words = [small.get(w, w) for w in name.removesuffix(", WA").title().split(" ")]
+    return " ".join(words)
+
+
+def _sites(ds: xr.Dataset, times, fr: dict, ext: dict, kind: str) -> list[dict]:
+    qh = _hourly(ds, times)
+    out = []
+    for i, s in enumerate(ds.site.values):
+        lon, lat = float(ds.lon[i]), float(ds.lat[i])
+        q = ds.discharge.isel(site=i)
+        ok = np.flatnonzero(np.isfinite(q.values))
+        j = int(np.nanargmax(q.values))
+        last = pd.Timestamp(ds.time.values[ok[-1]])
+        rec = {
+            "id": str(s),
+            "name": _site_name(str(ds.name[i].values)),
+            "kind": kind,
+            "lon": round(lon, 5),
+            "lat": round(lat, 5),
+            "x": round((lon - fr["lon0"]) * fr["kx"], 4),
+            "z": round(-(lat - fr["lat0"]) * fr["kz"], 4),
+            "onMap": bool(ext["west"] <= lon <= ext["east"] and ext["south"] <= lat <= ext["north"]),
+            "q": [None if np.isnan(v) else round(float(v), 1) for v in qh[i]],
+            "peak": {"q": round(float(q[j]), 1), "time": str(pd.Timestamp(ds.time.values[j]))[:16] + "Z"},
+            # the record stops more than 3 h before the event ends (telemetry or gauge lost in the flood)
+            "recordEnds": str(last)[:16] + "Z"
+            if last < pd.Timestamp(times[-1]) - pd.Timedelta("3h")
+            else None,
+        }
+        if "nse_logq" in ds:
+            rec["nse"] = round(float(ds.nse_logq[i]), 2)
+        out.append(rec)
+    return out
+
+
+def append_event(
+    atlas: Path,
+    dom,
+    ev: dict,
+    rain: xr.DataArray,
+    gauges: xr.Dataset,
+    virtual: xr.Dataset,
+    windows: list[dict],
+) -> dict:
+    """<atlas>/events/<key>/rain.u8.bin (time, row north->south, col) on the overview lon/lat box at RAIN_DEG,
+    <atlas>/events/<key>/event.json (frames, gauges, virtual discharge, windows, sources) and
+    <atlas>/events/index.json."""
+    out = atlas / "events" / ev["key"]
+    out.mkdir(parents=True, exist_ok=True)
+    manifest = json.loads((atlas / "manifest.json").read_text())
+    ext = manifest["extent"]["overview"]
+    t, w, h = overview_grid(manifest, int(round((ext["east"] - ext["west"]) / RAIN_DEG)))
+    g = ev["rain"]["grid_m"]
+    src_t = Affine(g, 0, float(rain.x[0]) - g / 2, 0, -g, float(rain.y[-1]) + g / 2)
+    frames = np.full((rain.sizes["time"], h, w), 255, "uint8")
+    means = []
+    for k in range(rain.sizes["time"]):
+        dst = np.full((h, w), np.nan, "float32")
+        reproject(
+            np.ascontiguousarray(rain.values[k][::-1]),
+            dst,
+            src_transform=src_t,
+            src_crs=dom.crs,
+            src_nodata=np.nan,
+            dst_transform=t,
+            dst_crs="EPSG:4326",
+            dst_nodata=np.nan,
+            resampling=Resampling.bilinear,
+        )
+        ok = np.isfinite(dst)
+        frames[k][ok] = np.clip(np.round(dst[ok] / RAIN_SCALE), 0, 254).astype("uint8")
+        has = np.isfinite(rain.values[k]).any()
+        means.append(round(float(np.nanmean(rain.values[k])), 2) if has else None)
+    frames.tofile(out / "rain.u8.bin")
+
+    times = pd.DatetimeIndex(rain.time.values)
+    fr, reg = scene_frame(atlas), _sources()
+    keys = (ev["rain"]["source"], ev["gauges"]["source"], ev["virtual_discharge"]["source"])
+    total = np.nansum(rain.values, axis=0)
+    doc = {
+        "key": ev["key"],
+        "title": ev["title"],
+        "frames": {
+            "start": times[0].strftime("%Y-%m-%dT%H:%MZ"),
+            "stepHours": 1,
+            "count": len(times),
+            "note": "frame t holds the rain of the hour ending at t (UTC)",
+        },
+        "rain": {
+            "file": "rain.u8.bin",
+            "width": w,
+            "height": h,
+            "scale": RAIN_SCALE,
+            "nodata": 255,
+            "units": "mm/h",
+            "extent": ext,
+            "domainMean": means,
+            "total": {
+                "domainMean": round(float(np.nanmean(total)), 1),
+                "max": round(float(np.nanmax(total)), 1),
+            },
+            "maxHourly": round(float(np.nanmax(rain.values)), 1),
+        },
+        "gauges": _sites(gauges, times, fr, ext, "gauge"),
+        "virtual": _sites(virtual, times, fr, ext, "virtual"),
+        "windows": windows,
+        "sources": {k: {"title": reg[k]["title"], "link": _link(reg[k])} for k in keys},
+        "note": "Observed forcing and river response only; nothing in the model responds to the rain yet.",
+    }
+    (out / "event.json").write_text(json.dumps(doc, separators=(",", ":")))
+    idx_p = atlas / "events" / "index.json"
+    idx = json.loads(idx_p.read_text()) if idx_p.exists() else {"events": []}
+    idx["events"] = [e for e in idx["events"] if e["key"] != ev["key"]] + [
+        {"key": ev["key"], "title": ev["title"], "path": f"events/{ev['key']}/event.json"}
+    ]
+    idx_p.write_text(json.dumps(idx, indent=1))
+    return {
+        "frames": len(times),
+        "width": w,
+        "height": h,
+        "gauges": len(doc["gauges"]),
+        "virtual": len(doc["virtual"]),
+        "bytes": int(frames.nbytes),
+    }

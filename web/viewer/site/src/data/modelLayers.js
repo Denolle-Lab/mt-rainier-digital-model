@@ -40,12 +40,12 @@ export function formatValue(layer, v) {
   return `${v.toFixed(d)} ${layer.units}`.trim();
 }
 
-// Legend tick labels: ends and middle, in log space for log ramps.
+// Legend tick labels: ends and middle, in log space for log ramps; ≤ and ≥ mark ends where the colours saturate.
 export function rampTicks(legend) {
-  const { min, max, log } = legend;
+  const { min, max, log, saturates } = legend;
   const mid = log ? Math.sqrt(min * max) : (min + max) / 2;
   const f = v => (Math.abs(v) >= 100 ? v.toFixed(0) : Math.abs(v) >= 10 ? v.toFixed(0) : v.toPrecision(2).replace(/\.?0+$/, ""));
-  return [f(min), f(mid), f(max)];
+  return saturates ? [`≤ ${f(min)}`, f(mid), `≥ ${f(max)}`] : [f(min), f(mid), f(max)];
 }
 
 export function groups(layers) {
