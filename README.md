@@ -126,6 +126,7 @@ of the layers you use; the Zenodo DOI plan is in `docs/doi.md`.
 | S26 relocated catalogue | `scripts/26_relocate_catalog.py` | `outputs/catalog/`: the PNSN catalogue relocated with NonLinLoc in the PNSN 1D model and in the rainier3d 3D model, same picks and settings, topography mask; viewer before/after (`quakes_relocated.*`) |
 | S27 Zenodo deposit | `scripts/27_zenodo_deposit.py` | a draft version of the software or data record on Zenodo (`docs/doi.md`) |
 | S28 canopy-storage pipeline | `scripts/28_canopy_pipeline.py` | `data/raw/canopy_storage/`: GEDI L3 canopy height, GEDI L2B footprints and grids, Sentinel-2 LAI, from the vendored code of `third_party/canopy-storage_seismic` (MIT); read by S19 (`docs/canopy_pipeline.md`; `pixi run -e canopy canopy`) |
+| S29 events | `scripts/29_flood_event.py` | `data/processed/events/<key>.zarr` (hourly MRMS precipitation on the 1 km domain grid, USGS discharge, seismic virtual discharge), `outputs/events/<key>/` (`peaks.csv`, `rain.csv`, `summary.json`), `fig21_flood_event.png`, the viewer Storms panel (`configs/events.yaml`, `docs/events.md`) |
 
 `docs/eikonal_benchmark.md` compares the eikonal solvers (`scripts/bench_eikonal.py`).
 

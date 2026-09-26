@@ -1,0 +1,29 @@
+# Hydrometeorological events (S29): observed forcing and river response on the model domain, for the viewer's
+# Events panel. This is the scaffold of the time-dependent part of the model: no process is coupled yet (water
+# table, glacier melt and runoff do not respond to the rain). Every source key is in configs/sources.yaml.
+
+events:
+  dec2025_ar:
+    title: December 2025 atmospheric-river floods
+    # UTC, hourly frames; the window covers the pre-AR storm and the three AR pulses of seis-hydro-2-sed
+    start: "2025-12-05T00:00:00Z"
+    end: "2025-12-14T00:00:00Z"
+    rain:
+      source: mrms_qpe
+      product: MultiSensor_QPE_01H_Pass2_00.00   # 1 h accumulation, gauge-corrected, 2 h latency pass
+      bucket: https://noaa-mrms-pds.s3.amazonaws.com/CONUS
+      grid_m: 1000        # stored on the domain grid at this spacing (MRMS native 0.01 deg, ~0.8 x 1.1 km here)
+    gauges:
+      source: usgs_nwis_iv
+      parameter: "00060"  # discharge, ft3/s; stored in m3/s
+      # every USGS gauge reporting discharge inside the domain box during the window
+    virtual_discharge:
+      source: seis_hydro_2_sed
+      repo: gaia-hazlab/seis-hydro-2-sed
+      commit: 6a5065a94e3512e583f6d2eeae73de3a39ff602a
+      files: [config/virtual_q.json, config/virtual_q_fit.json, config/cc_stations.json, config/uw_stations.json,
+              config/ar_windows.json]
+      # keep stations whose rating reproduces the co-located gauge: NSE of log Q from virtual_q_fit.json
+      min_nse_logq: 0.7
+    # Placeholders for the forecast part of the twin; not fetched yet (docs/events.md lists the archives).
+    forecasts: []

@@ -30,6 +30,9 @@ import RelocatedPanel from "./ui/RelocatedPanel.jsx";
 import { RelocatedQuakes } from "./scene/quakes/relocated.js";
 import { DEFAULT_RELOCATED, loadRelocated } from "./data/relocated.js";
 import Attribution from "./ui/Attribution.jsx";
+import EventsPanel from "./ui/EventsPanel.jsx";
+import { RainEvent } from "./scene/RainEvent.js";
+import { loadEvent, loadEvents } from "./data/events.js";
 import Legend from "./ui/Legend.jsx";
 import StationPanel from "./ui/StationPanel.jsx";
 import Tooltip from "./ui/Tooltip.jsx";
@@ -53,7 +56,7 @@ function Atlas({ bundle, onError }) {
   const [scene, setScene] = useState(null), [siteId, setSiteId] = useState(null), [hover, setHover] = useState(null);
   const [detail, setDetail] = useState("loading…"), [active, setActive] = useState("home"), [modelKey, setModelKey] = useState(null), [sheet, setSheet] = useState(null), [dock, setDock] = useState(() => new Set()), [helpOpened, setHelpOpened] = useState(false), [volume, setVolume] = useState(null), [sens, setSens] = useState(null), [sfilter, setSfilter] = useState(DEFAULT_FILTER);
   const [mass, setMass] = useState(null), [mfilter, setMfilter] = useState(DEFAULT_MASS_FILTER);
-  const [reloc, setReloc] = useState(null);
+  const [reloc, setReloc] = useState(null), [event, setEvent] = useState(null);
 
   const openSite = useCallback((site, sc) => {
     setSiteId(site.id); setActive(site.id); setHover(null); setSheet(null);
@@ -75,7 +78,8 @@ function Atlas({ bundle, onError }) {
         if (!inv || cancelled) return;
         const extras = extraSites(inv, bundle.stations);
         s.sensors = new SensorPoints(s, extras, inv.das); s.sensors.setFilter(DEFAULT_FILTER);
-        setSens({ all: [...bundle.stations.sites.filter(x => x.onMap).map(classifyMarker), ...extras], das: inv.das, points: s.sensors, notes: inv.notes ?? {} });
+        setSens({ all: [...bundle.stations.sites.filter(x => x.onMap).map(classifyMarker), ...extras], das: inv.das, points: s.sensors, notes: inv.notes ?? {}, virtual: inv.virtual ?? {} });
+        layer.setVirtual(inv.virtual ?? {});
       });
       if (bundle.model) loadMassEvents(bundle.base).then(doc => {
         if (!doc || cancelled) return;
@@ -87,18 +91,26 @@ function Atlas({ bundle, onError }) {
         s.reloc = new RelocatedQuakes(s, r); s.reloc.set(DEFAULT_RELOCATED);
         setReloc(s.reloc);
       });
+      loadEvents(bundle.base).then(async list => {   // optional: hydrometeorological events (rainier3d S29)
+        if (!list.length || cancelled) return;
+        const ev = await loadEvent(bundle.base, list[list.length - 1]).catch(() => null);
+        if (!ev || cancelled) return;
+        s.event = new RainEvent(s, ev, { drops: s.profile?.terrainStride > 1 ? 9000 : 24000 });
+        setEvent(s.event);
+      });
       if (bundle.model) loadVolumeMeta(bundle.model.base).then(meta => {
         if (meta && !cancelled) { s.volume = new ModelVolume(s, meta, bundle.model.base); setVolume(s.volume); }
       });
       s.onFrame = () => {
         layer.update();
         s.volume?.update();
+        s.event?.update();
         s.layers?.update((x, y, z) => s.project(x, y, z), s.camera.position.toArray(), (x, z) => s.elevKm(x, z) ?? -1e9);
         if (n++ % 15 === 0) setDetail(detailText(s.frame, bundle.summit));
       };
       setScene(s);
     }, onError);
-    return () => { cancelled = true; layer?.dispose(); sc?.layers?.dispose(); sc?.volume?.dispose(); sc?.sensors?.dispose(); sc?.mass?.dispose(); sc?.reloc?.dispose(); sc?.dispose(); };
+    return () => { cancelled = true; layer?.dispose(); sc?.layers?.dispose(); sc?.volume?.dispose(); sc?.sensors?.dispose(); sc?.mass?.dispose(); sc?.reloc?.dispose(); sc?.event?.dispose(); sc?.dispose(); };
   }, [bundle, onError, openSite]);
 
   useEffect(() => {   // the panel pushes the right-hand controls inward, as in the Cascadia atlas
@@ -113,7 +125,7 @@ function Atlas({ bundle, onError }) {
     setSfilter(f); sens?.points.setFilter(f);
     layerRef.current?.setFilter(x => passes(classifyMarker(x), f));
   };
-  const sensorLegend = sens && { filter: sfilter, onFilter: applyFilter, counts: kindCounts(sens.all, sfilter), das: sens.das };
+  const sensorLegend = sens && { filter: sfilter, onFilter: applyFilter, counts: kindCounts(sens.all, sfilter), das: sens.das, virtual: sens.virtual };
   const modelLayer = modelKey ? bundle.model.byKey[modelKey] : null;
   const flowLayer = bundle.model?.byKey.mass_flows;
   const showFlows = on => {   // the flow deposits are a draped model layer: the same slot as the layer menu
@@ -157,18 +169,19 @@ function Atlas({ bundle, onError }) {
                 <ModelLegend layer={modelLayer} />
                 {volume && <SubsurfacePanel volume={volume} scene={scene} />}
               </div>) }] : []),
+            ...(event ? [{ key: "events", label: "Storms", icon: "rain", node: <EventsPanel event={event} active={dock.has("events") || sheet === "events"} /> }] : []),
             { key: "help", label: "Help", icon: "help", node: (
               <HelpPanel bundle={bundle}><Attribution bundle={bundle} sensors={!!sensorLegend} mass={!!mass} reloc={!!reloc} /></HelpPanel>) },
           ]} />
           <GoTo majors={bundle.majors} active={active} onPlace={k => { setActive(k); scene.flyTo(k); }} onSite={s => openSite(s, scene)} />
           {modelLayer?.values && <ModelReadout scene={scene} model={bundle.model} layer={modelLayer} box={bundle.overviewBox} />}
-          <Tooltip hover={hover} notes={sens?.notes} />
+          <Tooltip hover={hover} notes={sens?.notes} virtual={sens?.virtual} />
           {sens && <SensorTip scene={scene} points={sens.points} />}
           {mass && <MassTip scene={scene} points={mass.points} doc={mass.doc} />}
-          <MobileDock sheet={sheet} onSheet={setSheet} has={{ model: !!bundle.model, quakes: !!(bundle.quakes || reloc), mass: !!massLegend }} />
+          <MobileDock sheet={sheet} onSheet={setSheet} has={{ model: !!bundle.model, quakes: !!(bundle.quakes || reloc), mass: !!massLegend, events: !!event }} />
           <NavPad scene={scene} onHelp={openHelp} />
           <HelpHint onHelp={openHelp} hidden={helpOpened} />
-          {site && <StationPanel site={site} bundle={bundle} notes={sens?.notes} onFly={s => scene.flyToSite(s)}
+          {site && <StationPanel site={site} bundle={bundle} notes={sens?.notes} virtual={sens?.virtual} onFly={s => scene.flyToSite(s)}
             onClose={() => { setSiteId(null); layerRef.current?.setSelected(null); }} />}
         </>
       )}

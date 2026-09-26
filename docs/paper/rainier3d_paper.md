@@ -61,6 +61,7 @@ This paper describes, in order:
 | [@sec:strain] | Strain and stress |
 | [@sec:hydro] | Geohydrology |
 | [@sec:mass] | Catalogue of mass movements |
+| [@sec:events] | Toward a time-dependent model: one storm, its precipitation and river response |
 | [@sec:access] | Access to the products |
 | [@sec:limits] | Limitations |
 
@@ -84,7 +85,7 @@ Properties are stored on three stacked regular grids whose spacing coarsens with
 
 : Model grids. The master product is one xarray DataTree in Zarr v3 format (`model.zarr`) with one node per level and a surface node. {#tbl:grids}
 
-The workflow is a sequence of numbered scripts, S0 to S23, each run as a task of one locked software environment (pixi). [@fig:workflow] shows how they connect:
+The workflow is a sequence of numbered scripts, S0 to S29, each run as a task of one locked software environment (pixi). [@fig:workflow] shows how they connect:
 - the model chain (S1–S5);
 - the calibration loop, in which travel-time residuals update the rock-physics parameters and the regional correction (S13, S14);
 - the checks and products that read the finished model.
@@ -795,6 +796,87 @@ The inventory records a failure depth for every lidar-protocol deposit (453 depo
 
 Each record carries its source, like every other layer. Records from the literature are to be entered from their tables with a citation to the page.
 
+# Toward a time-dependent model: the December 2025 floods {#sec:events}
+
+Every other layer of the model is static. This section adds one storm, the atmospheric rivers of 5–13 December 2025, as observed forcing and river response stored on the model domain. The aim is to fix the data structures, the viewer and the questions that a time-dependent model of the volcano will need. No process of the model responds to the rain: the water table, the glaciers and the rock properties stay as they are.
+
+## The event and its data
+
+The storm is the one analysed by the seis-hydro-2-sed project [@seis_hydro_2_sed], which divides it into a pre-AR storm and three atmospheric-river pulses (AR1–AR3); those windows are used here unchanged. Script S29 assembles three data sets for 216 hourly frames, from 00:00 UTC on 5 December to 00:00 UTC on 14 December ([@tbl:eventdata]).
+
+| Data | Source | Sampling | Stored as |
+|------|--------|----------|-----------|
+| Precipitation | MRMS multi-sensor QPE, 1 h, Pass 2 [@mrms_qpe] | 0.01°, hourly | area average on the 1 km domain grid (UTM 10N), mm per hour |
+| Discharge | USGS instantaneous values, parameter 00060 [@usgs_nwis_iv] | 15 min | 15 gauges in the model box, m³/s |
+| Virtual sensors: discharge from seismometers | power–discharge ratings of river-proximal stations [@seis_hydro_2_sed] | 5 min | 3 stations whose rating reproduces the gauge (Nash–Sutcliffe efficiency of log Q ≥ 0.7), m³/s |
+| Storm windows | seis-hydro-2-sed | – | pre-AR, AR1, AR2, AR3 |
+
+: Data of the December 2025 event (S29, `configs/events.yaml`). {#tbl:eventdata}
+
+The event is one DataTree in `data/processed/events/dec2025_ar.zarr`, with a node per data set: `/rain` (time, y, x), `/gauges` and `/virtual` (site, time). Each MRMS file holds the accumulation of the hour that ends at its time stamp, and frames keep that convention. `outputs/events/dec2025_ar/summary.json` and `peaks.csv` hold the numbers quoted below, and [@fig:flood] shows the event. In the viewer, the Storms panel replays the event hour by hour: drops fall wherever MRMS reports precipitation, at a density that follows the rate, and a bar at each gauge rises with its discharge.
+
+![The December 2025 event. (a) Precipitation, 5–13 December (MRMS, liquid equivalent) over a hillshade, with the USGS gauges (circles) and the virtual sensors, seismometers read as river gauges (diamonds). (b) Domain-mean hourly precipitation; shading marks the storm windows of seis-hydro-2-sed. (c) Discharge as a fraction of the event peak at four gauges and at the virtual gauge PR03, which sits next to the Electron gauge. (d) Mean event precipitation by ground elevation, 1 km cells, with the mean over cells at least half covered by glaciers.](figures/fig21_flood_event.png){#fig:flood}
+
+## For atmospheric scientists
+
+Over the 216 hours the domain received 217 mm on average. AR1 brought 90 mm in 54 hours, AR2 55 mm in 31 hours, AR3 21 mm in 42 hours and the pre-AR storm 41 mm in 58 hours. The domain-mean rate peaked at 4.8 mm h⁻¹ at 07:00 UTC on 9 December, within AR1; the wettest hour of a single cell was 17.2 mm. The event total grows with elevation, from 169 mm below 500 m to 547 mm above 3000 m ([@fig:flood]d), and the wettest cell, 752 mm, lies 4 km south-east of the summit.
+
+These high-elevation totals are the least certain numbers of the event. The edifice blocks the radar beams, and in such terrain MRMS falls back on gauge and climatology-based estimates [@mrms_qpe]; the compact maximum around the summit may reflect that fallback more than the storm. MRMS also gives the liquid equivalent of all precipitation and does not separate rain from snow.
+
+AI weather models already cover the event. GraphCast [@lam_2023_graphcast] runs are archived with 6-hourly precipitation at 0.25° by the NOAA machine-learning weather prediction archive [@radford_2025_mlwp], and ECMWF publishes the precipitation of AIFS [@lang_2024_aifs] as open data. FuXi [@chen_2023_fuxi] is set up in a separate GAIA pipeline but has not been run for this storm. At 0.25° the domain holds 4 × 6 forecast cells, and panel (d) shows a threefold precipitation gradient inside one of them, so any comparison with MRMS at the scale of the volcano needs downscaling. The event file reserves a `forecasts` list for these runs, to be stored with the same (time, y, x) layout as the observations so that forecasts can be scored against MRMS by lead time.
+
+## For hydrologists and geomorphologists
+
+[@tbl:eventgauges] lists the gauge peaks. Small basins on the flanks respond to AR1: Mineral Creek, the Carbon River near Fairfax, the Clearwater River and Huckleberry Creek peak between 0.5 and 4 h after the domain-mean maximum of 07:00 UTC on 9 December. The Nisqually River near National, the Puyallup River near Orting, the Greenwater River and the Cowlitz River at Packwood peak 31–34 h later, during AR2. The lowland South Prairie and Ohop creeks peak during AR3. These delays mix pulses and are not travel times. The Puyallup River near Electron reached 323 m³/s twice, at 03:30 and 11:30 UTC on 9 December. Two records stop during the storm: the White River below the Clearwater River (last value 20:30 UTC on 8 December) and the Nisqually River at La Grande Dam (07:00 UTC on 9 December).
+
+| Gauge | Peak (m³/s) | Peak time (UTC) |
+|-------|-------------|-----------------|
+| Cowlitz River at Randle | 1039 | 11 Dec 05:15 |
+| Cowlitz River at Packwood | 886 | 10 Dec 14:45 |
+| Puyallup River near Orting | 589 | 10 Dec 15:15 |
+| Nisqually River near National | 425 | 10 Dec 14:15 |
+| Carbon River near Fairfax | 371 | 9 Dec 09:45 |
+| Puyallup River near Electron | 323 | 9 Dec 03:30 |
+| South Prairie Creek at South Prairie | 213 | 11 Dec 17:15 |
+| Mineral Creek near Mineral | 176 | 9 Dec 07:30 |
+| Mashel River near La Grande | 154 | 9 Dec 12:00 |
+| Clearwater River near Buckley | 148 | 9 Dec 09:30 |
+| Greenwater River at Greenwater | 123 | 10 Dec 16:30 |
+| Virtual sensor PR03, seismometer (Puyallup) | 545 | 10 Dec 13:45 |
+| Virtual sensor PR02, seismometer (Puyallup) | 501 | 10 Dec 12:10 |
+| Virtual sensor STYX, seismometer (Puyallup) | 445 | 10 Dec 13:00 |
+
+: Peak discharge of the December 2025 event (S29, `peaks.csv`); gauges with peaks below 100 m³/s and the two interrupted records are in the file. {#tbl:eventgauges}
+
+We call an instrument used to estimate a quantity it was not designed to measure a virtual sensor. Each one is listed in `configs/virtual_sensors.yaml` with what it was designed for, what it estimates, the method, its skill against a direct measurement and the products that use it, and the viewer labels it on the map and on its station card. The three seismometers here invert the seismic power of river noise [@burtin_2008; @tsai_2012] through a power–discharge rating fitted on the co-located gauge [@seis_hydro_2_sed]. PR03 sits 200 m from the Electron gauge; its peak, 545 m³/s against 323 m³/s at the gauge, shows the rating extrapolated beyond the discharges it was fitted on, where bedload adds seismic power that the water alone does not. The same project reports that the bedload band rises 5–7 h before the discharge peak. With the mass-movement catalogue of [@sec:mass], the hourly 1 km precipitation can be read at any mapped debris-flow source or lahar path, for intensity–duration analyses of the kind introduced by @caine_1980.
+
+## For cryospheric scientists
+
+Cells at least half covered by glaciers (134 km², from the ice-thickness layer of [@sec:surface-core]) received 439 mm on average. How much of it fell as rain, and how much snow and glacier ice melted under a warm atmospheric river, cannot be told from MRMS alone. A freezing-level analysis and the SNOTEL stations in the box would give the phase, and the glacier outlines and thicknesses already in the model give the area and ice volume that a melt and runoff model would start from. The event file is where such a model's output would be stored against the gauges.
+
+## For geophysicists
+
+The event pairs each river-proximal seismic station with discharge, so river noise can be treated as a hydrological signal on the same time axis as precipitation. The model supplies the elastic structure around those stations (Vp, Vs and density, [@sec:subsurface]), and [@sec:hydro] supplies the static water table. Changes in seismic velocity from ambient noise, pore-pressure diffusion after the storm and seismicity during and after it (the relocated catalogue of [@sec:relocation]) can therefore be examined against the forcing on the same grid, although none of these is computed here.
+
+## For hazards researchers
+
+The event reproduces the chain that an operational tool would follow: forcing, observed or forecast; river response at gauges and at seismic stations; and the hazard layers of the model, which include lahar zones and debris-flow sources. Two gauges stopped reporting during the storm, while the seismic stations kept recording, so the virtual sensors filled part of the observational gap. The hourly field allows rainfall thresholds to be evaluated at each debris-flow source. Nothing here is run in real time, and none of the numbers carries an uncertainty yet.
+
+## What a time-dependent model still needs
+
+| Process | In the model now | Forcing available | Missing |
+|---------|------------------|-------------------|---------|
+| Precipitation phase | – | MRMS; AI forecasts | freezing level; SNOTEL snow water equivalent |
+| Snow and glacier melt | glacier outlines, ice thickness | precipitation | melt model (degree-day or energy balance) |
+| Runoff and routing | streams, 15 gauges, 3 virtual sensors | precipitation | routing model calibrated on the gauges |
+| Groundwater | static water-table depth | infiltration | recharge and water-table change |
+| Sediment and debris flows | mass-movement catalogue, lahar zones | hourly precipitation | thresholds; bedload from seismic noise |
+| Seismic velocity | Vp, Vs, density | groundwater, surface loading | ambient-noise monitoring on the model grid |
+
+: Components of a time-dependent model and their state. {#tbl:twin}
+
+The first four rows describe hydrology, which the model does not yet contain; the event supplies the forcing and the observations against which such components would be tested. The March 2026 flood named by seis-hydro-2-sed as its first out-of-sample test would be a second event of the same form.
+
 # Accessing the model {#sec:access}
 
 ## Products and the client
@@ -915,6 +997,7 @@ The viewer runs in a web browser, including on phones. It is a React and three.j
 - the seismic, geodetic, infrasound, tiltmeter and fibre sensors, with permanent and temporary networks separated;
 - the PNSN seismicity;
 - the mass movements of [@sec:mass]: the flow deposits as a draped layer and the events as points on the ground, filtered by class and date from the legend.
+- the storm of [@sec:events], replayed hour by hour: precipitation as falling drops and discharge as bars at the gauges.
 
 Below the ground it shows Vs, Vp, Vp/Vs, density, units, alteration and the strain fields of [@sec:strain3d], on a vertical section along the terrain cut and on a horizontal depth slice. For the strain fields, the depth slice also carries their orientation bars. A panel under the subsurface controls shows the relocated catalogue of [@sec:relocation], as located by ComCat, in the 1D model and in rainier3d, with optional lines from each 1D location to its 3D location. Its map data are built by scripts S8, S11, S24, S25 and S26 and published as a release asset named in `web/viewer/DATA_RELEASE`.
 
@@ -945,7 +1028,7 @@ rainier3d assembles, in one reproducible structure, what is openly known about t
 - **Surface.** Layers for geology, ice, soil, water, vegetation and imagery on a common grid.
 - **Geodesy and load.** GNSS strain rates, refreshed weekly, and the stress of the edifice load at depth.
 
-Every input is fetched from its original archive and checksummed. Every parameter names its source, and every product can be downloaded with one command in the formats that seismological codes read. The mass-movement catalogue is a first time-dependent layer; the next are the events digitised from the literature and couplings between the hydrological layers and the seismic properties.
+Every input is fetched from its original archive and checksummed. Every parameter names its source, and every product can be downloaded with one command in the formats that seismological codes read. Two layers carry time: the mass-movement catalogue and the December 2025 storm, whose hourly precipitation and river discharge are stored on the model grid. The next steps are the events digitised from the literature and the couplings listed in [@tbl:twin], between precipitation, the hydrological layers and the seismic properties.
 
 # Code and data availability {.codedataavailability .unnumbered}
 
@@ -979,6 +1062,9 @@ The code and this paper were written with an AI coding assistant (Claude, Anthro
 | US water-table depth | water table | @ma2026_wtd |
 | Global water-table depth | water table, comparison | @fan2017_wtd |
 | NHDPlus High Resolution | streams | @nhdplus_hr |
+| MRMS multi-sensor QPE, 1 h, Pass 2 | event precipitation | @mrms_qpe |
+| USGS instantaneous discharge | event river gauges | @usgs_nwis_iv |
+| seis-hydro-2-sed virtual discharge and storm windows | event virtual sensors | @seis_hydro_2_sed |
 | ETH global canopy height 2020 | canopy height | @eth_canopy_2020 |
 | NLCD 2021 | land cover | @nlcd_2021 |
 | Copernicus Sentinel-2 L2A | imagery, NDVI, NDSI, leaf area index | @sentinel2_l2a; @sentinel2_lai_2023 |

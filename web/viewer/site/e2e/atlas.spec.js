@@ -254,3 +254,36 @@ test("(r) the phone profile (?lite=1) loads a quarter of the terrain and stops t
   expect(await page.evaluate(() => window.__rainier.frame.finest)).toBe(2);
   await expect(page.locator(".header .detail-tag")).toContainText("2 m");
 });
+
+test("(s) the Events panel replays the December 2025 floods: slider, rain toggle, gauge bars", async ({ page }) => {
+  await page.waitForFunction(() => !!window.__rainier.event, null, { timeout: 30_000 });
+  expect(await page.evaluate(() => window.__rainier.event.rain.visible)).toBe(false);   // closed panel: no rain
+  await dock(page, "Storms");
+  const ev = () => page.evaluate(() => { const e = window.__rainier.event; return { k: e.k, rain: e.rain.visible, bars: e.bars.children.filter(b => b.visible).length }; });
+  expect((await page.evaluate(() => window.__rainier.event.rain.visible))).toBe(true);
+  const first = await ev();
+  expect(first.bars).toBeGreaterThan(5);                          // USGS and virtual gauges on the terrain box
+  await page.getByLabel("Event hour").fill("30");
+  expect((await ev()).k).toBe(30);
+  await page.getByRole("switch", { name: "Rain" }).click();
+  expect((await ev()).rain).toBe(false);
+  await expect(page.locator(".events-panel")).toContainText("Nisqually River near National");
+});
+
+test("(t) Vp, Vs and density colours saturate at the 2nd and 98th percentiles", async ({ page }) => {
+  await page.waitForFunction(() => !!window.__rainier.volume, null, { timeout: 30_000 });
+  await dock(page, "Models");
+  await page.getByLabel("Subsurface property").selectOption("vs");
+  await expect(page.locator(".model-panel .ramp-labels")).toContainText("≤");
+  await expect(page.locator(".model-panel .ramp-labels")).toContainText("≥");
+});
+
+test("(u) virtual sensors are labelled: marker badge, legend and station card", async ({ page }) => {
+  await page.waitForFunction(() => !!window.__rainier.sensors, null, { timeout: 30_000 });
+  await expect(page.locator('.station.virtual[data-id="CC.PR03"] .vbadge')).toHaveCount(1);
+  await dock(page, "Sensors");
+  await expect(page.locator(".sf-virtual")).toContainText("Virtual sensors (3)");
+  await page.locator('.station[data-id="CC.PR03"]').click({ force: true });
+  await expect(page.locator(".sp-virtual")).toContainText("river discharge");
+  await expect(page.locator(".sp-virtual")).toContainText("Nash-Sutcliffe");
+});

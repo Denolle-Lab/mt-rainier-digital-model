@@ -5,7 +5,7 @@ import "./ui.css";
 // The open sheet is written to <html data-sheet>, which the phone CSS in ui.css reads. Help has no tab: the nav pad's
 // ? button opens it as a sheet (App sets sheet "help").
 export const SHEETS = [["view", "View"], ["quakes", "Quakes"], ["mass", "Mass"], ["sensors", "Sensors"],
-  ["model", "Models"], ["goto", "Go to"]];
+  ["model", "Models"], ["events", "Storms"], ["goto", "Go to"]];
 
 export default function MobileDock({ sheet, onSheet, has = {} }) {
   useEffect(() => {

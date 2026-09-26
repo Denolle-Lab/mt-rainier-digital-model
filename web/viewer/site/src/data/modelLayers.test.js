@@ -24,6 +24,7 @@ describe("model layers", () => {
   it("puts log-ramp middle tick at the geometric mean", () => {
     expect(rampTicks({ min: 0.1, max: 100, log: true })).toEqual(["0.1", "3.2", "100"]);
     expect(rampTicks({ min: 0, max: 250, log: false })).toEqual(["0", "125", "250"]);
+    expect(rampTicks({ min: 3450, max: 6600, log: false, saturates: true })).toEqual(["≤ 3450", "5025", "≥ 6600"]);
   });
   it("groups layers in first-seen order", () => {
     expect(groups([{ key: "a", group: "G" }, { key: "b", group: "H" }, { key: "c", group: "G" }]).map(g => g.layers.length)).toEqual([2, 1]);

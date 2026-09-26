@@ -9,6 +9,7 @@ const ICONS = {
   sensors: <><path d="M8 2.2 13.2 12H2.8z" /><path d="M8 12v2.3M5.5 14.3h5" /></>,
   model: <><path d="M1.5 13.5 6 6l2.6 4 1.9-2.6 4 6.1z" /><path d="M1.5 13.5h13" /></>,
   legend: <><rect x="1.8" y="3" width="2.4" height="2.4" /><rect x="1.8" y="10.6" width="2.4" height="2.4" /><path d="M7 4.2h7.2M7 8h7.2M7 11.8h7.2M1.8 8h2.4" /></>,
+  rain: <><path d="M4.5 9.5a2.8 2.8 0 0 1 .3-5.6 3.6 3.6 0 0 1 6.8 1 2.3 2.3 0 0 1-.1 4.6z" /><path d="M5.5 11.5l-.8 2M8.3 11.5l-.8 2M11 11.5l-.8 2" /></>,
   help: <><circle cx="8" cy="8" r="6.5" /><path d="M6.1 6.3a1.95 1.95 0 1 1 2.7 1.8c-.5.2-.8.6-.8 1.1v.7" /><circle cx="8" cy="11.6" r=".4" fill="currentColor" /></>,
 };
 

@@ -26,6 +26,16 @@ export class StationLayer {
   setVisible(on) { this.hiddenAll = !on; }
   setFilter(pred) { this.pred = pred; }   // (site) => boolean, from the sensor legend
 
+  // virtual sensors (configs/virtual_sensors.yaml): a "V" badge on the marker of every site holding one
+  setVirtual(virtual = {}) {
+    for (const it of this.items) {
+      const on = it.site.codes.some(c => virtual[c]);
+      it.d.classList.toggle("virtual", on);
+      if (on && !it.d.querySelector(".vbadge")) it.d.insertAdjacentHTML("beforeend", '<span class="vbadge" aria-hidden="true">V</span>');
+      if (on) it.d.setAttribute("aria-label", `${it.site.name}, ${it.site.codes.join(", ")}, virtual sensor`);
+    }
+  }
+
   setSelected(id) { for (const it of this.items) it.d.classList.toggle("selected", it.site.id === id); }
 
   update() {

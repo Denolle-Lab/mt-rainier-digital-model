@@ -646,3 +646,80 @@ watters2000:
   doi: 10.1007/s000240050012
   verified: web-2026-09-25 (DOI resolved)
   role: laboratory and field rock properties of Cascade volcanic rocks (limitations)
+
+mrms_qpe:
+  title: NOAA Multi-Radar Multi-Sensor (MRMS) MultiSensor QPE, 1-hour accumulation, Pass 2 (radar with gauge correction), 0.01 deg CONUS grid, NOAA Open Data Dissemination on AWS (Zhang et al. 2016)
+  url: https://noaa-mrms-pds.s3.amazonaws.com/index.html#CONUS/MultiSensor_QPE_01H_Pass2_00.00/
+  doi: 10.1175/BAMS-D-14-00174.1
+  license: NOAA open data (no restrictions; attribution requested)
+  verified: web-2026-09-25 (bucket listed; 2025-12-09 12:00 UTC file read, box maximum 4.2 mm)
+  role: hourly rain of the event (S29, viewer Events panel)
+  redistribute_derived: true
+
+usgs_nwis_iv:
+  title: USGS National Water Information System, instantaneous values service, discharge (parameter 00060)
+  url: https://waterservices.usgs.gov/nwis/iv/
+  license: public domain (USGS)
+  verified: web-2026-09-25 (12 gauges with discharge in the domain box, 2025-12-05 to 2025-12-14)
+  role: river gauges of the event (S29, viewer Events panel)
+  redistribute_derived: true
+  bib_author: "{U.S. Geological Survey}"
+  bib_year: 2026
+
+seis_hydro_2_sed:
+  title: gaia-hazlab/seis-hydro-2-sed, seismic virtual discharge (power-discharge ratings inverted at river-proximal stations) and atmospheric-river windows of the December 2025 floods, commit 6a5065a9
+  url: https://github.com/gaia-hazlab/seis-hydro-2-sed/tree/6a5065a94e3512e583f6d2eeae73de3a39ff602a/config
+  license: MIT (CITATION.cff, README)
+  verified: web-2026-09-25 (files read at the commit; NSE of log Q 0.95 PR03, 0.92 PR02, 0.75 STYX)
+  role: virtual discharge and AR windows of the event (S29, viewer Events panel)
+  redistribute_derived: true
+
+# ---- literature of the events section (S29; paper Sect. events): forecasts, river noise, rainfall thresholds ----
+lam_2023_graphcast:
+  title: Lam et al. 2023, Learning skillful medium-range global weather forecasting (GraphCast), Science
+  doi: 10.1126/science.adi2336
+  license: n/a (article)
+  verified: web-2026-09-26 (doi.org)
+  role: AI forecast model whose archived precipitation covers the event (paper Sect. events)
+
+radford_2025_mlwp:
+  title: Radford et al. 2025, Accelerating community-wide evaluation of AI models for global weather prediction by facilitating access to model output (NOAA OAR MLWP archive, s3://noaa-oar-mlwp-data), BAMS
+  doi: 10.1175/BAMS-D-24-0057.1
+  license: n/a (article); archive public
+  verified: web-2026-09-26 (doi.org; archive listed, GraphCast 2025-12-08 00 UTC run read over the domain)
+  role: archive of GraphCast, Pangu, FourCastNet and Aurora runs (paper Sect. events)
+
+chen_2023_fuxi:
+  title: Chen et al. 2023, FuXi, a cascade machine learning forecasting system for 15-day global weather forecast, npj Climate and Atmospheric Science
+  doi: 10.1038/s41612-023-00512-1
+  license: n/a (article)
+  verified: web-2026-09-26 (doi.org)
+  role: AI forecast model of the GAIA forecast pipeline (paper Sect. events)
+
+lang_2024_aifs:
+  title: Lang et al. 2024, AIFS, ECMWF's data-driven forecasting system, arXiv
+  doi: 10.48550/arXiv.2406.01465
+  license: n/a (preprint)
+  verified: web-2026-09-26 (doi.org)
+  role: AI forecast model with open precipitation output (paper Sect. events)
+
+burtin_2008:
+  title: Burtin et al. 2008, Spectral analysis of seismic noise induced by rivers, JGR Solid Earth
+  doi: 10.1029/2007JB005034
+  license: n/a (article)
+  verified: web-2026-09-26 (doi.org)
+  role: river-generated seismic noise (paper Sect. events)
+
+tsai_2012:
+  title: Tsai et al. 2012, A physical model for seismic noise generation from sediment transport in rivers, GRL
+  doi: 10.1029/2011GL050255
+  license: n/a (article)
+  verified: web-2026-09-26 (doi.org)
+  role: bedload noise model (paper Sect. events)
+
+caine_1980:
+  title: Caine 1980, The rainfall intensity-duration control of shallow landslides and debris flows, Geografiska Annaler A
+  doi: 10.1080/04353676.1980.11879996
+  license: n/a (article)
+  verified: web-2026-09-26 (doi.org)
+  role: rainfall thresholds for debris flows (paper Sect. events)
