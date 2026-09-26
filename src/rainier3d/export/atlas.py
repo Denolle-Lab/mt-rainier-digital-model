@@ -505,8 +505,12 @@ VOLUME_STRETCH = {"vp": ((2, 98), 50.0), "vs": ((2, 98), 50.0), "rho": ((2, 98),
 def _stretch(q: np.ndarray, vmin: float, vmax: float, cmap: str, pct, step: float):
     """uint8 cube (255 = air) quantized over vmin-vmax -> (lut, lo, hi): a 256-entry colour table whose
     colours span lo-hi, the percentiles of the rock values rounded outward to step."""
-    v = vmin + q[q < 255].astype("float64") * (vmax - vmin) / 254
-    lo, hi = np.percentile(v, pct)
+    # percentiles in byte space from a 255-bin histogram: the byte -> value map is monotonic, and no
+    # float copy of the cube is made
+    counts = np.bincount(q.ravel(), minlength=256)[:255]
+    cdf = np.cumsum(counts) / counts.sum()
+    b_lo, b_hi = (int(np.searchsorted(cdf, p / 100.0)) for p in pct)
+    lo, hi = (vmin + b * (vmax - vmin) / 254 for b in (b_lo, b_hi))
     lo, hi = float(np.floor(lo / step) * step), float(np.ceil(hi / step) * step)
     t = np.clip((vmin + np.arange(256) * (vmax - vmin) / 254 - lo) / (hi - lo), 0, 1)
     cm = _cmap(cmap)
@@ -884,9 +888,13 @@ def export_sensors(atlas: Path, web_data: Path) -> dict:
         extra = [notes_cfg[c]["note"] for c in dict.fromkeys(codes) if c in notes_cfg]
         if extra:
             s["notes"] = " ".join([*extra, s["notes"]]).strip()
+    from rainier3d.sensors.virtual import load as load_virtual
+
     meta = {
         "sites": sites,
         "notes": {k: v["note"] for k, v in notes_cfg.items()},
+        # repurposed instruments: configs/virtual_sensors.yaml
+        "virtual": load_virtual(),
         "das": {
             "name": "Paradise–Nisqually Entrance DAS fiber",
             "segments": das,
@@ -1174,6 +1182,17 @@ def export_relocated(atlas: Path, catalog_csv: Path, dom, summary: dict | None =
     return meta
 
 
+def tag_virtual_sensors(atlas: Path) -> dict:
+    """Write configs/virtual_sensors.yaml into an existing bundle's model/sensors.json ("virtual")."""
+    from rainier3d.sensors.virtual import load as load_virtual
+
+    p = atlas / "model" / "sensors.json"
+    meta = json.loads(p.read_text())
+    meta["virtual"] = load_virtual()
+    p.write_text(json.dumps(meta, separators=(",", ":")))
+    return meta["virtual"]
+
+
 # ---- events (S29): hourly rain and river discharge for the viewer's Events panel ----
 RAIN_SCALE = 0.25  # mm per step of the uint8 rain frames; 254 steps = 63.5 mm/h, 255 = no data
 RAIN_DEG = 0.01  # rain texture pixel (degrees): the MRMS grid spacing
@@ -1230,6 +1249,10 @@ def _sites(ds: xr.Dataset, times, fr: dict, ext: dict, kind: str) -> list[dict]:
         }
         if "nse_logq" in ds:
             rec["nse"] = round(float(ds.nse_logq[i]), 2)
+        if kind == "virtual":
+            from rainier3d.sensors.virtual import load as load_virtual
+
+            rec["virtualSensor"] = load_virtual().get(str(s))
         out.append(rec)
     return out
 

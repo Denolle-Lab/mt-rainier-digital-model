@@ -78,7 +78,8 @@ function Atlas({ bundle, onError }) {
         if (!inv || cancelled) return;
         const extras = extraSites(inv, bundle.stations);
         s.sensors = new SensorPoints(s, extras, inv.das); s.sensors.setFilter(DEFAULT_FILTER);
-        setSens({ all: [...bundle.stations.sites.filter(x => x.onMap).map(classifyMarker), ...extras], das: inv.das, points: s.sensors, notes: inv.notes ?? {} });
+        setSens({ all: [...bundle.stations.sites.filter(x => x.onMap).map(classifyMarker), ...extras], das: inv.das, points: s.sensors, notes: inv.notes ?? {}, virtual: inv.virtual ?? {} });
+        layer.setVirtual(inv.virtual ?? {});
       });
       if (bundle.model) loadMassEvents(bundle.base).then(doc => {
         if (!doc || cancelled) return;
@@ -103,7 +104,7 @@ function Atlas({ bundle, onError }) {
       s.onFrame = () => {
         layer.update();
         s.volume?.update();
-        s.event?.update(1 / 60);
+        s.event?.update();
         s.layers?.update((x, y, z) => s.project(x, y, z), s.camera.position.toArray(), (x, z) => s.elevKm(x, z) ?? -1e9);
         if (n++ % 15 === 0) setDetail(detailText(s.frame, bundle.summit));
       };
@@ -124,7 +125,7 @@ function Atlas({ bundle, onError }) {
     setSfilter(f); sens?.points.setFilter(f);
     layerRef.current?.setFilter(x => passes(classifyMarker(x), f));
   };
-  const sensorLegend = sens && { filter: sfilter, onFilter: applyFilter, counts: kindCounts(sens.all, sfilter), das: sens.das };
+  const sensorLegend = sens && { filter: sfilter, onFilter: applyFilter, counts: kindCounts(sens.all, sfilter), das: sens.das, virtual: sens.virtual };
   const modelLayer = modelKey ? bundle.model.byKey[modelKey] : null;
   const flowLayer = bundle.model?.byKey.mass_flows;
   const showFlows = on => {   // the flow deposits are a draped model layer: the same slot as the layer menu
@@ -174,13 +175,13 @@ function Atlas({ bundle, onError }) {
           ]} />
           <GoTo majors={bundle.majors} active={active} onPlace={k => { setActive(k); scene.flyTo(k); }} onSite={s => openSite(s, scene)} />
           {modelLayer?.values && <ModelReadout scene={scene} model={bundle.model} layer={modelLayer} box={bundle.overviewBox} />}
-          <Tooltip hover={hover} notes={sens?.notes} />
+          <Tooltip hover={hover} notes={sens?.notes} virtual={sens?.virtual} />
           {sens && <SensorTip scene={scene} points={sens.points} />}
           {mass && <MassTip scene={scene} points={mass.points} doc={mass.doc} />}
           <MobileDock sheet={sheet} onSheet={setSheet} has={{ model: !!bundle.model, quakes: !!(bundle.quakes || reloc), mass: !!massLegend, events: !!event }} />
           <NavPad scene={scene} onHelp={openHelp} />
           <HelpHint onHelp={openHelp} hidden={helpOpened} />
-          {site && <StationPanel site={site} bundle={bundle} notes={sens?.notes} onFly={s => scene.flyToSite(s)}
+          {site && <StationPanel site={site} bundle={bundle} notes={sens?.notes} virtual={sens?.virtual} onFly={s => scene.flyToSite(s)}
             onClose={() => { setSiteId(null); layerRef.current?.setSelected(null); }} />}
         </>
       )}

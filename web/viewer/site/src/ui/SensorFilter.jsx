@@ -5,7 +5,7 @@ import "./ui.css";
 // The sensor legend doubles as the filter: networks (permanent / temporary), past deployments, and one toggle per
 // instrument kind with its count under the current network filter. Clicking a kind shows only that kind; clicking
 // it again shows all.
-export default function SensorFilter({ filter, onFilter, counts, das }) {
+export default function SensorFilter({ filter, onFilter, counts, das, virtual = {} }) {
   const set = patch => onFilter({ ...filter, ...patch });
   const only = key => set({ kinds: filter.kinds?.size === 1 && filter.kinds.has(key) ? null : new Set([key]) });
   const on = key => !filter.kinds || filter.kinds.has(key);
@@ -30,6 +30,13 @@ export default function SensorFilter({ filter, onFilter, counts, das }) {
           </button>
         )}
       </div>
+      {Object.keys(virtual).length > 0 && (
+        <div className="sf-virtual">
+          <span className="vbadge-key" aria-hidden="true">V</span>
+          <div><b>Virtual sensors ({Object.keys(virtual).length})</b>: instruments repurposed to estimate what they were not designed to
+            measure. {Object.entries(virtual).map(([c, uses]) => `${c.split(".")[1]}: ${uses.map(u => u.estimates.split(" (")[0]).join(", ")}`).join("; ")}.</div>
+        </div>
+      )}
     </div>
   );
 }

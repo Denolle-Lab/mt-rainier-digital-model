@@ -56,6 +56,12 @@ def main():
     virtual = E.in_box(
         E.virtual_discharge(files, ev["virtual_discharge"]["min_nse_logq"], ev["start"], ev["end"]), dom
     )
+    # a seismometer read as a river gauge is a virtual sensor: it must be in configs/virtual_sensors.yaml
+    from rainier3d.sensors.virtual import unregistered
+
+    missing = unregistered([str(c) for c in virtual.site.values])
+    if missing:
+        raise SystemExit(f"virtual sensors without an entry in configs/virtual_sensors.yaml: {missing}")
     for ds, key in ((gauges, ev["gauges"]["source"]), (virtual, ev["virtual_discharge"]["source"])):
         provenance(ds.discharge, [key], "river discharge", 0.0)
 

@@ -277,3 +277,13 @@ test("(t) Vp, Vs and density colours saturate at the 2nd and 98th percentiles", 
   await expect(page.locator(".model-panel .ramp-labels")).toContainText("≤");
   await expect(page.locator(".model-panel .ramp-labels")).toContainText("≥");
 });
+
+test("(u) virtual sensors are labelled: marker badge, legend and station card", async ({ page }) => {
+  await page.waitForFunction(() => !!window.__rainier.sensors, null, { timeout: 30_000 });
+  await expect(page.locator('.station.virtual[data-id="CC.PR03"] .vbadge')).toHaveCount(1);
+  await dock(page, "Sensors");
+  await expect(page.locator(".sf-virtual")).toContainText("Virtual sensors (3)");
+  await page.locator('.station[data-id="CC.PR03"]').click({ force: true });
+  await expect(page.locator(".sp-virtual")).toContainText("river discharge");
+  await expect(page.locator(".sp-virtual")).toContainText("Nash-Sutcliffe");
+});

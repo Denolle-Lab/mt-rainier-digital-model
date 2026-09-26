@@ -41,3 +41,10 @@ export function timeLabels(t) {
   const pst = new Date(t.getTime() - 8 * 3600e3).toISOString().slice(5, 16).replace("T", " ") + " PST";
   return { utc, pst };
 }
+
+// the frame with the most domain-mean precipitation; 0 when there is none (empty or all null)
+export function wettestFrame(values) {
+  let best = 0, max = -Infinity;
+  (values ?? []).forEach((v, i) => { if (v != null && v > max) { max = v; best = i; } });
+  return best;
+}

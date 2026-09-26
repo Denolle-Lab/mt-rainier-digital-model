@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { frameTime, timeLabels, windowAt } from "../data/events.js";
+import { frameTime, timeLabels, wettestFrame, windowAt } from "../data/events.js";
 import "./ui.css";
 
 const W = 232, H = 46;
@@ -30,10 +30,10 @@ function Series({ values, k, kind, windows, doc, label, unit }) {
 // `active`: its dock panel or phone sheet is open; panels stay mounted while closed, so the rain and bars follow it.
 export default function EventsPanel({ event, active = true }) {
   const { doc } = event;
-  const [k, setK] = useState(() => doc.rain.domainMean.indexOf(Math.max(...doc.rain.domainMean.filter(v => v != null))));
+  const [k, setK] = useState(() => Math.min(wettestFrame(doc.rain.domainMean), event.count - 1));
   const [play, setPlay] = useState(false), [rain, setRain] = useState(true), [gauges, setGauges] = useState(true);
   const sites = useMemo(() => [...doc.gauges, ...doc.virtual].sort((a, b) => b.peak.q - a.peak.q), [doc]);
-  const [sel, setSel] = useState(() => (doc.gauges.find(g => g.onMap) ?? sites[0])?.id);
+  const [sel, setSel] = useState(() => (doc.gauges.find(g => g.onMap) ?? sites[0])?.id ?? null);
   useEffect(() => { event.setFrame(k); }, [event, k]);
   useEffect(() => {
     if (active) event.show({ rain, gauges }); else event.hide();
@@ -66,14 +66,14 @@ export default function EventsPanel({ event, active = true }) {
       <div className="ev-sites" role="list">
         {sites.map(s => (
           <button key={s.id} role="listitem" className={`ev-site${s.id === sel ? " on" : ""}`} onClick={() => setSel(s.id)}
-            title={s.kind === "virtual" ? `seismic virtual gauge, NSE log Q ${s.nse}` : `USGS ${s.id}${s.recordEnds ? `, record ends ${s.recordEnds}` : ""}${s.onMap ? "" : ", off the map"}`}>
+            title={s.kind === "virtual" ? `virtual sensor: seismometer read as a river gauge, NSE log Q ${s.nse}` : `USGS ${s.id}${s.recordEnds ? `, record ends ${s.recordEnds}` : ""}${s.onMap ? "" : ", off the map"}`}>
             <span className={`ev-dot ${s.kind}`} /><span className="ev-name">{s.name}{s.recordEnds ? " †" : ""}</span>
             <span className="mono">{s.q[k] == null ? "–" : Math.round(s.q[k])}</span><span className="mono ev-peak">{Math.round(s.peak.q)}</span>
           </button>
         ))}
       </div>
       <div className="msrc">
-        m³/s now and at the event peak; † the record stops during the event. Blue: USGS gauges; amber: seismic virtual gauges (rating inverted from river
+        m³/s now and at the event peak; † the record stops during the event. Blue: USGS gauges; amber: virtual sensors, seismometers repurposed as river gauges (rating inverted from river
         noise, seis-hydro-2-sed). Precipitation is the MRMS liquid equivalent: rain and snow are not separated. Shaded: the pre-AR storm and three atmospheric-river pulses. {doc.note}{" "}
         Sources: {Object.entries(doc.sources).map(([key, s], i) => <span key={key}>{i ? ", " : ""}<a href={s.link} target="_blank" rel="noreferrer">{key}</a></span>)}.
       </div>

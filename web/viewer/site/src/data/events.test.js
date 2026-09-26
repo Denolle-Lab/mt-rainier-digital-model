@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { frameTime, rainAt, timeLabels, windowAt } from "./events.js";
+import { frameTime, rainAt, timeLabels, wettestFrame, windowAt } from "./events.js";
 
 const doc = {
   frames: { start: "2025-12-05T01:00Z", stepHours: 1, count: 3 },
@@ -22,6 +22,12 @@ describe("events", () => {
     expect(rainAt(doc, frames, 1, -121.1, 46.1)).toBe(3);      // south-east: 12 x 0.25
     expect(rainAt(doc, frames, 1, -121.9, 46.1)).toBeNull();   // 255
     expect(rainAt(doc, frames, 1, -123, 46.5)).toBeNull();
+  });
+  it("starts at the wettest frame, or frame 0 without data", () => {
+    expect(wettestFrame([0.1, null, 3, 2])).toBe(2);
+    expect(wettestFrame([])).toBe(0);
+    expect(wettestFrame([null, null])).toBe(0);
+    expect(wettestFrame(undefined)).toBe(0);
   });
   it("labels UTC and Pacific standard time", () => {
     expect(timeLabels(new Date("2025-12-09T12:00:00Z"))).toEqual({ utc: "2025-12-09 12:00 UTC", pst: "12-09 04:00 PST" });

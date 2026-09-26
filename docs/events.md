@@ -38,6 +38,21 @@ Add a block to `configs/events.yaml` with its window, the same `rain`, `gauges` 
 (or drop `virtual_discharge` where no rating exists), and run `pixi run s29 -- --event <key>`. The viewer
 lists every event in `<atlas>/events/index.json` and opens the last one.
 
+## Virtual sensors
+
+The seismometers read as river gauges are virtual sensors: instruments repurposed to estimate what they were not
+designed to measure. S29 stops if one of them has no entry in `configs/virtual_sensors.yaml`; the entry
+(designed for, estimates, method, skill, source, used by) travels to the viewer (`model/sensors.json`
+"virtual", and each virtual site of `event.json`), which labels the station on the map, in its tooltip, on its
+card and in the Sensors legend. `rainier3d.export.atlas.tag_virtual_sensors(atlas)` updates an existing bundle.
+
+## Rain drops in the viewer
+
+Drops appear with a probability that follows the MRMS rate under them (all drops at 8 mm/h), and their width and
+length grow with the rate up to 12 mm/h. Drop size is not observed: the rendering encodes intensity only. Rain
+impacts are recorded by seismometers and geophones, so a drop-size estimate from seismic records would be
+another virtual sensor and could drive the drop size directly (`uThick` in `RainEvent.js`).
+
 ## Forecasts (not fetched yet)
 
 `forecasts: []` in `configs/events.yaml` reserves the place for AI and physics forecasts, stored with the same

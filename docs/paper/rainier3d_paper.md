@@ -808,14 +808,14 @@ The storm is the one analysed by the seis-hydro-2-sed project [@seis_hydro_2_sed
 |------|--------|----------|-----------|
 | Precipitation | MRMS multi-sensor QPE, 1 h, Pass 2 [@mrms_qpe] | 0.01°, hourly | area average on the 1 km domain grid (UTM 10N), mm per hour |
 | Discharge | USGS instantaneous values, parameter 00060 [@usgs_nwis_iv] | 15 min | 15 gauges in the model box, m³/s |
-| Seismic virtual discharge | power–discharge ratings of river-proximal stations [@seis_hydro_2_sed] | 5 min | 3 stations whose rating reproduces the gauge (Nash–Sutcliffe efficiency of log Q ≥ 0.7), m³/s |
+| Virtual sensors: discharge from seismometers | power–discharge ratings of river-proximal stations [@seis_hydro_2_sed] | 5 min | 3 stations whose rating reproduces the gauge (Nash–Sutcliffe efficiency of log Q ≥ 0.7), m³/s |
 | Storm windows | seis-hydro-2-sed | – | pre-AR, AR1, AR2, AR3 |
 
 : Data of the December 2025 event (S29, `configs/events.yaml`). {#tbl:eventdata}
 
 The event is one DataTree in `data/processed/events/dec2025_ar.zarr`, with a node per data set: `/rain` (time, y, x), `/gauges` and `/virtual` (site, time). Each MRMS file holds the accumulation of the hour that ends at its time stamp, and frames keep that convention. `outputs/events/dec2025_ar/summary.json` and `peaks.csv` hold the numbers quoted below, and [@fig:flood] shows the event. In the viewer, the Storms panel replays the event hour by hour: drops fall wherever MRMS reports precipitation, at a density that follows the rate, and a bar at each gauge rises with its discharge.
 
-![The December 2025 event. (a) Precipitation, 5–13 December (MRMS, liquid equivalent) over a hillshade, with the USGS gauges (circles) and the seismic virtual gauges (diamonds). (b) Domain-mean hourly precipitation; shading marks the storm windows of seis-hydro-2-sed. (c) Discharge as a fraction of the event peak at four gauges and at the virtual gauge PR03, which sits next to the Electron gauge. (d) Mean event precipitation by ground elevation, 1 km cells, with the mean over cells at least half covered by glaciers.](figures/fig21_flood_event.png){#fig:flood}
+![The December 2025 event. (a) Precipitation, 5–13 December (MRMS, liquid equivalent) over a hillshade, with the USGS gauges (circles) and the virtual sensors, seismometers read as river gauges (diamonds). (b) Domain-mean hourly precipitation; shading marks the storm windows of seis-hydro-2-sed. (c) Discharge as a fraction of the event peak at four gauges and at the virtual gauge PR03, which sits next to the Electron gauge. (d) Mean event precipitation by ground elevation, 1 km cells, with the mean over cells at least half covered by glaciers.](figures/fig21_flood_event.png){#fig:flood}
 
 ## For atmospheric scientists
 
@@ -842,13 +842,13 @@ AI weather models already cover the event. GraphCast [@lam_2023_graphcast] runs 
 | Mashel River near La Grande | 154 | 9 Dec 12:00 |
 | Clearwater River near Buckley | 148 | 9 Dec 09:30 |
 | Greenwater River at Greenwater | 123 | 10 Dec 16:30 |
-| Seismic virtual gauge PR03 (Puyallup) | 545 | 10 Dec 13:45 |
-| Seismic virtual gauge PR02 (Puyallup) | 501 | 10 Dec 12:10 |
-| Seismic virtual gauge STYX (Puyallup) | 445 | 10 Dec 13:00 |
+| Virtual sensor PR03, seismometer (Puyallup) | 545 | 10 Dec 13:45 |
+| Virtual sensor PR02, seismometer (Puyallup) | 501 | 10 Dec 12:10 |
+| Virtual sensor STYX, seismometer (Puyallup) | 445 | 10 Dec 13:00 |
 
 : Peak discharge of the December 2025 event (S29, `peaks.csv`); gauges with peaks below 100 m³/s and the two interrupted records are in the file. {#tbl:eventgauges}
 
-The virtual gauges invert the seismic power of river noise [@burtin_2008; @tsai_2012] through a power–discharge rating fitted on the co-located gauge [@seis_hydro_2_sed]. PR03 sits 200 m from the Electron gauge; its peak, 545 m³/s against 323 m³/s at the gauge, shows the rating extrapolated beyond the discharges it was fitted on, where bedload adds seismic power that the water alone does not. The same project reports that the bedload band rises 5–7 h before the discharge peak. With the mass-movement catalogue of [@sec:mass], the hourly 1 km precipitation can be read at any mapped debris-flow source or lahar path, for intensity–duration analyses of the kind introduced by @caine_1980.
+We call an instrument used to estimate a quantity it was not designed to measure a virtual sensor. Each one is listed in `configs/virtual_sensors.yaml` with what it was designed for, what it estimates, the method, its skill against a direct measurement and the products that use it, and the viewer labels it on the map and on its station card. The three seismometers here invert the seismic power of river noise [@burtin_2008; @tsai_2012] through a power–discharge rating fitted on the co-located gauge [@seis_hydro_2_sed]. PR03 sits 200 m from the Electron gauge; its peak, 545 m³/s against 323 m³/s at the gauge, shows the rating extrapolated beyond the discharges it was fitted on, where bedload adds seismic power that the water alone does not. The same project reports that the bedload band rises 5–7 h before the discharge peak. With the mass-movement catalogue of [@sec:mass], the hourly 1 km precipitation can be read at any mapped debris-flow source or lahar path, for intensity–duration analyses of the kind introduced by @caine_1980.
 
 ## For cryospheric scientists
 
@@ -860,7 +860,7 @@ The event pairs each river-proximal seismic station with discharge, so river noi
 
 ## For hazards researchers
 
-The event reproduces the chain that an operational tool would follow: forcing, observed or forecast; river response at gauges and at seismic stations; and the hazard layers of the model, which include lahar zones and debris-flow sources. Two gauges stopped reporting during the storm, while the seismic stations kept recording, so the virtual gauges filled part of the observational gap. The hourly field allows rainfall thresholds to be evaluated at each debris-flow source. Nothing here is run in real time, and none of the numbers carries an uncertainty yet.
+The event reproduces the chain that an operational tool would follow: forcing, observed or forecast; river response at gauges and at seismic stations; and the hazard layers of the model, which include lahar zones and debris-flow sources. Two gauges stopped reporting during the storm, while the seismic stations kept recording, so the virtual sensors filled part of the observational gap. The hourly field allows rainfall thresholds to be evaluated at each debris-flow source. Nothing here is run in real time, and none of the numbers carries an uncertainty yet.
 
 ## What a time-dependent model still needs
 
@@ -868,7 +868,7 @@ The event reproduces the chain that an operational tool would follow: forcing, o
 |---------|------------------|-------------------|---------|
 | Precipitation phase | – | MRMS; AI forecasts | freezing level; SNOTEL snow water equivalent |
 | Snow and glacier melt | glacier outlines, ice thickness | precipitation | melt model (degree-day or energy balance) |
-| Runoff and routing | streams, 15 gauges, 3 virtual gauges | precipitation | routing model calibrated on the gauges |
+| Runoff and routing | streams, 15 gauges, 3 virtual sensors | precipitation | routing model calibrated on the gauges |
 | Groundwater | static water-table depth | infiltration | recharge and water-table change |
 | Sediment and debris flows | mass-movement catalogue, lahar zones | hourly precipitation | thresholds; bedload from seismic noise |
 | Seismic velocity | Vp, Vs, density | groundwater, surface loading | ambient-noise monitoring on the model grid |
@@ -1064,7 +1064,7 @@ The code and this paper were written with an AI coding assistant (Claude, Anthro
 | NHDPlus High Resolution | streams | @nhdplus_hr |
 | MRMS multi-sensor QPE, 1 h, Pass 2 | event precipitation | @mrms_qpe |
 | USGS instantaneous discharge | event river gauges | @usgs_nwis_iv |
-| seis-hydro-2-sed virtual discharge and storm windows | event virtual gauges | @seis_hydro_2_sed |
+| seis-hydro-2-sed virtual discharge and storm windows | event virtual sensors | @seis_hydro_2_sed |
 | ETH global canopy height 2020 | canopy height | @eth_canopy_2020 |
 | NLCD 2021 | land cover | @nlcd_2021 |
 | Copernicus Sentinel-2 L2A | imagery, NDVI, NDSI, leaf area index | @sentinel2_l2a; @sentinel2_lai_2023 |

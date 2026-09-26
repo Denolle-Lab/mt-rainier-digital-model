@@ -6,3 +6,6 @@
 .station.major .name { font-weight: 500; }
 .station:focus-visible { outline: none; }
 .station:focus-visible svg { outline: 1px dashed var(--text-primary); outline-offset: 3px; border-radius: 50%; }
+
+/* virtual sensor badge on a station marker (configs/virtual_sensors.yaml) */
+.station .vbadge { position: absolute; left: -4px; top: -4px; width: 12px; height: 12px; border-radius: 6px; background: #e8a33d; color: #121211; font: 600 8px/12px "IBM Plex Sans", system-ui, sans-serif; text-align: center; pointer-events: none; box-shadow: 0 0 0 1px #121211; }

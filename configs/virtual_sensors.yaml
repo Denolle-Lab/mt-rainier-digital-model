@@ -1,0 +1,39 @@
+# Virtual sensors: instruments repurposed to estimate a quantity they were not designed to measure. The viewer
+# labels them "virtual sensor" (marker badge, tooltip, station card, Sensors legend) and every product that uses
+# them names the entry here. One list per station code, since one instrument can serve several purposes.
+#   designed_for  what the instrument measures by design
+#   estimates     the repurposed quantity (with units)
+#   method        how the quantity is derived from the recording
+#   skill         agreement with a direct measurement of the quantity, with the period it was measured on
+#   source        key in configs/sources.yaml
+#   used_by       the stage and configuration that use the estimate
+CC.PR03:
+  - designed_for: ground motion and infrasound (broadband seismometer, infrasound microphone)
+    estimates: river discharge of the Puyallup River (m³/s)
+    method: >-
+      seismic power of river noise at 5-15 Hz inverted through a power-discharge rating fitted on the co-located
+      USGS gauge (seis-hydro-2-sed workflows/12_virtual_q.py); the station is 200 m from USGS 12092000,
+      Puyallup River near Electron
+    skill: >-
+      Nash-Sutcliffe efficiency of log discharge 0.95, December 2025; above the fitted range the rating
+      overshoots (flood peak 545 m³/s against 323 m³/s at the Electron gauge)
+    source: seis_hydro_2_sed
+    used_by: S29, configs/events.yaml (dec2025_ar)
+CC.PR02:
+  - designed_for: ground motion and infrasound (broadband seismometer, infrasound microphone)
+    estimates: river discharge of the Puyallup River (m³/s)
+    method: >-
+      seismic power of river noise at 5-15 Hz inverted through a power-discharge rating fitted on the co-located
+      USGS gauge (seis-hydro-2-sed workflows/12_virtual_q.py)
+    skill: Nash-Sutcliffe efficiency of log discharge 0.92, December 2025 (5752 of 8916 five-minute samples)
+    source: seis_hydro_2_sed
+    used_by: S29, configs/events.yaml (dec2025_ar)
+CC.STYX:
+  - designed_for: ground motion and infrasound (broadband seismometer, infrasound microphone)
+    estimates: river discharge of the Puyallup River (m³/s)
+    method: >-
+      seismic power of river noise at 5-15 Hz inverted through a power-discharge rating fitted on the co-located
+      USGS gauge (seis-hydro-2-sed workflows/12_virtual_q.py)
+    skill: Nash-Sutcliffe efficiency of log discharge 0.75, December 2025
+    source: seis_hydro_2_sed
+    used_by: S29, configs/events.yaml (dec2025_ar)

@@ -1039,7 +1039,7 @@ EVENT_GAUGES = (
 
 def fig_flood_event(surface, rain, gauges, virtual, windows, summary, path):
     """S29: (a) event precipitation over a hillshade with the gauges; (b) domain-mean hourly precipitation
-    with the AR windows; (c) discharge / event peak at four gauges and one seismic virtual gauge;
+    with the AR windows; (c) discharge / event peak at four gauges and one virtual sensor;
     (d) precipitation by elevation band."""
     s = surface.sortby("y")
     x, y = s.x.values / 1e3, s.y.values / 1e3
@@ -1069,7 +1069,7 @@ def fig_flood_event(surface, rain, gauges, virtual, windows, summary, path):
     ax.set_ylabel("UTM 10N northing (km)")
     ax.set_title("(a) Precipitation, 5-13 Dec 2025 (MRMS)")
     cb = fig.colorbar(im, ax=ax, orientation="horizontal", shrink=0.8, pad=0.02, extend="max")
-    cb.set_label("mm (liquid equivalent); ○ USGS gauge, ◇ seismic virtual gauge")
+    cb.set_label("mm (liquid equivalent); ○ USGS gauge, ◇ virtual sensor (seismometer)")
 
     t = pd.DatetimeIndex(rain.time.values)
     t0 = pd.Timestamp(windows[0]["start"]).tz_convert(None) - pd.Timedelta("3D")

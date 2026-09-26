@@ -21,7 +21,7 @@ export function links(st, now = new Date()) {
   return out;
 }
 
-export default function StationPanel({ site, bundle, onClose, onFly, notes = {} }) {
+export default function StationPanel({ site, bundle, onClose, onFly, notes = {}, virtual = {} }) {
   return (
     <aside className="panel station-panel" id="panel" aria-label={`${site.name} station details`}>
       <div className="sp-head">
@@ -40,6 +40,17 @@ export default function StationPanel({ site, bundle, onClose, onFly, notes = {} 
           <div className="sp-meta">Running since {st.since.slice(0, 4)} · {fmtElev(st.elev)}{st.depth > 1 ? ` · sensor ${Math.round(st.depth)} m below the surface` : ""}</div>
           <ul className="sp-inst">{st.instruments.map(i => <li key={i.channels.join()}>{instrumentLine(i)}</li>)}</ul>
           {notes[st.code] && <p className="sp-note sp-stnote">{notes[st.code]}</p>}
+          {(virtual[st.code] ?? []).map((u, i) => (
+            <div key={i} className="sp-virtual" aria-label="Virtual sensor">
+              <div className="vhead"><span className="vtag">Virtual sensor</span> repurposed to estimate {u.estimates}</div>
+              <dl>
+                <dt>Designed for</dt><dd>{u.designed_for}</dd>
+                <dt>Method</dt><dd>{u.method}</dd>
+                <dt>Skill</dt><dd>{u.skill}</dd>
+                <dt>Used by</dt><dd>{u.used_by} · source {u.source}</dd>
+              </dl>
+            </div>
+          ))}
           <ul className="sp-links">{links(st).map(l => <li key={l.label}><a href={l.url} target="_blank" rel="noreferrer">{l.label}</a></li>)}</ul>
         </section>
       ))}
