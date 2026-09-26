@@ -296,7 +296,8 @@ test("(u) virtual sensors are labelled: marker badge, legend and station card", 
 
 test("(v) the scale bar follows the zoom", async ({ page }) => {
   const label = () => page.locator(".scalebar .sb-label").textContent();
-  expect(await label()).toMatch(/km$/);
+  await expect(page.locator(".scalebar .sb-label")).toBeVisible();   // the bar renders after its first update
+  await expect.poll(label).toMatch(/km$/);
   await page.getByRole("button", { name: "Summit crater" }).click();
   await expect.poll(label, { timeout: 15_000 }).toMatch(/ m$/);
 });
