@@ -171,7 +171,7 @@ function Atlas({ bundle, onError }) {
                 {volume && <SubsurfacePanel volume={volume} scene={scene} />}
               </div>) }] : []),
             { key: "help", label: "Help", icon: "help", node: (
-              <HelpPanel bundle={bundle}><Attribution bundle={bundle} sensors={!!sensorLegend} mass={!!mass} reloc={!!reloc} /></HelpPanel>) },
+              <HelpPanel bundle={bundle}><Attribution bundle={bundle} sensors={!!sensorLegend} mass={!!mass} reloc={!!reloc} storm={!!event} /></HelpPanel>) },
           ]} />
           <GoTo majors={bundle.majors} active={active} onPlace={k => { setActive(k); scene.flyTo(k); }} onSite={s => openSite(s, scene)} />
           {modelLayer?.values && <ModelReadout scene={scene} model={bundle.model} layer={modelLayer} box={bundle.overviewBox} />}

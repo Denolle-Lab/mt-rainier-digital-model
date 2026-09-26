@@ -74,9 +74,8 @@ Later versions repeat steps 2–5, with `--concept <record id>` so the new versi
 
 ## Before the first deposit
 
-- **WGS landslide inventory.** It states no licence (`docs/data_policy.md`). Confirm with the Washington
-  Geological Survey that derived polygons may be redistributed under CC-BY, or drop them from the
-  `mass_movements` product.
+- **WGS landslide inventory.** Settled: the Washington Geological Survey's citation guidelines allow any use,
+  including derivatives, with citation (`docs/data_policy.md`); the `mass_movements` product cites it.
 - **ORCID iDs.** Add all six authors' ORCIDs to `CITATION.cff`; the deposit script reads authors from it.
 - **Grant.** Give the Paros Geohazard Center gift as the funding reference (Zenodo `grants` does not list
   private gifts; state it in `notes`).

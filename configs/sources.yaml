@@ -5,8 +5,9 @@
 
 dnr_gems_100k:
   title: Washington Geological Survey 1:100,000 surface geology (GeMS), map units, orientations, faults
+  license_url: "https://www.dnr.wa.gov/washington-geological-survey/publications-and-data/disclaimers-and-citation-guidelines"
   url: https://gis.dnr.wa.gov/site1/rest/services/Public_Geology/100K_Surface_Geology_WA_GeMS/FeatureServer
-  license: public (WA DNR)
+  license: "Washington Geological Survey content: free to use for any purpose, commercial or not, including modification, with citation (WGS Disclaimers and Citation Guidelines, read 2026-09-26)"
   verified: web-2026-09-23
   role: surface lithology (layer 11), description of map units (layer 13); orientations (layer 1) for M3; faults (layer 7) and lahar deposits (Qvl units) for S24
   bib_author: "{Washington Geological Survey}"   # author and year for the BibTeX entry (live service: year accessed)
@@ -14,8 +15,9 @@ dnr_gems_100k:
 
 dnr_quaternary_faults:
   title: Washington Geological Survey, Quaternary active faults of Washington (Earthquakes and Faults map service, layer 12)
+  license_url: "https://www.dnr.wa.gov/washington-geological-survey/publications-and-data/disclaimers-and-citation-guidelines"
   url: https://gis.dnr.wa.gov/site1/rest/services/Public_Geology/Earthquakes_and_Faults/MapServer/12
-  license: not stated in the service metadata
+  license: "Washington Geological Survey content: free to use for any purpose, commercial or not, including modification, with citation (WGS Disclaimers and Citation Guidelines, read 2026-09-26)"
   verified: web-2026-09-25 (service queried; 4 features in the model box)
   role: Quaternary faults and seismic zones (S24, report figure)
   bib_author: "{Washington Geological Survey}"   # author and year for the BibTeX entry (live service: year accessed)
@@ -39,6 +41,8 @@ nps_gri_mora:
 
 fiske_1963:
   title: Fiske, Hopson & Waters 1963, Geology of Mount Rainier National Park, USGS PP 444
+  license_url: "https://www.usgs.gov/information-policies-and-instructions/copyrights-and-credits"
+  license: "public domain: USGS-authored or produced data and information (USGS copyrights and credits policy)"
   url: https://pubs.usgs.gov/pp/0444/report.pdf
   doi: 10.3133/pp444
   verified: web-2026-09-23
@@ -95,6 +99,8 @@ pnsn_quarterly_2003a:
 
 comcat_uw:
   title: USGS ComCat, PNSN (uw) origins and phase-data QuakeML
+  license_url: "https://www.usgs.gov/information-policies-and-instructions/copyrights-and-credits"
+  license: "public domain: USGS-authored or produced data and information (USGS copyrights and credits policy)"
   url: https://earthquake.usgs.gov/fdsnws/event/1/
   verified: web-2026-09-23 (89 M>=2 events in domain 2015-2026 with phase-data)
   role: analyst picks and PNSN hypocentres for S6
@@ -153,6 +159,7 @@ m1_placeholder:
 # ---- sensor atlas (S8) and overlays
 earthscope_fdsn:
   title: EarthScope FDSN station web service (channel level, all networks in the domain box)
+  license: "provider terms, to verify (see url)"
   url: https://service.earthscope.org/fdsnws/station/1/
   verified: web-2026-09-23 (864 stations, 3969 channel epochs)
   role: seismic, strong motion, nodes, infrasound, strain/tilt, MT sensors
@@ -161,12 +168,14 @@ earthscope_fdsn:
 
 earthscope_gnss:
   title: EarthScope/UNAVCO GNSS site metadata web service
+  license: "provider terms, to verify (see url)"
   url: https://web-services.unavco.org/gps/metadata/sites/v1
   verified: web-2026-09-23 (14 sites); ellipsoidal heights from the service not used (values implausible)
   role: GNSS sites
 
 synoptic_catalog:
   title: Synoptic weather, SNOTEL and streamflow stations via gaia-hazlab/catalog GeoJSON
+  license: "provider terms, to verify (see url)"
   url: https://github.com/gaia-hazlab/catalog
   local: ~/GitHub/mt-rainier-smart-sensing/data/stations/
   note: elevations are in feet; converted to m
@@ -187,18 +196,23 @@ das_paradise_nisqually:
 
 usgs_i432_kmz:
   title: USGS I-432 KMZ, Geologic map and section of Mount Rainier National Park, sheet 1 (Fiske et al. 1963), NGMDB product 1268
+  license_url: "https://www.usgs.gov/information-policies-and-instructions/copyrights-and-credits"
+  license: "public domain: USGS-authored or produced data and information (USGS copyrights and credits policy)"
   url: file://~/Downloads/USGS_I-432_1.kmz
   verified: local file read 2026-09-23 (single GroundOverlay, 10000 x 10000 px)
   role: geology overlay (atlas, 3D drape); M2 candidate for digitizing units
 
 nrcs_soil_poster_kmz:
   title: NRCS/NPS General Soil Map, Mount Rainier National Park (poster) as a Google Earth super-overlay, "modified"
+  license: "US federal government work (USDA NRCS), not subject to copyright in the United States (17 U.S.C. 105)"
   url: file://~/Downloads/soilmap_mtrainier_modified_super_overlay.kmz
   verified: "local file read 2026-09-23; the whole poster is placed over a lon/lat box (hand georeferencing), cropped to the map panel"
   role: soil overlay (approximate registration); SSURGO/NPS digital soils remain the M2 source
 
 aws_terrain_tiles:
   title: AWS Terrain Tiles (terrarium encoding; Mapzen, sources include USGS 3DEP)
+  license_url: "https://github.com/tilezen/joerd/blob/master/docs/attribution.md"
+  license: "Tilezen terrain tiles: attribution to each underlying elevation source is required (tilezen/joerd docs/attribution.md, read 2026-09-26)"
   url: https://registry.opendata.aws/terrain-tiles/
   verified: web-2026-09-23
   role: atlas terrain, hillshade, contours
@@ -206,6 +220,7 @@ aws_terrain_tiles:
 # ---- glaciers
 iceboost_v2:
   title: IceBoost v2.0 per-glacier ice thickness and error (N. Maffezzoli, UC Irvine), RGI 6.0 region 02 GeoTIFFs, produced 2025-11-05
+  license: "provider terms, to verify (see url)"
   url: https://cluster.klima.uni-bremen.de/~oggm/ice_thickness/iceboost_v2/RGI62/rgi2/
   paper: "Maffezzoli et al., IceBoost (Geosci. Model Dev., 2025) -- citation and DOI not verified"
   verified: web-2026-09-23 (files downloaded; metadata read from GeoTIFF tags)
@@ -222,6 +237,7 @@ rgi60:
 
 glathida:
   title: GlaThiDa v3.1.0 (Glacier Thickness Database), survey table T.csv; Rainier entries from Driedger & Kennard 1986 (1981 GPR)
+  license: "provider terms, to verify (see url)"
   doi: 10.5904/wgms-glathida-2020-10
   url: https://cluster.klima.uni-bremen.de/~oggm/glathida/glathida-v3.1.0/data/T.csv
   verified: "web-2026-09-23 (file); DOI from memory"
@@ -239,6 +255,7 @@ solus100:
 
 ma2026_wtd:
   title: Ma, Condon, Koch, Bennett, Defnet, Tijerina-Kreuzer, Melchior & Maxwell 2026, High resolution US water table depth estimates reveal quantity of accessible groundwater, Commun. Earth Environ. 7, 45
+  attribution: "Water-table depth: Ma et al. (2026), doi:10.5281/zenodo.18504963, CC BY-NC-ND 4.0. Displayed in the viewer with attribution for non-commercial research; not redistributed as data."
   doi: 10.5281/zenodo.18504963
   article_doi: 10.1038/s43247-025-03094-3
   url: https://zenodo.org/records/18504963
@@ -347,6 +364,7 @@ huber_1964:
 
 ulberg_2020:
   title: Ulberg, Creager, Moran, Abers, Thelen, Levander, Kiser, Schmandt, Hansen & Crosson 2020, Local source Vp and Vs tomography in the Mount St. Helens region with the iMUSH broadband array, G3 21
+  license: "CC-BY-4.0 (DataCite record of doi:10.17611/dp/emc.2020.imushloceq.1, read 2026-09-26)"
   doi: 10.17611/dp/emc.2020.imushloceq.1
   article_doi: 10.1029/2019GC008888
   url: https://data.earthscope.org/archive/seismology/products/emc/netcdf/iMUSH-localEQ-Ulberg-2020.r0.0-n4c.nc
@@ -391,6 +409,7 @@ johnson_1985:
 
 canopy_lidar_chm:
   title: Canopy height model and vegetation cover fraction, 10 m, from airborne lidar DSM/DTM tiles of the WA DNR Lidar Portal (2022-2023 "Wali" acquisitions, e.g. Rainier Wali 2022; NAD83(HARN) Washington South ftUS), gridded in QGIS for the canopy-storage project (M. Koepfli)
+  attribution: "Canopy height and vegetation cover from WA DNR Lidar Portal DSM/DTM (2022-2023 Wali acquisitions), gridded by M. Köpfli (canopy-storage project). Displayed in the viewer; not redistributed as data until the portal terms are confirmed."
   url: https://lidarportal.dnr.wa.gov/ (tiles); https://github.com/koepflma/canopy-storage_seismic (private; non-seismic_code/CHM/, commit 292ebe4)
   license: "WA DNR Lidar Portal terms not yet confirmed (the portal pages are script-rendered; ask the DNR lidar manager)"
   verified: "no"
@@ -432,6 +451,7 @@ gedi_l4b:
 
 soil_map_image:
   title: Soil map rendering (RGB, EPSG:3857, 7.8 m), masked to Mount Rainier National Park; delivered 2026-09-24
+  attribution: "Soil-map image delivered with the canopy-storage products; source, legend and terms not documented. Displayed in the viewer only."
   license: "unknown (TODO: source and legend)"
   verified: "no"
   role: soil_map image layer in the viewer (display only)
@@ -441,8 +461,10 @@ soil_map_image:
 # at doi.org and metadata read from Crossref or DataCite on 2026-09-25
 wgs_landslide_inventory:
   title: Washington Geological Survey, Washington State Landslide Inventory Database, Digital Data Series 29, v1.5 (2026); includes the Landslide Compilation layer with the NPS mapping of Riedel et al.
+  redistribute_derived: true   # WGS guidelines: free use with citation
+  license_url: "https://www.dnr.wa.gov/washington-geological-survey/publications-and-data/disclaimers-and-citation-guidelines"
   url: https://gis.dnr.wa.gov/site3/rest/services/Geology/Landslide_Inventory_Database/MapServer
-  license: not stated in the service metadata
+  license: "Washington Geological Survey content: free to use for any purpose, commercial or not, including modification, with citation (WGS Disclaimers and Citation Guidelines, read 2026-09-26)"
   verified: web-2026-09-25 (service queried; 57 compilation polygons in lon -122.00 to -121.44, lat 46.70 to 47.00); S24 fetch 2026-09-25 (layers 1, 21, 131 over the model box)
   role: landslide polygons (mass-movement catalogue, S24)
   bib_author: "{Washington Geological Survey}"   # author and year for the BibTeX entry (live service: year accessed)

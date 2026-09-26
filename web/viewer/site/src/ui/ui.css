@@ -262,3 +262,7 @@ input[type=range]:disabled { opacity: 0.35; }
 .sb-bar { height: 6px; border: 1.5px solid var(--text-primary); border-top: 0; }
 .sb-label { font-size: 11px; color: var(--text-primary); }
 @media (max-width: 700px) { .scalebar { bottom: calc(76px + env(safe-area-inset-bottom)); right: 8px; } }
+
+/* licence of a layer source and its attribution text, in the model legend */
+.mlegend .lic, .mlegend .lic a { color: var(--text-muted); }
+.mlegend .attrib { margin-top: 4px; color: var(--text-secondary); font-size: 11px; line-height: 1.45; }

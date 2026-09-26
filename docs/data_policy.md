@@ -18,11 +18,11 @@ The rule applied by `scripts/20_publish_products.py`: a variable whose provenanc
 
 | Tier | Inputs | What is published | What a user needs to rebuild |
 |---|---|---|---|
-| Open, redistributable | USGS 3DEP, CVM v1.7, ComCat, NHDPlus (v2.1 and HR), NLCD 2021 (public domain); WA DNR GeMS geology; SOLUS100 and ETH canopy height (CC-BY-4.0); Copernicus Sentinel-2 (open, with attribution); PANGA and UNR GNSS (open, with acknowledgement) | derived layers and products | nothing |
+| Open, redistributable | USGS 3DEP, CVM v1.7, ComCat, NHDPlus (v2.1 and HR), NLCD 2021, USGS NWIS discharge (public domain); Washington Geological Survey GeMS geology, Quaternary faults and landslide inventory (free use, including derivatives, with citation: WGS Disclaimers and Citation Guidelines); iMUSH tomography (CC-BY-4.0); NOAA MRMS precipitation (open data); seis-hydro-2-sed (MIT); SOLUS100 and ETH canopy height (CC-BY-4.0); Copernicus Sentinel-2 (open, with attribution); PANGA and UNR GNSS (open, with acknowledgement) | derived layers and products | nothing |
 | Open, login needed to download | GEDI L2B / L3 / L4B (NASA Earthdata login); Sentinel-2 LAI (Copernicus Data Space account) | derived layers (NASA and Copernicus data carry no redistribution restriction; cite them) | their own account, to rerun S19 from source |
-| Restricted licence | Ma et al. 2026 water-table depth (CC-BY-NC-ND-4.0: no derivatives) | **not published** (`redistribute_derived: false`); the 3D viewer shows it as a visualisation only | nothing: the Zenodo record is open; `pixi run s2 -- --ma` rebuilds the layer |
+| Restricted licence | Ma et al. 2026 water-table depth (CC-BY-NC-ND-4.0: no derivatives) | **not published** as data (`redistribute_derived: false`); the 3D viewer shows it as a visualisation, with its reference and licence in the layer legend and in Help, for non-commercial research | nothing: the Zenodo record is open; `pixi run s2 -- --ma` rebuilds the layer |
 | Licence not yet documented | canopy-storage lidar canopy height and vegetation cover (WA DNR Lidar Portal, 2022–2023 "Wali" DSM and DTM; terms to confirm); soil-map image (source and legend unknown) | **not published** until documented | the delivered files (ask the canopy-storage project) |
-| Licence field not recorded in `configs/sources.yaml` | CRESCENT Gen0, IceBoost v2 / OGGM, RGI 6.0, GlaThiDa, Synoptic, Fan et al. 2017 ("free for research purposes") | published for now | – |
+| Licence to verify (recorded as "provider terms, to verify" in `configs/sources.yaml`) | CRESCENT Gen0, IceBoost v2 / OGGM, RGI 6.0, GlaThiDa, EarthScope station and GNSS metadata, Synoptic, Fan et al. 2017 ("free for research purposes") | published for now, with attribution | – |
 
 **To do before a public product release:** record the licence of every source in the last row. Synoptic, whose network terms vary by provider, and Fan et al. 2017 are the ones most likely to need `redistribute_derived: false`.
 
@@ -41,4 +41,10 @@ Nobody needs an account to use the published products.
 
 Cite the model as Denolle et al. (2026) (see `products.json`), plus the sources of the layers you use. `configs/sources.yaml` gives each one's DOI or URL. Also include:
 - "Contains modified Copernicus Sentinel data 2023/2025" for Sentinel-2 layers;
-- "GPS time series provided by the Pacific Northwest Geodetic Array, Central Washington University" for the GNSS products.
+- "GPS time series provided by the Pacific Northwest Geodetic Array, Central Washington University" for the GNSS products;
+- the Washington Geological Survey (Washington Department of Natural Resources) and its Digital Data Series for the geology, fault and landslide layers and the `mass_movements` product, as its citation guidelines ask;
+- Ma et al. (2026), doi:10.5281/zenodo.18504963, CC BY-NC-ND 4.0, wherever the water-table depth is shown (the viewer does so in the layer legend and in Help);
+- NOAA MRMS (Zhang et al. 2016), USGS NWIS and seis-hydro-2-sed for the storm layer (S29);
+- each elevation source listed in the Tilezen attribution notes, where the AWS terrain tiles are used.
+
+In the viewer, every model layer lists its sources with their licence (from `configs/sources.yaml`, written into `layers.json` by `rainier3d.export.atlas.tag_licences`), and Help lists the sources of the base map, sensors, earthquakes, mass movements and the storm.
