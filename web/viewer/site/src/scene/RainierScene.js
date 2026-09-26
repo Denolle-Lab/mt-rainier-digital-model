@@ -12,14 +12,21 @@ import { terrainMaterial } from "./terrainMaterial.js";
 const STYLE = { photo: 0, mono: 1, contours: 2 };
 const BLANK = new THREE.DataTexture(new Uint8Array(4), 1, 1); BLANK.needsUpdate = true;
 
-// Draw a loaded texture's image at most maxWidth wide (the phone profile's drape); returns the texture.
-function shrink(tex, maxWidth) {
+// Draw a loaded texture's image at most maxWidth wide (the phone profile's drape); returns the texture, unchanged
+// when the browser has no 2D canvas or cannot draw the image (a larger drape beats no scene).
+export function shrink(tex, maxWidth, doc = typeof document === "undefined" ? undefined : document) {
   const im = tex.image;
-  if (!im || !(im.width > maxWidth) || typeof document === "undefined") return tex;
-  const c = document.createElement("canvas");
-  c.width = maxWidth; c.height = Math.round((im.height * maxWidth) / im.width);
-  c.getContext("2d").drawImage(im, 0, 0, c.width, c.height);
-  tex.image = c; tex.needsUpdate = true;
+  if (!im || !(im.width > maxWidth) || !doc) return tex;
+  try {
+    const c = doc.createElement("canvas");
+    c.width = maxWidth; c.height = Math.round((im.height * maxWidth) / im.width);
+    const ctx = c.getContext("2d");
+    if (!ctx) return tex;
+    ctx.drawImage(im, 0, 0, c.width, c.height);
+    tex.image = c; tex.needsUpdate = true;
+  } catch {
+    /* keep the full-size image */
+  }
   return tex;
 }
 

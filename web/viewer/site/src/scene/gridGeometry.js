@@ -48,7 +48,8 @@ export function gridArrays(n, m, posAt, heights, uvAt, skirtKm = 0) {
 }
 
 // Every s-th sample of an n × m height grid (rows of n), keeping the last row and column when (n - 1) is a
-// multiple of s. Returns the smaller grid and the source index of its first column and row step.
+// multiple of s. Returns { heights, n, m, s }: the smaller grid, its size and the stride (sample c of the new
+// grid is sample c * s of the old).
 export function decimate(heights, n, m, s) {
   if (s <= 1) return { heights, n, m, s: 1 };
   const n2 = Math.floor((n - 1) / s) + 1, m2 = Math.floor((m - 1) / s) + 1, h = new Float32Array(n2 * m2);
