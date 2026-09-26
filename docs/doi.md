@@ -76,6 +76,6 @@ Later versions repeat steps 2–5, with `--concept <record id>` so the new versi
 
 - **WGS landslide inventory.** Settled: the Washington Geological Survey's citation guidelines allow any use,
   including derivatives, with citation (`docs/data_policy.md`); the `mass_movements` product cites it.
-- **ORCID iDs.** Add all six authors' ORCIDs to `CITATION.cff`; the deposit script reads authors from it.
+- **ORCID iDs.** Five of the six authors have their ORCID in `CITATION.cff` (the deposit script reads authors from it); Sangwoo Han's is still needed.
 - **Grant.** Give the Paros Geohazard Center gift as the funding reference (Zenodo `grants` does not list
   private gifts; state it in `notes`).
