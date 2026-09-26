@@ -516,7 +516,8 @@ def _src(reg: dict, key: str) -> dict:
 
 def tag_licences(atlas: Path) -> int:
     """Refresh the licence and attribution of every layer source in an existing bundle's model/layers.json
-    from configs/sources.yaml (keeps each source's title and link). Returns the number of sources updated."""
+    from configs/sources.yaml, keeping each source's title and link as they are (an empty link stays empty).
+    Returns the number of sources processed."""
     reg = _sources()
     p = atlas / "model" / "layers.json"
     meta = json.loads(p.read_text())
@@ -524,7 +525,9 @@ def tag_licences(atlas: Path) -> int:
     for layer in meta["layers"]:
         for i, src in enumerate(layer.get("sources", [])):
             new = _src(reg, src["key"])
-            new["title"], new["link"] = src.get("title", new["title"]), src.get("link") or new["link"]
+            for field in ("title", "link"):  # present in the bundle: kept, even when empty
+                if field in src:
+                    new[field] = src[field]
             layer["sources"][i] = new
             n += 1
     p.write_text(json.dumps(meta, indent=1))

@@ -243,5 +243,5 @@ input[type=range]:disabled { opacity: 0.35; }
 .vbadge-key { flex: none; width: 14px; height: 14px; border-radius: 7px; background: #e8a33d; color: #121211; font: 600 9px/14px var(--font-sans); text-align: center; }
 
 /* licence of a layer source and its attribution text, in the model legend */
-.mlegend .lic { color: var(--text-muted); }
+.mlegend .lic, .mlegend .lic a { color: var(--text-muted); }
 .mlegend .attrib { margin-top: 4px; color: var(--text-secondary); font-size: 11px; line-height: 1.45; }
