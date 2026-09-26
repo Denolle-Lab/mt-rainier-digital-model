@@ -379,7 +379,7 @@ URL, retrieval time, size and SHA-256 of each file.</li>
 <li><strong>A checksum for every cached file.</strong>
 <code>scripts/00_data_manifest.py</code> records the size and SHA-256 of
 all cached files in the committed table
-<code>docs/data_manifest.csv</code> (2,065 files, 3.30 GB; <a href="#tbl:raw">Table 3</a>). <code>pixi run manifest -- --check</code>
+<code>docs/data_manifest.csv</code> (2,072 files, 4.44 GB; <a href="#tbl:raw">Table 3</a>). <code>pixi run manifest -- --check</code>
 compares a rebuilt cache with it. Some services can return different
 bytes on a later request: ComCat can revise picks, and the USGS can
 re-stage NHDPlus. The check lists those files, so any difference between
@@ -538,6 +538,14 @@ footprints</td>
 <td>1,639</td>
 <td>1,818</td>
 </tr>
+<tr>
+<td><code>canopy_storage</code></td>
+<td>S28</td>
+<td>GEDI L3 global 1 km grids and their crops to the box (vendored
+canopy-storage code)</td>
+<td>7</td>
+<td>1,135</td>
+</tr>
 </tbody>
 </table>
 <p>Four inputs are not fetched by script:</p>
@@ -567,10 +575,11 @@ delivered files skip those layers and say so.</p>
 <span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="ex">pixi</span> run s2 <span class="at">--</span> <span class="at">--ma</span>                <span class="co"># optional: the Ma et al. (2026) water table (~1 GB download)</span></span>
 <span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="ex">pixi</span> run s22 <span class="kw">&amp;&amp;</span> <span class="ex">pixi</span> run s3 <span class="kw">&amp;&amp;</span> <span class="ex">pixi</span> run s4 <span class="kw">&amp;&amp;</span> <span class="ex">pixi</span> run s5   <span class="co"># alteration from the EM survey, then rebuild</span></span>
 <span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="ex">pixi</span> run s17 <span class="kw">&amp;&amp;</span> <span class="ex">pixi</span> run s18       <span class="co"># GNSS positions, velocities, strain, edifice load</span></span>
-<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="ex">pixi</span> run s25                       <span class="co"># mass movements and faults: catalogue, figure, viewer layers (~1.8 GB of 1 m windows)</span></span>
-<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="ex">pixi</span> run s9                        <span class="co"># uniform grids for ray tracing and location</span></span>
-<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a><span class="ex">pixi</span> run manifest <span class="at">--</span> <span class="at">--check</span>       <span class="co"># compare the rebuilt cache with docs/data_manifest.csv</span></span>
-<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="ex">pixi</span> run test                      <span class="co"># unit tests and the invariants of the built model</span></span></code></pre></div>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="ex">pixi</span> run s24                       <span class="co"># mass movements and faults: catalogue, figure, viewer layers (~1.8 GB of 1 m windows)</span></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="ex">pixi</span> run <span class="at">-e</span> canopy canopy          <span class="co"># canopy-storage pipeline: GEDI (Earthdata login), Sentinel-2 LAI (CDSE client)</span></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a><span class="ex">pixi</span> run s9                        <span class="co"># uniform grids for ray tracing and location</span></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="ex">pixi</span> run manifest <span class="at">--</span> <span class="at">--check</span>       <span class="co"># compare the rebuilt cache with docs/data_manifest.csv</span></span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a><span class="ex">pixi</span> run test                      <span class="co"># unit tests and the invariants of the built model</span></span></code></pre></div>
 <p>The calibration (S13, about 26 min on a 10-core laptop) and the
 relocation comparisons (S14) are rerun as described in
 <code>docs/joint_calibration.md</code>.</p>
@@ -779,9 +788,11 @@ Vegetation structure</h2>
 describe the canopy that intercepts precipitation and loads the ground:
 height, cover, leaf and plant area, and aboveground biomass.</p>
 <table id="tbl:canopy">
-<caption>Table 5. Vegetation layers (S19). The provenance of the lidar
-and of a soil-map image delivered with these products is undocumented;
-both are displayed in the 3D viewer and excluded from the downloadable
+<caption>Table 5. Vegetation layers (S19). The lidar is the 2022–2023
+“Wali” acquisition of the Washington Department of Natural Resources
+Lidar Portal, whose terms of reuse are not yet confirmed; the provenance
+of a soil-map image delivered with these products is undocumented. Both
+are displayed in the 3D viewer and excluded from the downloadable
 products.</caption>
 <colgroup>
 <col style="width: 19%" />
@@ -851,6 +862,20 @@ of 10 m cells in each 100 m cell, including gaps, while the GEDI value
 is a 1 km mean of the tallest return per footprint. That is why the
 lidar median (14.6 m) is lower than the GEDI median (25.5 m) and the ETH
 median (30 m).</p>
+<p>The project’s download and gridding code is part of this repository,
+unmodified and under its MIT licence
+(<code>third_party/canopy-storage_seismic</code>). Script S28 runs it
+inside the raw-data cache: it fetches the GEDI L3 grids and L2B
+footprints through NASA Earthdata and the Sentinel-2 leaf area index
+through the Copernicus Data Space, and S19 reads its products in place
+of the delivered files. The GEDI L3 canopy height it produces is
+identical to the delivered grid (33,701 cells). The L2B plant area
+index, the L4B biomass, the lidar layers and the soil map are still read
+from the delivered files: the vendored gridder writes the maximum plant
+area index rather than the mean, and the others were made outside that
+code. The project’s lidar scripts compute canopy height only at its
+stations; the 10 m lidar grids were made from the same tiles in QGIS.
+<code>docs/canopy_pipeline.md</code> lists each service call.</p>
 </section>
 </section>
 <section id="sec:subsurface" class="level1" data-number="5">
@@ -2923,70 +2948,101 @@ Accessing the model</h1>
 <section id="products-and-the-client" class="level2" data-number="9.1">
 <h2 data-number="9.1"><span class="header-section-number">9.1</span>
 Products and the client</h2>
-<p>The derived products are published as release assets of the code
-repository, under CC-BY 4.0, and listed with their URLs and SHA-256
-checksums in the package catalogue
-<code>src/rainier3d/products.json</code>.</p>
+<p>The derived products are published as assets of the release
+<code>products-v1.0.0</code> of the code repository, under CC-BY 4.0 (<a href="#tbl:products">Table 23</a>). The archive names and their SHA-256
+checksums are listed in the release file <code>SHA256SUMS</code> and in
+the package catalogue <code>src/rainier3d/products.json</code>.</p>
 <table id="tbl:products">
 <caption>Table 23. Downloadable products.</caption>
 <colgroup>
-<col style="width: 14%" />
-<col style="width: 61%" />
-<col style="width: 23%" />
+<col style="width: 28%" />
+<col style="width: 12%" />
+<col style="width: 58%" />
 </colgroup>
 <thead>
 <tr>
 <th>Product</th>
+<th>Size</th>
 <th>Content</th>
-<th>Refresh</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td><code>model</code></td>
-<td><code>model.zarr</code>: surface node and levels L1–L3 with Vp, Vs,
-density, Qp, Qs, units, alteration, and the geology and regional inputs;
+<td>110 MB</td>
+<td>the subsurface model, <code>model.zarr</code>: levels L1–L3 (<a href="#tbl:grids">Table 2</a>) with Vp, Vs, density, Qp, Qs, unit,
+alteration, and the geology and regional inputs, plus the surface node;
 variables from sources that forbid redistribution are removed</td>
-<td>with each model release</td>
 </tr>
 <tr>
-<td><code>gnss</code></td>
-<td>station velocities with quality flags, strain-rate grid, daily
-regional strain series, the download manifest and the cut-off date</td>
-<td>weekly (rolling release <code>gnss-latest</code>, with dated
-copies)</td>
-</tr>
-<tr>
-<td><code>edifice_load</code></td>
-<td>stress from the edifice load on L1–L3</td>
-<td>with each model release</td>
+<td><code>grids</code></td>
+<td>55 MB</td>
+<td>the subsurface model on one uniform 500 m grid: CF netCDF, EMC-style
+netCDF, NonLinLoc P and S grids</td>
 </tr>
 <tr>
 <td><code>strain_3d</code></td>
+<td>72 MB</td>
 <td>strain in the volume (<a href="#sec:strain3d">Sect. 6.5</a>): GNSS
 strain rate carried down and edifice-load strain, with their
 orientations</td>
-<td>with each model release</td>
+</tr>
+<tr>
+<td><code>edifice_load</code></td>
+<td>115 MB</td>
+<td>stress from the edifice load on L1–L3</td>
+</tr>
+<tr>
+<td><code>alteration</code></td>
+<td>1 MB</td>
+<td>alteration from the helicopter electromagnetic survey (<a href="#sec:alteration">Sect. 5.2</a>)</td>
+</tr>
+<tr>
+<td><code>mass_movements</code></td>
+<td>2 MB</td>
+<td>the mass-movement catalogue (<a href="#sec:mass">Sect. 8</a>),
+GeoPackage and CSV</td>
+</tr>
+<tr>
+<td><code>gnss</code></td>
+<td>4 MB</td>
+<td>station velocities with quality flags, strain-rate grid, daily
+regional strain series and the download manifest; refreshed weekly in
+the rolling release <code>gnss-latest</code>, with dated copies</td>
 </tr>
 </tbody>
 </table>
+<p>The archives need no software from this project. The subsurface model
+is downloaded, checked and opened with standard tools:</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="va">B</span><span class="op">=</span>https://github.com/Denolle-Lab/mt-rainier-digital-model/releases/download/products-v1.0.0</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="ex">curl</span> <span class="at">-LO</span> <span class="va">$B</span>/SHA256SUMS <span class="at">-LO</span> <span class="va">$B</span>/rainier3d_model.zarr.zip <span class="at">-LO</span> <span class="va">$B</span>/rainier3d_grids.zip</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="fu">sha256sum</span> <span class="at">-c</span> SHA256SUMS <span class="at">--ignore-missing</span>     <span class="co"># or: shasum -a 256 -c (macOS)</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="fu">unzip</span> rainier3d_model.zarr.zip <span class="kw">&amp;&amp;</span> <span class="fu">unzip</span> rainier3d_grids.zip</span></code></pre></div>
+<div class="sourceCode" id="cb3"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> xarray <span class="im">as</span> xr</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>tree <span class="op">=</span> xr.open_datatree(<span class="st">&quot;model.zarr&quot;</span>, engine<span class="op">=</span><span class="st">&quot;zarr&quot;</span>, consolidated<span class="op">=</span><span class="va">False</span>)</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>vs <span class="op">=</span> tree[<span class="st">&quot;L2&quot;</span>].to_dataset().vs.interp(x<span class="op">=</span><span class="dv">594500</span>, y<span class="op">=</span><span class="dv">5189500</span>, z<span class="op">=-</span><span class="dv">2000</span>)   <span class="co"># m/s, 2 km below sea level</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>g <span class="op">=</span> xr.open_dataset(<span class="st">&quot;grids/rainier3d_fused_500m.nc&quot;</span>)                    <span class="co"># whole model, 500 m spacing</span></span></code></pre></div>
+<p>In <code>model.zarr</code>, cells above the ground are empty (NaN),
+and the unit codes are those of <code>configs/units.yaml</code>.</p>
 <p>A client is installed with the package. It is available as the
 <code>rainier3d</code> command and as the Python module
 <code>rainier3d.api</code>. It downloads a product once, checks its
 checksum, caches it, and writes grids for other codes:</p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="ex">pip</span> install <span class="st">&quot;git+https://github.com/Denolle-Lab/mt-rainier-digital-model&quot;</span></span>
-<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="ex">rainier3d</span> list                                        <span class="co"># products, versions and licences</span></span>
-<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="ex">rainier3d</span> export model <span class="at">--format</span> specfem <span class="at">--bbox</span> <span class="at">-122.0</span> 46.7 <span class="at">-121.6</span> 47.0 <span class="dt">\</span></span>
-<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">--dx</span> 250 <span class="at">--dz</span> 250 <span class="at">--zmin</span> <span class="at">-10000</span> <span class="at">--out</span> out/tomography_model.xyz</span>
-<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="ex">rainier3d</span> export model <span class="at">--format</span> nll <span class="at">--dx</span> 500 <span class="at">--dz</span> 500 <span class="at">--out</span> out/nll/rainier3d</span>
-<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="ex">rainier3d</span> export surface <span class="at">--layers</span> elevation soil_thickness <span class="at">--out</span> out/surface/   <span class="co"># GeoTIFFs</span></span>
-<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a><span class="ex">rainier3d</span> sample <span class="at">--lon</span> <span class="at">-121.76</span> <span class="at">--lat</span> 46.85 <span class="at">--depth</span> 5000   <span class="co"># values at one point</span></span>
-<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a><span class="ex">rainier3d</span> fetch gnss                                  <span class="co"># latest weekly strain product</span></span></code></pre></div>
-<div class="sourceCode" id="cb3"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> rainier3d.api <span class="im">as</span> r3</span>
-<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>tree <span class="op">=</span> r3.open_model()                                    <span class="co"># downloads once, then reads the cache</span></span>
-<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>g <span class="op">=</span> r3.grid(tree, bbox<span class="op">=</span>(<span class="op">-</span><span class="fl">122.0</span>, <span class="fl">46.7</span>, <span class="op">-</span><span class="fl">121.6</span>, <span class="fl">47.0</span>), dx<span class="op">=</span><span class="dv">250</span>, dz<span class="op">=</span><span class="dv">250</span>, zmin<span class="op">=-</span><span class="dv">10000</span>)</span>
-<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>r3.export(g, <span class="st">&quot;netcdf&quot;</span>, <span class="st">&quot;out/rainier3d_250m.nc&quot;</span>)           <span class="co"># also nll, emc, specfem, csv</span></span>
-<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>vs <span class="op">=</span> tree[<span class="st">&quot;L2&quot;</span>].to_dataset().vs.interp(x<span class="op">=</span><span class="dv">594500</span>, y<span class="op">=</span><span class="dv">5189500</span>, z<span class="op">=-</span><span class="dv">2000</span>)   <span class="co"># m/s, 2 km below sea level</span></span></code></pre></div>
+<div class="sourceCode" id="cb4"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="ex">pip</span> install <span class="st">&quot;git+https://github.com/Denolle-Lab/mt-rainier-digital-model&quot;</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="ex">rainier3d</span> list                                        <span class="co"># products, versions and licences</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="ex">rainier3d</span> fetch model                                 <span class="co"># prints the folder that holds model.zarr</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="ex">rainier3d</span> export model <span class="at">--format</span> specfem <span class="at">--bbox</span> <span class="at">-122.0</span> 46.7 <span class="at">-121.6</span> 47.0 <span class="dt">\</span></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">--dx</span> 250 <span class="at">--dz</span> 250 <span class="at">--zmin</span> <span class="at">-10000</span> <span class="at">--out</span> out/tomography_model.xyz</span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a><span class="ex">rainier3d</span> export model <span class="at">--format</span> nll <span class="at">--dx</span> 500 <span class="at">--dz</span> 500 <span class="at">--out</span> out/nll/rainier3d</span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a><span class="ex">rainier3d</span> export surface <span class="at">--layers</span> elevation soil_thickness <span class="at">--out</span> out/surface/   <span class="co"># GeoTIFFs</span></span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a><span class="ex">rainier3d</span> sample <span class="at">--lon</span> <span class="at">-121.76</span> <span class="at">--lat</span> 46.85 <span class="at">--depth</span> 5000   <span class="co"># values at one point</span></span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a><span class="ex">rainier3d</span> fetch gnss                                  <span class="co"># latest weekly strain product</span></span></code></pre></div>
+<div class="sourceCode" id="cb5"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> rainier3d.api <span class="im">as</span> r3</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>tree <span class="op">=</span> r3.open_model()                                    <span class="co"># downloads once, then reads the cache</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>g <span class="op">=</span> r3.grid(tree, bbox<span class="op">=</span>(<span class="op">-</span><span class="fl">122.0</span>, <span class="fl">46.7</span>, <span class="op">-</span><span class="fl">121.6</span>, <span class="fl">47.0</span>), dx<span class="op">=</span><span class="dv">250</span>, dz<span class="op">=</span><span class="dv">250</span>, zmin<span class="op">=-</span><span class="dv">10000</span>)</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>r3.export(g, <span class="st">&quot;netcdf&quot;</span>, <span class="st">&quot;out/rainier3d_250m.nc&quot;</span>)           <span class="co"># also nll, emc, specfem, pylith, csv</span></span></code></pre></div>
+<p>The repository file <code>docs/products.md</code> gives examples for
+every product.</p>
 <p>Resampled grids are interpolated linearly within each level. Cells
 above the ground take the value of the first rock cell beneath them, so
 receivers at the surface sit in rock, and a variable <code>air</code>
