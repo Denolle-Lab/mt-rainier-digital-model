@@ -35,6 +35,7 @@ from rainier3d.export.atlas import (
     export_sensors,
     export_strain,
     export_volume,
+    tag_licences,
 )
 from rainier3d.io.store import read_tree
 from rainier3d.surface import layers as L
@@ -112,6 +113,8 @@ def main():
     )
     for layer in meta["layers"]:
         logging.info("  %-20s %s", layer["key"], layer["label"])
+    # every layer source carries its licence and attribution text (configs/sources.yaml)
+    logging.info("licences: %d layer sources tagged", tag_licences(atlas))
 
 
 def merge_layers(tree, dom, manifest, model_dir: Path, flowlines, keys: list[str]) -> dict:

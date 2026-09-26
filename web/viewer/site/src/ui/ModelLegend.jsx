@@ -19,7 +19,12 @@ export default function ModelLegend({ layer }) {
         </>
       )}
       <div className="msrc">{layer.note}{layer.note ? ". " : ""}{layer.kind === "image" ? "" : `${layer.grid ?? "Model grid, 100 m cells."} `}
-        {layer.sources.map((s, i) => <span key={s.key}>{i ? ", " : "Source: "}{s.link ? <a href={s.link} target="_blank" rel="noreferrer">{s.key}</a> : s.key}</span>)}
+        {layer.sources.map((s, i) => (
+          <span key={s.key}>{i ? "; " : "Source: "}{s.link ? <a href={s.link} target="_blank" rel="noreferrer">{s.key}</a> : s.key}
+            {s.license && <span className="lic"> ({s.licenseUrl ? <a href={s.licenseUrl} target="_blank" rel="noreferrer" title={s.licenseText}>{s.license}</a> : <span title={s.licenseText}>{s.license}</span>})</span>}
+          </span>
+        ))}
+        {layer.sources.filter(s => s.attribution).map(s => <div key={`a${s.key}`} className="attrib">{s.attribution}</div>)}
       </div>
     </div>
   );
