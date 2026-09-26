@@ -1,0 +1,32 @@
+name: canopy-storage-seismic
+channels:
+  - conda-forge
+dependencies:
+  - python=3.11
+  # --- core scientific stack (seismic_code + non-seismic_code) ---
+  - numpy
+  - pandas
+  - scipy
+  - matplotlib
+  - seaborn
+  # --- seismic_code ---
+  - obspy                    # 01a_func_power.py (raw seismic processing)
+  # --- non-seismic_code: GEDI ---
+  - h5py                     # GEDI L2B HDF5 footprint files
+  - rasterio                 # GEDI/Sentinel2 raster read/write, reprojection
+  - pyproj                   # coordinate transforms (GEDI, MRMS, Sentinel2)
+  # --- non-seismic_code: MRMS ---
+  - cfgrib                   # MRMS GRIB2 reading (pulls in eccodes)
+  - eccodes                  # explicit -- the C library cfgrib depends on
+  - awscli                   # aws s3 cp, used by download_mrms.sh
+  # --- notebooks (02, 04: interactive annotation/picking; 08: summary) ---
+  - jupyterlab
+  - ipympl                   # %matplotlib widget backend for 02/04
+  - ipywidgets
+  - pip
+  - pip:
+      # --- non-seismic_code: GEDI + Sentinel2 downloads (not on conda-forge
+      # in a form we've verified against this project; installed via pip) ---
+      - earthaccess          # NASA Earthdata Login + GEDI search/download
+      - sentinelhub          # Copernicus Sentinel Hub API (Sentinel-2 LAI)
+      - python-dotenv        # Sentinel2/01_download_lai.py's .env credentials

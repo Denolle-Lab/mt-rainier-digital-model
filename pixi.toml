@@ -106,6 +106,7 @@ gnss-publish = { cmd = "python scripts/20_publish_products.py --only gnss", env 
 [environments]
 gnss = { features = ["gnss"], no-default-feature = true }
 paper = { features = ["paper"], no-default-feature = true }
+canopy = { features = ["canopy"], no-default-feature = true }
 
 # Report build (scripts/23_paper.py, .github/workflows/paper.yml): Pandoc Markdown -> self-contained HTML
 # and ESSD LaTeX -> PDF. No model data needed; figures are committed.
@@ -119,3 +120,22 @@ graphviz = "*"
 
 [feature.paper.tasks]
 paper = "python scripts/23_paper.py"
+
+# Vendored canopy-storage pipeline (third_party/canopy-storage_seismic, MIT; scripts/28_canopy_pipeline.py): only
+# what its gridded-product scripts import. Credentials: NASA Earthdata (~/.netrc) and Sentinel Hub (SH_CLIENT_ID,
+# SH_CLIENT_SECRET); see docs/canopy_pipeline.md.
+[feature.canopy.dependencies]
+python = ">=3.11,<3.14"
+numpy = "*"
+pandas = "*"
+h5py = "*"
+rasterio = "*"
+pyproj = "*"
+shapely = ">=2"
+matplotlib = "*"
+earthaccess = "*"
+sentinelhub = "*"
+python-dotenv = "*"
+
+[feature.canopy.tasks]
+canopy = "python scripts/28_canopy_pipeline.py"

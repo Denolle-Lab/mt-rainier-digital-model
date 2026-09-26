@@ -14,12 +14,22 @@ import numpy as np
 import xarray as xr
 from rasterio.enums import Resampling
 
-from rainier3d.config.domain import Domain
+from rainier3d.config.domain import REPO, Domain
 from rainier3d.surface.layers import _da, warp
+
+# where S28 (the vendored canopy-storage pipeline) writes its products
+PIPELINE_OUT = REPO / "data" / "raw" / "canopy_storage" / "output_non-seismic_code"
 
 
 def source_path(spec: dict, root: Path) -> Path:
-    """The delivered file of a layer or image spec, with ~/Downloads replaced by the configured root."""
+    """The file of a layer or image spec: the S28 pipeline product (``pipeline_file``) when it exists,
+    else the delivered file, with ~/Downloads replaced by the configured root."""
+    if spec.get("pipeline_file"):
+        rel = Path(spec["pipeline_file"])
+        if rel.is_absolute() or ".." in rel.parts:
+            raise ValueError(f"pipeline_file must be relative to {PIPELINE_OUT}: {rel}")
+        if (PIPELINE_OUT / rel).exists():
+            return PIPELINE_OUT / rel
     return Path(spec["file"].replace("~/Downloads", str(root))).expanduser()
 
 

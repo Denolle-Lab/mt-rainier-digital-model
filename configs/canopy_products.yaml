@@ -1,6 +1,8 @@
 # Canopy and soil products of the canopy-storage project (M. Koepfli, github.com/koepflma/canopy-storage_seismic,
 # private; code MIT). Files are read from `root` (default ~/Downloads, as delivered 2026-09-24). Each entry names
 # its source key in configs/sources.yaml. Provenance fields marked TODO come from that repository's own TODOs.
+# `pipeline_file` (relative to data/raw/canopy_storage/output_non-seismic_code/) is the product of the vendored
+# pipeline (S28, third_party/canopy-storage_seismic); S19 reads it when it exists and `file` otherwise.
 root: ~/Downloads
 layers:
   - name: canopy_height_lidar
@@ -21,6 +23,7 @@ layers:
     source: canopy_lidar_chm
   - name: lai_sentinel2
     file: ~/Downloads/MtRainier_gridded_products/lai_mosaic_pnw.tif
+    pipeline_file: Sentinel2/lai_mosaic_pnw.tif
     long_name: leaf area index, Sentinel-2 L2A SNAP biophysical processor, 2023-07-01 to 2023-08-15, 10 m
     units: m2/m2
     valid_range: [0, 10]
@@ -29,6 +32,7 @@ layers:
     source: sentinel2_lai_2023
   - name: gedi_pai
     file: ~/Downloads/MtRainier_gridded_products/GEDI_l2b_PAI_gridded/L2B_PAI_mean.tif
+    # no pipeline_file: S28 grids the footprints to L2B_PAI_max/count/ntracks, not the mean used here
     long_name: plant area index, GEDI L2B footprints (quality-filtered) gridded to 1 km
     units: m2/m2
     valid_range: [0, 12]
@@ -37,6 +41,7 @@ layers:
     source: gedi_l2b
   - name: gedi_canopy_height
     file: "~/Downloads/MtRainier_gridded_products 2/GEDI_l3_CH_cropped/L3_rh100_mean.tif"
+    pipeline_file: GEDI/gedi_l3/cropped/L3_rh100_mean.tif
     long_name: canopy height (rh100 mean), GEDI L3 gridded, 1 km
     units: m
     valid_range: [0, 110]

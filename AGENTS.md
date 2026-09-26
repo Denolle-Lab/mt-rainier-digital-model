@@ -21,3 +21,6 @@ Conventions for anyone (human or agent) changing this repo.
   `npx playwright test` in `web/viewer/site`. Its map data (`web/viewer/site/public/atlas/`) is never committed; it
   is built with `pixi run viewer-data` + `pixi run s11` and deployed from the release asset named in
   `web/viewer/DATA_RELEASE`. Keep the MIT `LICENSE` and `THIRD_PARTY_NOTICES.md` in that directory.
+- **Vendored code (`third_party/`):** kept byte-identical to the upstream commit named in its `PROVENANCE.md`,
+  with the upstream `LICENSE` files. Adapt it from the runner script (e.g. `scripts/28_canopy_pipeline.py`),
+  not by editing the vendored files.
