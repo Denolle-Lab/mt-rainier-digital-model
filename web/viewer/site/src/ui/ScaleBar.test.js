@@ -9,6 +9,8 @@ describe("scale bar", () => {
   it("picks a round length drawn close to 110 px and at most 150 px", () => {
     expect(niceScale(0.0637)).toEqual({ km: 5, px: 5 / 0.0637 });
     expect(niceScale(0.001).km).toBe(0.1);
+    expect(niceScale(0.00001)).toEqual({ km: 0.001, px: 100 });   // zoomed in: 1 m at 100 px, not 0.1 km at 10,000 px
+    expect(niceScale(0.00001).px).toBeLessThanOrEqual(150);
     expect(niceScale(0.3).km).toBe(20);            // 50 km would be 167 px
   });
 });

@@ -1,14 +1,14 @@
 import { useEffect, useState } from "react";
 import "./ui.css";
 
-const STEPS = [0.1, 0.2, 0.5, 1, 2, 5, 10, 20, 50];   // km
+const STEPS = [0.001, 0.002, 0.005, 0.01, 0.02, 0.05, 0.1, 0.2, 0.5, 1, 2, 5, 10, 20, 50, 100];   // km, 1 m to 100 km
 
 // km per screen pixel at the view centre (the orbit target), for a perspective camera
 export function kmPerPixel(fovDeg, distKm, viewportPx) {
   return (2 * distKm * Math.tan((fovDeg * Math.PI) / 360)) / viewportPx;
 }
 
-// the round length whose bar is closest to `targetPx` without exceeding `maxPx`
+// the round length whose bar is closest to `targetPx` without exceeding `maxPx` (the smallest step when none fits)
 export function niceScale(kmPerPx, targetPx = 110, maxPx = 150) {
   let best = STEPS[0];
   for (const s of STEPS) if (s / kmPerPx <= maxPx && Math.abs(s / kmPerPx - targetPx) < Math.abs(best / kmPerPx - targetPx)) best = s;
@@ -21,7 +21,9 @@ export default function ScaleBar({ scene }) {
   useEffect(() => {
     const tick = () => {
       const cam = scene.camera, dist = cam.position.distanceTo(scene.controls.target);
-      setS(niceScale(kmPerPixel(cam.fov, dist, innerHeight)));
+      const next = niceScale(kmPerPixel(cam.fov, dist, innerHeight));
+      // re-render only when the length changes or the bar moves by a pixel or more
+      setS(prev => (prev && prev.km === next.km && Math.abs(prev.px - next.px) < 1 ? prev : next));
     };
     tick();
     const id = setInterval(tick, 250);
