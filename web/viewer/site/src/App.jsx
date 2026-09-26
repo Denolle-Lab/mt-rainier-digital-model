@@ -14,6 +14,7 @@ import ModelLegend from "./ui/ModelLegend.jsx";
 import ModelReadout from "./ui/ModelReadout.jsx";
 import MobileDock from "./ui/MobileDock.jsx";
 import NavPad from "./ui/NavPad.jsx";
+import ScaleBar from "./ui/ScaleBar.jsx";
 import SubsurfacePanel from "./ui/SubsurfacePanel.jsx";
 import SensorTip from "./ui/SensorTip.jsx";
 import { SensorPoints } from "./scene/SensorPoints.js";
@@ -180,6 +181,7 @@ function Atlas({ bundle, onError }) {
           <MobileDock sheet={sheet} onSheet={setSheet} has={{ model: !!bundle.model, quakes: !!(bundle.quakes || reloc), mass: !!massLegend }} />
           {event && <EventsPanel event={event} />}
           <NavPad scene={scene} onHelp={openHelp} />
+          <ScaleBar scene={scene} />
           <HelpHint onHelp={openHelp} hidden={helpOpened} />
           {site && <StationPanel site={site} bundle={bundle} notes={sens?.notes} virtual={sens?.virtual} onFly={s => scene.flyToSite(s)}
             onClose={() => { setSiteId(null); layerRef.current?.setSelected(null); }} />}

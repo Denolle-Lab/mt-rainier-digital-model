@@ -293,3 +293,10 @@ test("(u) virtual sensors are labelled: marker badge, legend and station card", 
   await expect(page.locator(".sp-virtual")).toContainText("river discharge");
   await expect(page.locator(".sp-virtual")).toContainText("Nash-Sutcliffe");
 });
+
+test("(v) the scale bar follows the zoom", async ({ page }) => {
+  const label = () => page.locator(".scalebar .sb-label").textContent();
+  expect(await label()).toMatch(/km$/);
+  await page.getByRole("button", { name: "Summit crater" }).click();
+  await expect.poll(label, { timeout: 15_000 }).toMatch(/ m$/);
+});
