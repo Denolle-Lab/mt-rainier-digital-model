@@ -169,7 +169,6 @@ function Atlas({ bundle, onError }) {
                 <ModelLegend layer={modelLayer} />
                 {volume && <SubsurfacePanel volume={volume} scene={scene} />}
               </div>) }] : []),
-            ...(event ? [{ key: "events", label: "Storms", icon: "rain", node: <EventsPanel event={event} active={dock.has("events") || sheet === "events"} /> }] : []),
             { key: "help", label: "Help", icon: "help", node: (
               <HelpPanel bundle={bundle}><Attribution bundle={bundle} sensors={!!sensorLegend} mass={!!mass} reloc={!!reloc} /></HelpPanel>) },
           ]} />
@@ -178,7 +177,8 @@ function Atlas({ bundle, onError }) {
           <Tooltip hover={hover} notes={sens?.notes} virtual={sens?.virtual} />
           {sens && <SensorTip scene={scene} points={sens.points} />}
           {mass && <MassTip scene={scene} points={mass.points} doc={mass.doc} />}
-          <MobileDock sheet={sheet} onSheet={setSheet} has={{ model: !!bundle.model, quakes: !!(bundle.quakes || reloc), mass: !!massLegend, events: !!event }} />
+          <MobileDock sheet={sheet} onSheet={setSheet} has={{ model: !!bundle.model, quakes: !!(bundle.quakes || reloc), mass: !!massLegend }} />
+          {event && <EventsPanel event={event} />}
           <NavPad scene={scene} onHelp={openHelp} />
           <HelpHint onHelp={openHelp} hidden={helpOpened} />
           {site && <StationPanel site={site} bundle={bundle} notes={sens?.notes} virtual={sens?.virtual} onFly={s => scene.flyToSite(s)}
