@@ -26,12 +26,14 @@ function Series({ values, k, kind, windows, doc, label, unit }) {
   );
 }
 
-// Events: one storm replayed hour by hour. Observed forcing and river response only; nothing responds to the rain.
-// `active`: its dock panel or phone sheet is open; panels stay mounted while closed, so the rain and bars follow it.
-export default function EventsPanel({ event, active = true }) {
+// The storm bar: always on the map (top centre), one line with the event, its hour and play; the title drops the
+// panel down. Observed forcing and river response only; nothing responds to the rain. Rain and gauge bars are
+// drawn while the panel is open or playing, so the map stays clear otherwise.
+export default function EventsPanel({ event, defaultOpen = false }) {
   const { doc } = event;
   const [k, setK] = useState(() => Math.min(wettestFrame(doc.rain.domainMean), event.count - 1));
   const [play, setPlay] = useState(false), [rain, setRain] = useState(true), [gauges, setGauges] = useState(true);
+  const [open, setOpen] = useState(defaultOpen), active = open || play;
   const sites = useMemo(() => [...doc.gauges, ...doc.virtual].sort((a, b) => b.peak.q - a.peak.q), [doc]);
   const [sel, setSel] = useState(() => (doc.gauges.find(g => g.onMap) ?? sites[0])?.id ?? null);
   useEffect(() => { event.setFrame(k); }, [event, k]);
@@ -39,7 +41,6 @@ export default function EventsPanel({ event, active = true }) {
     if (active) event.show({ rain, gauges }); else event.hide();
     return () => event.hide();
   }, [event, rain, gauges, active]);
-  useEffect(() => { if (!active) setPlay(false); }, [active]);
   useEffect(() => {
     if (!play) return undefined;
     const id = setInterval(() => setK(i => (i + 1) % event.count), 180);
@@ -48,12 +49,17 @@ export default function EventsPanel({ event, active = true }) {
   const t = frameTime(doc, k), { utc, pst } = timeLabels(t), win = windowAt(doc, t);
   const site = sites.find(s => s.id === sel);
   return (
-    <div className="panel events-panel" aria-label="Storms and floods">
-      <div className="eyebrow">{doc.title}</div>
-      <div className="ev-time">
+    <div className={`panel events-panel${open ? " open" : ""}`} aria-label="Storms and floods">
+      <div className="ev-bar">
+        <button className="ev-title" aria-expanded={open} aria-controls="ev-body" onClick={() => setOpen(o => !o)}>
+          <span className="ev-chev" aria-hidden="true">{open ? "▾" : "▸"}</span><span className="ev-name-t">{doc.title}</span>
+        </button>
+        <span className="mono ev-now">{pst}{win ? ` · ${win.label}` : ""}</span>
         <button className="ev-play" aria-label={play ? "Pause" : "Play"} aria-pressed={play} onClick={() => setPlay(p => !p)}>{play ? "❚❚" : "▶"}</button>
-        <div><div className="mono">{pst}</div><div className="mono ev-utc">{utc}{win ? ` · ${win.label}` : ""}</div></div>
       </div>
+      {open && (
+      <div className="ev-body" id="ev-body">
+      <div className="mono ev-utc">{utc}{win ? ` · ${win.label}` : ""}</div>
       <input className="ev-slider" type="range" min="0" max={event.count - 1} value={k} aria-label="Event hour" onChange={e => { setPlay(false); setK(+e.target.value); }} />
       <Series values={doc.rain.domainMean} k={k} kind="bars" windows={doc.windows} doc={doc} label="Precipitation, domain mean" unit="mm/h" />
       {site && <Series values={site.q} k={k} kind="line" windows={doc.windows} doc={doc} label={site.name} unit="m³/s" />}
@@ -77,6 +83,8 @@ export default function EventsPanel({ event, active = true }) {
         noise, seis-hydro-2-sed). Precipitation is the MRMS liquid equivalent: rain and snow are not separated. Shaded: the pre-AR storm and three atmospheric-river pulses. {doc.note}{" "}
         Sources: {Object.entries(doc.sources).map(([key, s], i) => <span key={key}>{i ? ", " : ""}<a href={s.link} target="_blank" rel="noreferrer">{key}</a></span>)}.
       </div>
+      </div>
+      )}
     </div>
   );
 }
