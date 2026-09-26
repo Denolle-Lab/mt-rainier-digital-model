@@ -50,6 +50,7 @@ UNICODE = {
     "⁰": r"\ensuremath{^0}",
     "ě": r"\v{e}",
     "×": r"\ensuremath{\times}",
+    "∇": r"\ensuremath{\nabla}",
     "≥": r"\ensuremath{\geq}",
     "≤": r"\ensuremath{\leq}",
     "≈": r"\ensuremath{\approx}",

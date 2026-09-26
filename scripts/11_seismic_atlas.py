@@ -12,7 +12,8 @@ Usage: pixi run s11 [-- --atlas web/viewer/site/public/atlas]
 The canopy-storage layers of S19 (data/processed/surface_canopy.zarr) and the soil-map image are appended when
 that store exists; their keys can also be given to --layers. The mass movements of S24
 (outputs/mass_movements/) are appended the same way: the flow deposits as layer "mass_flows", the event points
-as model/mass_events.json.
+as model/mass_events.json. The terrain-geometry layers of S30 (data/processed/terrain_geometry.zarr) are
+appended as group "Terrain geometry"; their keys can also be given to --layers.
 The strain fields of S25 (data/processed/strain_3d.zarr) are added to the volume, with their orientation
 bars, when that store exists.
 """
@@ -31,6 +32,7 @@ from rainier3d.config.domain import REPO, load_domain
 from rainier3d.export.atlas import (
     append_canopy_layers,
     append_mass_movements,
+    append_terrain_layers,
     export_layers,
     export_sensors,
     export_strain,
@@ -39,6 +41,7 @@ from rainier3d.export.atlas import (
 )
 from rainier3d.io.store import read_tree
 from rainier3d.surface import layers as L
+from rainier3d.surface.terrain import LAYERS as TERRAIN_KEYS
 
 
 def main():
@@ -62,7 +65,7 @@ def main():
     }
     if a.layers:
         keys = [k.strip() for k in a.layers.split(",") if k.strip()]
-        model_keys = [k for k in keys if k not in canopy_keys and k != "mass_flows"]
+        model_keys = [k for k in keys if k not in canopy_keys | set(TERRAIN_KEYS) and k != "mass_flows"]
         meta = merge_layers(tree, dom, manifest, atlas / "model", fl, model_keys) if model_keys else None
     else:
         meta = export_layers(tree, dom, manifest, atlas / "model", fl, imagery=fetch_s2_composite(dom))
@@ -92,6 +95,15 @@ def main():
         logging.info("mass movements appended: %d flow polygons, %d event points", r["flows"], r["events"])
     elif a.layers and "mass_flows" in keys:
         raise SystemExit(f"{mm} lacks flows.gpkg or events.gpkg; run S24 first")
+    # S30 terrain geometry: its own 30 m store, appended when S30 has run
+    terrain_store = dom.path("processed") / "terrain_geometry.zarr"
+    want = None if not a.layers else [k for k in keys if k in TERRAIN_KEYS]
+    if terrain_store.exists() and (want is None or want):
+        ds = xr.open_zarr(terrain_store, consolidated=False)
+        added = append_terrain_layers(atlas, dom, ds[want or list(TERRAIN_KEYS)])
+        logging.info("terrain layers appended: %s", ", ".join(added))
+    elif want:
+        raise SystemExit(f"{terrain_store} is missing; run S30 first")
     meta = json.loads((atlas / "model" / "layers.json").read_text())
     vol = export_volume(tree, dom, atlas)
     g = vol["grid"]

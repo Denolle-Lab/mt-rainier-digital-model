@@ -156,6 +156,11 @@ m1_placeholder:
   verified: "n/a"
   role: marks every number that is not yet sourced
 
+han_terrain_2026:
+  title: "S. Han, 2026, specification of terrain-geometry layers for surface instability (internal note to the authors): 30 m grid, surface and bedrock slope by central differences, local relief in a 510 m disk, valley depth as the black top-hat with a 990 m disk, mirror-reflected edges"
+  verified: "n/a (author choice, no DOI)"
+  role: layers, operators and radii of S30 (configs/terrain.yaml)
+
 # ---- sensor atlas (S8) and overlays
 earthscope_fdsn:
   title: EarthScope FDSN station web service (channel level, all networks in the domain box)
