@@ -795,22 +795,44 @@ Each record carries its source, like every other layer. Records from the literat
 
 ## Products and the client
 
-The derived products are published as release assets of the code repository, under CC-BY 4.0, and listed with their URLs and SHA-256 checksums in the package catalogue `src/rainier3d/products.json`.
+The derived products are published as assets of the release `products-v1.0.0` of the code repository, under CC-BY 4.0 ([@tbl:products]). The archive names and their SHA-256 checksums are listed in the release file `SHA256SUMS` and in the package catalogue `src/rainier3d/products.json`.
 
-| Product | Content | Refresh |
-|------|--------------------------|----------|
-| `model` | `model.zarr`: surface node and levels L1–L3 with Vp, Vs, density, Qp, Qs, units, alteration, and the geology and regional inputs; variables from sources that forbid redistribution are removed | with each model release |
-| `gnss` | station velocities with quality flags, strain-rate grid, daily regional strain series, the download manifest and the cut-off date | weekly (rolling release `gnss-latest`, with dated copies) |
-| `edifice_load` | stress from the edifice load on L1–L3 | with each model release |
-| `strain_3d` | strain in the volume ([@sec:strain3d]): GNSS strain rate carried down and edifice-load strain, with their orientations | with each model release |
+| Product | Size | Content |
+|-----------|-----|-----------------------|
+| `model` | 110 MB | the subsurface model, `model.zarr`: levels L1–L3 ([@tbl:grids]) with Vp, Vs, density, Qp, Qs, unit, alteration, and the geology and regional inputs, plus the surface node; variables from sources that forbid redistribution are removed |
+| `grids` | 55 MB | the subsurface model on one uniform 500 m grid: CF netCDF, EMC-style netCDF, NonLinLoc P and S grids |
+| `strain_3d` | 72 MB | strain in the volume ([@sec:strain3d]): GNSS strain rate carried down and edifice-load strain, with their orientations |
+| `edifice_load` | 115 MB | stress from the edifice load on L1–L3 |
+| `alteration` | 1 MB | alteration from the helicopter electromagnetic survey ([@sec:alteration]) |
+| `mass_movements` | 2 MB | the mass-movement catalogue ([@sec:mass]), GeoPackage and CSV |
+| `gnss` | 4 MB | station velocities with quality flags, strain-rate grid, daily regional strain series and the download manifest; refreshed weekly in the rolling release `gnss-latest`, with dated copies |
 
 : Downloadable products. {#tbl:products}
+
+The archives need no software from this project. The subsurface model is downloaded, checked and opened with standard tools:
+
+```bash
+B=https://github.com/Denolle-Lab/mt-rainier-digital-model/releases/download/products-v1.0.0
+curl -LO $B/SHA256SUMS -LO $B/rainier3d_model.zarr.zip -LO $B/rainier3d_grids.zip
+sha256sum -c SHA256SUMS --ignore-missing     # or: shasum -a 256 -c (macOS)
+unzip rainier3d_model.zarr.zip && unzip rainier3d_grids.zip
+```
+
+```python
+import xarray as xr
+tree = xr.open_datatree("model.zarr", engine="zarr", consolidated=False)
+vs = tree["L2"].to_dataset().vs.interp(x=594500, y=5189500, z=-2000)   # m/s, 2 km below sea level
+g = xr.open_dataset("grids/rainier3d_fused_500m.nc")                    # whole model, 500 m spacing
+```
+
+In `model.zarr`, cells above the ground are empty (NaN), and the unit codes are those of `configs/units.yaml`.
 
 A client is installed with the package. It is available as the `rainier3d` command and as the Python module `rainier3d.api`. It downloads a product once, checks its checksum, caches it, and writes grids for other codes:
 
 ```bash
 pip install "git+https://github.com/Denolle-Lab/mt-rainier-digital-model"
 rainier3d list                                        # products, versions and licences
+rainier3d fetch model                                 # prints the folder that holds model.zarr
 rainier3d export model --format specfem --bbox -122.0 46.7 -121.6 47.0 \
     --dx 250 --dz 250 --zmin -10000 --out out/tomography_model.xyz
 rainier3d export model --format nll --dx 500 --dz 500 --out out/nll/rainier3d
@@ -823,9 +845,10 @@ rainier3d fetch gnss                                  # latest weekly strain pro
 import rainier3d.api as r3
 tree = r3.open_model()                                    # downloads once, then reads the cache
 g = r3.grid(tree, bbox=(-122.0, 46.7, -121.6, 47.0), dx=250, dz=250, zmin=-10000)
-r3.export(g, "netcdf", "out/rainier3d_250m.nc")           # also nll, emc, specfem, csv
-vs = tree["L2"].to_dataset().vs.interp(x=594500, y=5189500, z=-2000)   # m/s, 2 km below sea level
+r3.export(g, "netcdf", "out/rainier3d_250m.nc")           # also nll, emc, specfem, pylith, csv
 ```
+
+The repository file `docs/products.md` gives examples for every product.
 
 Resampled grids are interpolated linearly within each level. Cells above the ground take the value of the first rock cell beneath them, so receivers at the surface sit in rock, and a variable `air` flags them. [@tbl:formats] lists the formats.
 

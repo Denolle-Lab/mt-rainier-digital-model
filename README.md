@@ -15,6 +15,85 @@ wavelengths of the regional Cascadia model and is checked against PNSN travel ti
 Status: **M1 skeleton**. Every stage runs end to end at coarse resolution. Most rock-physics and
 geometry numbers are placeholders, marked `m1_placeholder` in `configs/`.
 
+## Download the derived products
+
+The derived products are the assets of the GitHub release
+[`products-v1.0.0`](https://github.com/Denolle-Lab/mt-rainier-digital-model/releases/tag/products-v1.0.0), under
+CC-BY 4.0. Every archive is listed with its SHA-256 in the release file `SHA256SUMS` and in
+`src/rainier3d/products.json`. Coordinates are UTM 10N (EPSG:32610) metres, elevation above NAVD88 positive up.
+
+| Product | Archive | Size | Content |
+|---|---|---|---|
+| `model` | `rainier3d_model.zarr.zip` | 110 MB | **The subsurface model**: Vp, Vs, density, Qp, Qs, unit and alteration on levels L1–L3, with the geology-only and regional inputs, plus the 100 m surface layers (xarray DataTree, Zarr v3) |
+| `grids` | `rainier3d_grids.zip` | 55 MB | The subsurface model on one uniform 500 m grid: CF netCDF, EMC-style netCDF, NonLinLoc P and S grids |
+| `strain_3d` | `rainier3d_strain_3d.zarr.zip` | 72 MB | GNSS strain rate carried down and edifice-load strain in the volume |
+| `edifice_load` | `rainier3d_edifice_load.zarr.zip` | 115 MB | Stress from the weight of the edifice on L1–L3 |
+| `alteration` | `rainier3d_alteration_finn2001.zip` | 1 MB | Hydrothermal alteration from the 1996 helicopter EM survey (top 200 m) |
+| `mass_movements` | `rainier3d_mass_movements.zip` | 2 MB | Landslide, lahar, debris-flow and avalanche catalogue (GeoPackage, CSV) |
+| `gnss` | `rainier3d_gnss_2026-09-01.zip` | 4 MB | GNSS velocities and strain, snapshot of 2026-09-01; refreshed weekly in the release `gnss-latest` |
+
+### 1. Direct download, no installation
+
+```bash
+B=https://github.com/Denolle-Lab/mt-rainier-digital-model/releases/download/products-v1.0.0
+curl -LO $B/SHA256SUMS -LO $B/rainier3d_model.zarr.zip -LO $B/rainier3d_grids.zip
+sha256sum -c SHA256SUMS --ignore-missing            # macOS: shasum -a 256 -c SHA256SUMS --ignore-missing
+unzip rainier3d_model.zarr.zip                      # -> model.zarr/{surface,L1,L2,L3}
+unzip rainier3d_grids.zip                           # -> grids/rainier3d_fused_500m.nc, grids/rainier3d_emc.nc, grids/nll/
+```
+
+### 2. Open the subsurface model with xarray
+
+`model.zarr` holds one node per level (grids in the [Grid](#grid) table below) and a surface node. Cells above the
+ground are NaN; `depth` is the depth of each cell below the local ground surface. Unit codes are defined in
+`configs/units.yaml`.
+
+```python
+import xarray as xr
+
+tree = xr.open_datatree("model.zarr", engine="zarr", consolidated=False)   # xarray >= 2024.10, zarr >= 3
+L2 = tree["L2"].to_dataset()                              # 0 to -6 km, 500 m x 250 m
+print(sorted(L2.data_vars))                               # vp, vs, rho (kg/m3), qp, qs, unit, alteration, depth, ...
+vs = L2.vs.interp(x=594500, y=5189500, z=-2000)           # m/s, under the summit, 2 km below sea level
+
+g = xr.open_dataset("grids/rainier3d_fused_500m.nc")      # the whole model, 4250 m to -19750 m, every 500 m
+vp_rock = g.vp.where(g.air == 0)                          # here air cells carry the rock value below; `air` flags them
+```
+
+### 3. The `rainier3d` client: fetch, resample, export
+
+The client downloads a product once, checks its SHA-256, caches it in `$RAINIER3D_DATA` (default
+`~/.cache/rainier3d`) and resamples the model for other codes. It needs only numpy, pandas, xarray, zarr, pyproj,
+requests, netCDF4, scipy and rioxarray.
+
+```bash
+pip install "git+https://github.com/Denolle-Lab/mt-rainier-digital-model"
+rainier3d list                                            # products, versions, sizes, licences
+rainier3d fetch model                                     # prints the folder that holds model.zarr
+rainier3d sample --lon -121.76 --lat 46.85 --depth 5000   # Vp, Vs, density at one point
+rainier3d export model --format netcdf --dx 250 --dz 250 --zmin -10000 --out out/rainier3d_250m.nc
+rainier3d export model --format specfem --bbox -122.0 46.7 -121.6 47.0 --out out/tomography_model.xyz
+rainier3d export model --format nll --dx 500 --dz 500 --out out/nll/rainier3d      # NonLinLoc P and S grids
+rainier3d export model --format pylith --dx 1000 --dz 500 --out out/pylith/rainier3d_elastic.spatialdb
+rainier3d export surface --layers elevation soil_thickness --out out/surface/     # GeoTIFFs
+```
+
+```python
+import rainier3d.api as r3
+
+tree = r3.open_model()                                    # fetch + open the DataTree
+g = r3.grid(tree, bbox=(-122.0, 46.7, -121.6, 47.0), dx=250, dz=250, zmin=-10000)
+r3.export(g, "netcdf", "out/rainier3d_250m.nc")           # also "nll", "emc", "specfem", "pylith", "csv"
+print(r3.sample(tree, -121.76, 46.85, 5000))              # {'vp': ..., 'vs': ..., 'rho': ..., 'level': 'L2'}
+```
+
+Inside this repository the same commands run as `pixi run python -m rainier3d ...`, and `--model
+data/processed/model.zarr` uses a local pipeline build instead of the download. Every product, with more
+examples, is in `docs/products.md`. Inputs whose licence forbids redistributing derivatives are left out (the
+model has no `water_table_depth`; `docs/data_policy.md`). Cite the products with `CITATION.cff` and the sources
+of the layers you use; the Zenodo DOI plan is in `docs/doi.md`.
+`scripts/20_publish_products.py --tag <tag> --upload` builds and uploads a release.
+
 ## Pipeline
 
 | Stage | Script | Product (`data/processed/`, `outputs/`) |
@@ -54,39 +133,6 @@ pixi run all      # s1-s8
 pixi run test
 pixi run viz      # interactive PyVista window
 ```
-
-## Download and format the products (CLI and Python)
-
-Every derived product, with command-line and Python examples, is described in `docs/products.md`; the DOI
-strategy is in `docs/doi.md`, and the citation in `CITATION.cff`.
-
-The derived products (the fused model, GNSS velocities and strain, the edifice-load stress) are published as
-release assets and listed in `src/rainier3d/products.json` with SHA-256 checksums. Inputs whose licence forbids
-redistributing derivatives are left out and rebuilt locally with your own access (`docs/data_policy.md`).
-
-Outside this repository, the client installs on its own (it needs only numpy, pandas, xarray, zarr, pyproj,
-requests, netCDF4, scipy and rioxarray):
-
-```
-pip install "git+https://github.com/Denolle-Lab/mt-rainier-digital-model"
-rainier3d list
-```
-
-Inside the repository, the same commands run through pixi:
-
-```
-pixi run python -m rainier3d list
-pixi run python -m rainier3d export model --format specfem --bbox -122.0 46.7 -121.6 47.0 --dx 250 --dz 250 \
-    --zmin -10000 --out out/tomography_model.xyz       # also netcdf, nll, emc, csv
-pixi run python -m rainier3d export surface --layers elevation soil_thickness --out out/surface/   # GeoTIFFs
-pixi run python -m rainier3d sample --lon -121.76 --lat 46.85 --depth 5000
-```
-
-The `gnss` product is refreshed every Monday by `.github/workflows/gnss-weekly.yml` (`docs/gnss_strain.md`).
-`--model data/processed/model.zarr` uses a local pipeline build instead of the download. The same calls are in
-`rainier3d.api` (`open_model`, `grid`, `export`, `export_surface`, `sample`). Downloads are cached in
-`$RAINIER3D_DATA` (default `~/.cache/rainier3d`). `scripts/20_publish_products.py --tag <tag> --upload` builds
-and uploads a release.
 
 ## Paper
 
