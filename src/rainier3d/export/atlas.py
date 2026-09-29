@@ -880,6 +880,24 @@ def viewer_kind(kind: str, family: str) -> str:
     }.get(family, "other")
 
 
+def retired_kinds(sensors: list[dict], family: str) -> dict:
+    """Viewer kinds whose sensors have all ended at a site where another still runs: kind -> [start, end].
+    The viewer keeps them in the site's ring and card, with dates, but not in the kind filter or counts."""
+    if not any(s.get("status") == "operating" for s in sensors):
+        return {}
+    by = {}
+    for s in sensors:
+        by.setdefault(viewer_kind(s.get("kind", ""), s.get("family", family)), []).append(s)
+    return {
+        k: [
+            min((s["start"] for s in ss if s.get("start")), default=None),
+            max((s["end"] for s in ss if s.get("end")), default=None),
+        ]
+        for k, ss in sorted(by.items())
+        if all(s.get("status") != "operating" for s in ss)
+    }
+
+
 def export_sensors(atlas: Path, web_data: Path) -> dict:
     """S8's web/atlas/data/{sites,das}.geojson -> <atlas>/model/sensors.json in the viewer's scene frame.
     Deployers' names are left out of the public file."""
@@ -912,6 +930,7 @@ def export_sensors(atlas: Path, web_data: Path) -> dict:
                 "start": min(starts) if starts else None,
                 "end": None if p["status"] == "operating" else (max(ends) if ends else None),
                 "instruments": sorted({s.get("kind", "") for s in sensors} - {""}),
+                "retiredKinds": retired_kinds(sensors, p["family"]),
                 "notes": p.get("notes") or "",
                 "url": p.get("url") or "",
             }

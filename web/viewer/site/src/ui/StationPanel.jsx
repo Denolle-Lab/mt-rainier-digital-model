@@ -1,5 +1,5 @@
 import { KIND_BY_KEY } from "../data/kinds.js";
-import { fmtElev } from "../data/format.js";
+import { fmtElev, fmtMonths } from "../data/format.js";
 import Glyph from "./Glyph.jsx";
 import { instrumentLine, operators } from "./instruments.js";
 import "./ui.css";
@@ -31,7 +31,11 @@ export default function StationPanel({ site, bundle, onClose, onFly, notes = {},
         </div>
         <button className="icon" aria-label="Close" onClick={onClose}>×</button>
       </div>
-      <div className="sp-kinds">{site.kinds.map(k => <span key={k}><Glyph glyph={KIND_BY_KEY[k].glyph} color={KIND_BY_KEY[k].color} />{KIND_BY_KEY[k].label}</span>)}</div>
+      <div className="sp-kinds">{site.kinds.map(k => <span key={k}><Glyph glyph={KIND_BY_KEY[k].glyph} color={KIND_BY_KEY[k].color} />{KIND_BY_KEY[k].label}{site.retiredKinds?.[k] && <span className="t-when">{fmtMonths(site.retiredKinds[k])}</span>}</span>)}</div>
+      {site.merged && (
+        <p className="sp-note">Also at this site (rainier3d inventory): {site.merged.kinds.map(k => KIND_BY_KEY[k].label).join(", ")}
+          {site.merged.names.length > 0 && ` · ${site.merged.names.join(", ")}`}</p>
+      )}
       {site.onMap ? <button className="fly" onClick={() => onFly(site)}>Fly to {site.id.split(".")[1]}</button>
         : <p className="sp-note">This station is outside the map area, {Math.round(Math.hypot(site.x, site.z))} km from the summit.</p>}
       {site.stations.map(st => (

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { DEFAULT_FILTER, classifyMarker, extraSites, fiberOn, isTemporaryNet, kindCounts, passes } from "./sensors.js";
+import { DEFAULT_FILTER, classifyMarker, extraSites, faded, fiberOn, isTemporaryNet, kindCounts, liveKinds, mergedKinds, passes } from "./sensors.js";
 
 const node = { id: "node-1", kinds: ["geophone"], temporary: true, status: "operating" };
 const old = { id: "XD.A1", kinds: ["seismometer"], temporary: true, status: "retired" };
@@ -19,21 +19,40 @@ describe("sensors", () => {
     expect(passes(node, { ...DEFAULT_FILTER, current: false })).toBe(false);
     expect(passes(gnss, { ...DEFAULT_FILTER, kinds: new Set(["geophone"]) })).toBe(false);
   });
-  it("shows a survey by its own toggle, whatever Current and Past say", () => {
+  it("shows a survey that is on whatever Current and Past say, and leaves it to them when off", () => {
+    const off = { ...DEFAULT_FILTER, surveysOff: new Set(["nodes_2025", "mora_das"]) };
     expect(passes(z5, DEFAULT_FILTER)).toBe(true);                        // surveys on by default, though retired
     expect(passes(z5, { ...DEFAULT_FILTER, current: false, past: false })).toBe(true);
-    expect(passes(z5, { ...DEFAULT_FILTER, surveysOff: new Set(["nodes_2025"]) })).toBe(false);
-    const das = { survey: "mora_das" };
+    expect(passes(z5, off)).toBe(false);                                  // off: retired, so under Past (off)
+    expect(passes(z5, { ...off, past: true })).toBe(true);
+    expect(faded(z5, DEFAULT_FILTER)).toBe(false);                        // opaque while its survey is on
+    expect(faded(z5, off)).toBe(true);
+    expect(faded(node, off)).toBe(false);                                 // operating: never faded
+    const das = { survey: "mora_das", status: "operating" };
     expect(fiberOn(das, DEFAULT_FILTER)).toBe(true);
-    expect(fiberOn(das, { ...DEFAULT_FILTER, surveysOff: new Set(["mora_das"]) })).toBe(false);
-    expect(fiberOn({}, { ...DEFAULT_FILTER, current: false })).toBe(false);   // a bundle without surveys: Current
+    expect(fiberOn(das, off)).toBe(true);                                 // off: operating, so under Current
+    expect(fiberOn(das, { ...off, current: false })).toBe(false);
   });
   it("does not draw station-marker sites twice and counts per kind", () => {
     const sensors = { sites: [{ ...node, name: "Node 1" }, { ...gnss, name: "P432" }, { id: "UW.STAR", name: "UW.STAR", kinds: ["seismometer"], temporary: false, status: "operating" }] };
     expect(extraSites(sensors, { sites: [{ codes: ["UW.STAR"], kinds: ["seismometer"] }] }).map(s => s.id)).toEqual(["node-1", "gnss-P432"]);
     const pupy = { id: "UW.PUPY", name: "UW.PUPY", kinds: ["seismometer", "tiltmeter"], temporary: false, status: "operating" };
-    const extra = extraSites({ sites: [pupy] }, { sites: [{ codes: ["UW.PUPY"], kinds: ["seismometer"] }] });
-    expect(extra.map(s => [s.id, s.kinds])).toEqual([["UW.PUPY+extra", ["tiltmeter"]]]);   // only what the marker lacks
+    const markers = { sites: [{ id: "UW.PUPY", codes: ["UW.PUPY"], kinds: ["seismometer"] },
+      { id: "UW.RCM", codes: ["UW.RCM"], kinds: ["seismometer"] }] };
+    const rcm = { id: "UW.RCM", name: "UW.RCM + MUIR Camp Muir", kinds: ["gnss", "seismometer"] };
+    expect(extraSites({ sites: [pupy, rcm] }, markers)).toEqual([]);     // merged into the markers, not drawn again
+    expect([...mergedKinds({ sites: [pupy, rcm] }, markers)]).toEqual([   // only what the marker lacks
+      ["UW.PUPY", { kinds: ["tiltmeter"], names: [], retired: {} }],
+      ["UW.RCM", { kinds: ["gnss"], names: ["MUIR Camp Muir"], retired: {} }]]);
     expect(kindCounts([node, old, gnss], DEFAULT_FILTER)).toEqual({ geophone: 1, gnss: 1 });
+  });
+  it("keeps an ended instrument in the site's kinds but not in the filter and counts", () => {
+    const pr01 = { id: "CC.PR01", name: "CC.PR01", kinds: ["infrasound", "seismometer"], temporary: false, status: "operating",
+      retiredKinds: { infrasound: ["2018-10-04", "2020-06-08"] } };
+    const m = mergedKinds({ sites: [pr01] }, { sites: [{ id: "CC.PR01", codes: ["CC.PR01"], kinds: ["seismometer"] }] });
+    expect(m.get("CC.PR01")).toEqual({ kinds: ["infrasound"], names: [], retired: { infrasound: ["2018-10-04", "2020-06-08"] } });
+    expect(liveKinds(pr01)).toEqual(["seismometer"]);
+    expect(passes(pr01, { ...DEFAULT_FILTER, kinds: new Set(["infrasound"]) })).toBe(false);   // no infrasound now
+    expect(kindCounts([pr01], DEFAULT_FILTER)).toEqual({ seismometer: 1 });
   });
 });

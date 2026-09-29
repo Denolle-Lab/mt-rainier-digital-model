@@ -164,6 +164,8 @@ input[type=range]:disabled { opacity: 0.35; }
 .sf-kind:hover { background: var(--surface-2); }
 .sf-kind[aria-pressed="false"] { opacity: 0.38; }
 .sf-kind .n { color: var(--text-muted); font-size: 11px; }
+.sf-kind.zero { opacity: 0.55; }
+.t-when { color: var(--text-muted); margin-left: 6px; font-variant-numeric: tabular-nums; }
 .sf-line { width: 14px; height: 3px; background: #f4f4f0; border-radius: 2px; box-shadow: 0 0 0 1px #121211; }
 .legend { max-height: calc(100vh - 32px - 520px); min-height: 180px; overflow-y: auto; }
 .stip { width: 320px; }

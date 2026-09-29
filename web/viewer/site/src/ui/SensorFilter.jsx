@@ -34,15 +34,15 @@ export default function SensorFilter({ filter, onFilter, counts, das, surveys = 
       </>)}
       <div className="sf-key">filled: permanent network · ring: temporary · faded: past deployment</div>
       <div className="sf-kinds">
-        {KINDS.filter(k => counts[k.key]).map(k => (
-          <button key={k.key} className="sf-kind" aria-pressed={on(k.key)} title={`Show only ${k.label.toLowerCase()} (again: all)`}
+        {KINDS.map(k => (   // every kind, also at 0 under the current switches, so it can still be picked
+          <button key={k.key} className={`sf-kind${counts[k.key] ? "" : " zero"}`} aria-pressed={on(k.key)} title={`Show only ${k.label.toLowerCase()} (again: all)`}
             onClick={() => only(k.key)}>
-            <Glyph glyph={k.glyph} color={k.color} /><span>{k.label}</span><span className="mono n">{counts[k.key].toLocaleString("en-US")}</span>
+            <Glyph glyph={k.glyph} color={k.color} /><span>{k.label}</span><span className="mono n">{(counts[k.key] ?? 0).toLocaleString("en-US")}</span>
           </button>
         ))}
-        {fiberOn(das, filter) && (
-          <button className="sf-kind" aria-pressed={on("das")} title="Show only the DAS fiber (again: all)" onClick={() => only("das")}>
-            <span className="sf-line" /><span>DAS fiber</span><span className="mono n">{das.channels.toLocaleString("en-US")} ch</span>
+        {das && (   // like the kinds: always listed, 0 ch while the switches hide the fiber
+          <button className={`sf-kind${fiberOn(das, filter) ? "" : " zero"}`} aria-pressed={on("das")} title="Show only the DAS fiber (again: all)" onClick={() => only("das")}>
+            <span className="sf-line" /><span>DAS fiber</span><span className="mono n">{(fiberOn(das, filter) ? das.channels : 0).toLocaleString("en-US")} ch</span>
           </button>
         )}
       </div>
