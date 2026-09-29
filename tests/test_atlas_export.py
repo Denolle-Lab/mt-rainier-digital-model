@@ -42,7 +42,6 @@ def test_temporary_networks_follow_fdsn_convention():
         assert is_temporary(sid, "FDSN (EarthScope)")
     for sid in ("UW.RCM", "CC.OBSR", "PB.B941", "NP.1234"):
         assert not is_temporary(sid, "FDSN (EarthScope)")
-    assert is_temporary("node-13217", "2025 Rainier node deployment (UW)")
     assert not is_temporary("gnss-P432", "EarthScope GNSS (UNAVCO)")
 
 

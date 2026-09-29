@@ -846,12 +846,9 @@ def export_strain(strain: xr.Dataset, dom, atlas: Path, spacing_cells=(10, 4), l
 # Temporary networks follow the FDSN convention (codes starting with a digit or X, Y, Z are temporary);
 # TA is a permanent code for a moving deployment. Non-FDSN sources are classed by what they are.
 TEMP_CODES = {"TA"}
-TEMP_SOURCES = ("2025 Rainier node deployment",)
 
 
 def is_temporary(site_id: str, source: str) -> bool:
-    if source.startswith(TEMP_SOURCES):
-        return True
     if source.startswith("FDSN"):
         net = site_id.split(".")[0]
         return net[:1].isdigit() or net[:1] in "XYZ" or net in TEMP_CODES
@@ -957,7 +954,7 @@ def export_sensors(atlas: Path, web_data: Path) -> dict:
             "channels": ch,
         },
         "counts": counts,
-        "source": "rainier3d S8 sensor inventory (EarthScope FDSN, UW 2025 nodes, "
+        "source": "rainier3d S8 sensor inventory (EarthScope FDSN incl. the 2025 Z5 node array, "
         "EarthScope GNSS, Synoptic), exported by S11",
     }
     (atlas / "model" / "sensors.json").write_text(json.dumps(meta, separators=(",", ":")))

@@ -1031,7 +1031,7 @@ In this period ComCat places one event above the ground. The problem of the 500 
 The viewer runs in a web browser, including on phones. It is a React and three.js application (MIT licence) published at <https://denolle-lab.github.io/mt-rainier-digital-model/>, and it draws the following on the terrain:
 - the 22 draped surface layers of [@sec:surface] (`model/layers.json` of the data release), from Sentinel-2 imagery, geology, ice and soil thickness to canopy, vegetation indices, land cover and water-table depth;
 - the alteration field at the surface and the apparent magnetisation from the 1996 helicopter survey ([@sec:alteration]);
-- the 1,161 sensor sites of the S8 inventory (EarthScope FDSN, UW 2025 nodes, EarthScope GNSS, Synoptic), 123 permanent and 1,038 temporary: seismometers, accelerometers, geophone nodes (1,004), infrasound, GNSS, strain and tilt meters, weather, snow and streamflow stations, and the Paradise–Nisqually Entrance distributed acoustic sensing (DAS) fibre with 3,191 channels, with permanent and temporary networks separated;
+- the 970 sensor sites of the S8 inventory (EarthScope FDSN, including the 2025 node array Z5 [@fdsn_z5_2025]; EarthScope GNSS; Synoptic), 123 permanent and 847 temporary: seismometers, accelerometers, geophone nodes (813), infrasound, GNSS, strain and tilt meters, weather, snow and streamflow stations, and the Paradise–Nisqually Entrance distributed acoustic sensing (DAS) fibre with 3,191 channels, with permanent and temporary networks separated;
 - the PNSN seismicity from ComCat [@comcat_uw]: 15,660 events from 1980 to 23 September 2026, magnitude −1.6 to 4.9, in the overview box (46.58–47.12° N, 122.16–121.36° W), drawn at their hypocentres; the 439 that ComCat places above the viewer terrain are counted but not drawn;
 - the mass movements of [@sec:mass]: the 466 flow deposits as a draped layer and the 1,650 events as points on the ground (crown or seismic location), filtered by class and date from the legend;
 - the storm of [@sec:events], replayed over its 216 hourly frames: precipitation as falling drops and discharge as bars at the 7 USGS gauges and 3 virtual sensors inside the overview box.
@@ -1106,7 +1106,8 @@ The code and this paper were written with an AI coding assistant (Claude, Anthro
 | PNSN one-dimensional velocity model, western Washington | reference model for validation and relocation | [TODO: citable reference; registry key pnsn_1d_wa has no BibTeX entry] |
 | FDSN station metadata | station coordinates, sensor inventory | @earthscope_fdsn |
 | EarthScope GNSS site metadata | GNSS site positions | @earthscope_gnss |
-| 2025 nodal deployment; Paradise–Nisqually Entrance DAS channel table | sensor positions, fibre route | [TODO: citable references; registry keys nodes_2025 and das_paradise_nisqually are local files with no BibTeX entry] |
+| 2025 Rainier NP node array (FDSN network Z5) | geophone node positions and dates | @fdsn_z5_2025 |
+| Paradise–Nisqually Entrance DAS channel table | fibre route | [TODO: citable reference; registry key das_paradise_nisqually is a local file with no BibTeX entry] |
 | Synoptic weather, SNOTEL and streamflow stations (gaia-hazlab catalogue) | sensor inventory in the viewer | @synoptic_catalog [TODO: licence] |
 | PANGA and UNR GNSS daily positions | velocities, strain | @panga_gnss; @unr_ngl_gnss |
 | SOLUS100 | soil thickness | @solus100 |

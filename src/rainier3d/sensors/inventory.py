@@ -7,7 +7,7 @@ has a family (configs/sensor_families.yaml), a status (operating / retired) and 
 Sources
   FDSN (EarthScope station service, channel level): seismic, strong motion, nodes, infrasound,
       strain/tilt, MT. Channels grouped per (network, station, location, band+instrument).
-  2025 Rainier nodes: the deployment spreadsheet (serial, deployers, date, field notes).
+  2025 Rainier nodes: FDSN network Z5 (2025), fetched whole, also beyond the domain box.
   GNSS: EarthScope/UNAVCO GNSS site metadata web service.
   Meteorology & streamflow: gaia-hazlab/catalog GeoJSON (Synoptic), cached by mt-rainier-smart-sensing.
   DAS: the Paradise-Nisqually Entrance channel table (per-channel coordinates and lithology).
@@ -50,27 +50,43 @@ def _date(t) -> str | None:
     return None if t is None or pd.isna(t) else pd.Timestamp(t).strftime("%Y-%m-%d")
 
 
+def is_node_2025(site_id: str, cfg: dict) -> bool:
+    """A site of the 2025 Rainier node array (FDSN network in configs/sensor_families.yaml nodes_2025)."""
+    return site_id.startswith(cfg["nodes_2025"]["network"] + ".")
+
+
 def _in(dom: Domain, lon, lat):
     w, s, e, n = dom.bbox_4326
     return (lon >= w) & (lon <= e) & (lat >= s) & (lat <= n)
 
 
 # ---------------------------------------------------------------- FDSN
-def fdsn_channels(dom: Domain) -> pd.DataFrame:
-    cache = dom.path("raw") / "sensors" / "fdsn_channels.txt"
+def _fdsn_text(cache: Path, **params) -> Path:
     if not cache.exists():
-        w, s, e, n = dom.bbox_4326
-        r = requests.get(
-            FDSN,
-            params=dict(
-                minlatitude=s, maxlatitude=n, minlongitude=w, maxlongitude=e, level="channel", format="text"
-            ),
-            timeout=180,
-        )
+        r = requests.get(FDSN, params=dict(params, level="channel", format="text"), timeout=180)
         r.raise_for_status()
         cache.parent.mkdir(parents=True, exist_ok=True)
         cache.write_text(r.text)
-    df = pd.read_csv(cache, sep="|", dtype=str)
+    return cache
+
+
+def fdsn_channels(dom: Domain, cfg: dict) -> pd.DataFrame:
+    w, s, e, n = dom.bbox_4326
+    box = _fdsn_text(
+        dom.path("raw") / "sensors" / "fdsn_channels.txt",
+        minlatitude=s,
+        maxlatitude=n,
+        minlongitude=w,
+        maxlongitude=e,
+    )
+    nd = cfg["nodes_2025"]
+    nodes = _fdsn_text(
+        dom.path("raw") / "sensors" / f"fdsn_channels_{nd['network']}_{nd['start'][:4]}.txt",
+        network=nd["network"],
+        starttime=nd["start"],
+        endtime=nd["end"],
+    )
+    df = pd.concat([pd.read_csv(f, sep="|", dtype=str) for f in (box, nodes)]).drop_duplicates()
     df.columns = [c.strip().lstrip("#").strip() for c in df.columns]
     for c in ("Latitude", "Longitude", "Elevation", "SampleRate"):
         df[c] = pd.to_numeric(df[c], errors="coerce")
@@ -92,7 +108,7 @@ def classify(df: pd.DataFrame, cfg: dict) -> pd.DataFrame:
 
 
 def fdsn_sites(dom: Domain, cfg: dict) -> list[dict]:
-    df = classify(fdsn_channels(dom), cfg)
+    df = classify(fdsn_channels(dom, cfg), cfg)
     sites = []
     for (net, sta), g in df.groupby(["Network", "Station"]):
         sensors = []
@@ -126,37 +142,6 @@ def fdsn_sites(dom: Domain, cfg: dict) -> list[dict]:
             )
         )
     return sites
-
-
-# ---------------------------------------------------------------- 2025 Rainier nodes
-def nodes_2025(cfg: dict) -> list[dict]:
-    path = Path(cfg["nodes_2025"]["source"]).expanduser()
-    d = pd.read_excel(path, sheet_name=0).dropna(subset=["Latitude", "Longitude"])
-    out = []
-    for _, r in d.iterrows():
-        out.append(
-            dict(
-                id=f"node-{int(r.Serial)}",
-                name=f"Node {int(r.Serial)}",
-                source=cfg["nodes_2025"]["label"],
-                lon=float(r.Longitude),
-                lat=float(r.Latitude),
-                elev=None,
-                deployers=str(r.Deployers),
-                notes=str(r.Notes) if pd.notna(r.Notes) else "",
-                sensors=[
-                    dict(
-                        family="nodes",
-                        kind="geophone node (2025)",
-                        channels="DP?",
-                        start=_date(r["Date Deployed"]),
-                        end=None,
-                        status="operating",
-                    )
-                ],
-            )
-        )
-    return out
 
 
 # ---------------------------------------------------------------- GNSS
@@ -290,9 +275,9 @@ def merge_colocated(sites: list[dict], tol_m: float = 60.0) -> list[dict]:
 
 def inventory(dom: Domain) -> list[dict]:
     cfg = families()
-    sites = fdsn_sites(dom, cfg) + nodes_2025(cfg) + gnss_sites(dom) + synoptic_sites(dom)
+    sites = fdsn_sites(dom, cfg) + gnss_sites(dom) + synoptic_sites(dom)
     # nodes are all kept (the 2025 deployment extends beyond the model domain); others are clipped
-    sites = [s for s in sites if s["id"].startswith("node-") or _in(dom, s["lon"], s["lat"])]
+    sites = [s for s in sites if is_node_2025(s["id"], cfg) or _in(dom, s["lon"], s["lat"])]
     for s in sites:
         s["in_model_domain"] = bool(_in(dom, s["lon"], s["lat"]))
     for s in sites:

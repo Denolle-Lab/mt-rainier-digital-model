@@ -6,7 +6,7 @@ export default function Attribution({ bundle, sensors, mass, reloc, storm }) {
   return (
     <div className="attribution">
       Terrain and imagery: USGS 3DEP and The National Map (public domain), 1 m lidar at the summit. Stations: EarthScope
-      FDSN, active as of {bundle.stations.asOf}{sensors ? "; other sensors: rainier3d inventory (UW 2025 nodes, EarthScope GNSS, Synoptic, past FDSN deployments, DAS)" : ""}.
+      FDSN, active as of {bundle.stations.asOf}{sensors ? "; other sensors: rainier3d inventory (2025 Z5 node array, EarthScope GNSS, Synoptic, past FDSN deployments, DAS)" : ""}.
       {bundle.quakes ? " Earthquakes: USGS ComCat (PNSN), public domain, depth below sea level." : ""}
       {mass ? " Mass movements: Washington Geological Survey landslide inventory and 1:100,000 geology (free use with citation), Allstadt et al. (2017)." : ""}
       {reloc ? " Relocated earthquakes: rainier3d S26 (NonLinLoc, PNSN picks)." : ""}
