@@ -26,9 +26,9 @@ OUT = Path("outputs/ai_transcripts")
 KEEP_EMAILS = {"noreply@anthropic.com"}
 
 JWT = re.compile(r"eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}")
-# The TLD list keeps code such as "\n@pytest.mark.parametrize" or "A@cN-N.ravel" from matching.
-TLDS = "edu|com|org|gov|net|us|io|ai|uk|fr|ch|de|ca|info|mil"
-EMAIL = re.compile(rf"(?<![\\A-Za-z0-9._%+-])[A-Za-z0-9._%+-]+@(?:[A-Za-z0-9-]+\.)+(?:{TLDS})\b")
+# Any alphabetic TLD: a missed address is a leak, while a false positive (code such as "A@cN-N.ravel()") only
+# costs a few characters of the transcript.
+EMAIL = re.compile(r"(?<![A-Za-z0-9._%+-])[A-Za-z0-9._%+-]+@(?:[A-Za-z0-9-]+\.)+[A-Za-z]{2,}\b")
 TMP = re.compile(r"/private/tmp(?:/[^\s\"'\\]*)?|/private/var/folders/[^\s\"'\\]*|/var/folders/[^\s\"'\\]*")
 HOME = re.compile(r"/Users/[A-Za-z0-9._-]+")
 ENCODED_HOME = re.compile(r"-Users-[A-Za-z0-9._]+-")
@@ -75,7 +75,7 @@ def walk(x, counts: Counter):
 
 
 def main():
-    ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    ap = argparse.ArgumentParser(description="Write redacted copies of Claude Code transcripts for deposit.")
     ap.add_argument("folders", nargs="+", type=Path)
     args = ap.parse_args()
     OUT.mkdir(parents=True, exist_ok=True)

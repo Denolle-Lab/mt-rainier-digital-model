@@ -8,7 +8,7 @@ that the schema in `references/author_profile.md` does not define; how the orche
 ```yaml
 name: Marine Denolle (rainier3d, ESSD)
 register: plain; first person allowed; minimal hedging; opinions stated directly
-favored_phrasing: "digital model" (never "digital twin": the paper states it assimilates no time-dependent data); "rebuild"; stage labels S1 to S22 and level labels L1 to L3 as terms of art; "placeholder" for unsourced parameters (configs/sources.yaml key m1_placeholder); "held-out events"; "invariant test"
+favored_phrasing: "digital model" (never "digital twin": the paper states it assimilates no time-dependent data); "rebuild"; stage labels S0 to S30 and level labels L1 to L3 as terms of art; "placeholder" for unsourced parameters (configs/sources.yaml key m1_placeholder); "held-out events"; "invariant test"
 banned_phrasing: the group plain-voice list (no LLM-tell vocabulary; no em-dashes)
 sentence_rhythm: mixed, with short emphatic sentences among longer ones; leave my cadence
 never_change: clear non-native phrasing; the reader-addressed subsections of the December 2025 flood section ("For atmospheric scientists", "For hydrologists and geomorphologists", ...); numbers stated with their source (data, parameter file, window, script); the Limitations section's candour about placeholders

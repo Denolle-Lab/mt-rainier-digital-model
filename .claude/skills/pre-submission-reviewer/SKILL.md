@@ -395,7 +395,7 @@ the updated manifest.
 DENOLLE GROUP PRE-SUBMISSION REVIEW
 =====================================
 Manuscript: [title]   Target: [journal + article type]   Date: [date]
-Reviewer: Pre-Submission Orchestrator (9 subagents → 8-criterion synthesis)
+Reviewer: Pre-Submission Orchestrator (10 subagents → 8-criterion synthesis)
 Note: Advisory. All findings require human judgment before submission.
 Profile: [author profile used, or "default"]
 Provenance: Skill v[version] (commit [skill_commit]) | Model [model id] | Iteration [N] | Manuscript hash [short]
@@ -425,6 +425,7 @@ SECTION-BY-SECTION  — [one compressed block per subagent, including S-RP:]
   [S-FD] fig/table/eq counts; color audit; caption-interp flags; findings; fixes
   [S-RP] compliance pass/fail count; REPRODUCTION VERDICT; blocking stops; fixes
   [S-CD] self-citation %; temporal/venue/geographic spread; reference-combination novelty; (gender/race only if enabled); fixes
+  [S-PR] register flags by category; considered-not-flagged; top swaps
 
 DIVERSITY SIGNALS (surfaced, not scored)  — [the S-CD Citation Diversity
   Statement-style block; note these are awareness signals the authors act on,
