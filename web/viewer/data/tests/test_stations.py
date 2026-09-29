@@ -43,6 +43,9 @@ def test_kind_of_maps_instruments_and_ignores_state_of_health():
     assert S.kind_of("ELZ") == ("seismometer", "short period")
     assert S.kind_of("BDF") == ("infrasound", None)
     assert S.kind_of("VM1") is None and S.kind_of("LNZ") is None
+    assert S.kind_of("CHZ") == ("seismometer", "broadband")   # 500 sps stream of a broadband sensor
+    for gps in ("GAN", "GEL", "GLA", "GLO", "GNS", "GPL", "GST"):   # the datalogger's GPS timing receiver
+        assert S.kind_of(gps) is None
     with pytest.raises(KeyError):
         S.kind_of("XYZ")
 
@@ -53,7 +56,8 @@ def test_colocated_codes_merge_into_one_named_site():
     assert lon["id"] == "UW.LON" and lon["name"] == "Longmire"   # the major code names the site
     assert sorted(lon["codes"]) == ["UW.LO2", "UW.LON", "UW.LON9"]
     assert lon["kinds"] == ["seismometer", "accelerometer", "tiltmeter"]   # KINDS order
-    assert lon["major"] == "Longmire, broadband" and lon["since"] == "2009-01-28"
+    assert lon["major"] == "Longmire, broadband"
+    assert lon["since"] == "2000-01-01"   # the station epochs, not the channel epochs
     st = next(x for x in lon["stations"] if x["code"] == "UW.LON")
     assert st["instruments"][0] == {"kind": "seismometer", "band": "broadband", "channels": ["HHN", "HHZ"], "rate": 100.0}
     assert st["operator"] == "Pacific Northwest Seismic Network"
@@ -86,3 +90,18 @@ def test_a_station_with_only_state_of_health_channels_is_recorded_not_lost():
     assert {"code": "UW.SOH", "reason": "only state-of-health channels are open"} in out["excluded"]
     c = out["counts"]
     assert c["returned"] - c["excluded"] == c["stations"]
+
+
+def test_high_rate_broadband_timing_gps_and_station_start():
+    # UW.RER as in EarthScope: station since 1989, channels reopened in 2026 when the logger was reconfigured
+    chans = HEAD + "".join(ch("UW", "RER", c, 46.81858, -121.8425, "2026-08-12", rate=r)
+                           for c, r in (("HHZ", 100.0), ("CHZ", 500.0), ("GAN", 0.016666), ("GLA", 0.016666)))
+    sites = STA_HEAD + "UW|RER|46.81858|-121.8425|1751.1|Emerald Ridge, WA, USA|1989-07-13T00:00:00|\n"
+
+    def get(url, path):
+        return (sites if "level=station" in url else chans).encode()
+    out = S.build_stations("unused", get=get, as_of="2026-09-23", majors={})
+    (rer,) = out["sites"]
+    assert rer["kinds"] == ["seismometer"] and rer["since"] == "1989-07-13"
+    assert rer["stations"][0]["instruments"] == [
+        {"kind": "seismometer", "band": "broadband", "channels": ["CHZ", "HHZ"], "rate": 500.0}]

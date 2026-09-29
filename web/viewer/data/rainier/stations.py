@@ -23,16 +23,19 @@ KINDS = ["seismometer", "geophone", "infrasound", "accelerometer", "gnss", "tilt
 _KIND = {
     "BH": ("seismometer", "broadband"), "HH": ("seismometer", "broadband"),
     "EH": ("seismometer", "short period"), "EL": ("seismometer", "short period"),
-    "CH": ("geophone", None),
+    "CH": ("seismometer", "broadband"),   # 500 sps stream of the broadband sensor (UW.RER: Trillium Compact)
     "BD": ("infrasound", None), "HD": ("infrasound", None), "CD": ("infrasound", None),
     "EN": ("accelerometer", None), "HN": ("accelerometer", None),
-    **{p: ("gnss", None) for p in ("GA", "GE", "GN", "GS", "GP", "GL")},
     "HA": ("tiltmeter", None), "HK": ("tiltmeter", None),
     "BS": ("strainmeter", None), "LS": ("strainmeter", None),
 }
 # State of health, weather at CC.PR04, and the low-rate duplicates (LN at NP stations, LH at PB.B941).
-_IGNORE = set("AC CP DE DS HU LC LD LH LI LK LN LO LP LR LW ME OC QB QD QG QL QR QW RA RC RD RE RK RR RS "
-              "SB SC SD SI SM SN SP SR SS ST SW VA VB VC VD VE VF VH VK VM VP VS VV".split())
+# GA GE GL GN GP GS: the datalogger's GPS timing receiver (antenna, position, satellites, lock), not
+# geodetic GNSS; GNSS sites come from the EarthScope GNSS metadata in the rainier3d inventory
+# (model/sensors.json).
+_IGNORE = set("AC CP DE DS GA GE GL GN GP GS HU LC LD LH LI LK LN LO LP LR LW ME OC QB QD QG QL QR QW "
+              "RA RC RD RE RK RR RS SB SC SD SI SM SN SP SR SS ST SW "
+              "VA VB VC VD VE VF VH VK VM VP VS VV".split())
 OPERATORS = {
     "CC": "USGS Cascades Volcano Observatory",
     "UW": "Pacific Northwest Seismic Network",
@@ -82,10 +85,11 @@ def build_stations(cache_dir, get=fetch.get, as_of: str | None = None, majors: d
     cache = Path(cache_dir) / "stations"
     chan_text = get(query_url("channel", as_of), cache / f"channels_{as_of}.txt").decode()
     sta_text = get(query_url("station", as_of), cache / f"stations_{as_of}.txt").decode()
-    names = {}
+    names, starts = {}, {}
     for f in _rows(sta_text):
         if not f[7] or f[7] > as_of:   # the open epoch wins over closed ones
             names[f"{f[0]}.{f[1]}"] = f[5]
+            starts[f"{f[0]}.{f[1]}"] = f[6][:10]
 
     stations, excluded, returned, excluded_codes = {}, {}, set(), set()
     for f in _rows(chan_text):
@@ -117,6 +121,9 @@ def build_stations(cache_dir, get=fetch.get, as_of: str | None = None, majors: d
         excluded[code] = "only state-of-health channels are open"; excluded_codes.add(code)
 
     for s in stations.values():
+        # running since the station epoch began: channel epochs restart whenever the logger is reconfigured
+        # (UW.RER: station 1989, open channels 2026)
+        s["since"] = starts.get(s["code"], s["since"])
         insts = sorted(s.pop("_inst").values(), key=lambda i: (KINDS.index(i["kind"]), i["band"] or ""))
         for i in insts:
             i["channels"].sort()
