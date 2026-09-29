@@ -86,6 +86,7 @@ function Atlas({ bundle, onError }) {
         }
         layer.refreshKinds();
         s.sensors = new SensorPoints(s, extras, inv.das); s.sensors.setFilter(DEFAULT_FILTER);
+        if (layer.hiddenAll) s.sensors.setVisible(false);   // Stations switched off before the inventory loaded
         setSens({ all: [...bundle.stations.sites.filter(x => x.onMap).map(classifyMarker), ...extras], das: inv.das, points: s.sensors, notes: inv.notes ?? {}, virtual: inv.virtual ?? {}, surveys: inv.surveys ?? [] });
         layer.setVirtual(inv.virtual ?? {});
       });
@@ -169,7 +170,7 @@ function Atlas({ bundle, onError }) {
               <div className="panel mass-panel"><MassFilter {...massLegend} /></div>) }] : []),
             { key: "sensors", label: "Sensors", icon: "sensors", node: (
               <Legend bundle={bundle} sensors={sensorLegend}>
-                <LayerPanel layers={scene.layers} scene={scene} parts={["stations"]} onStations={on => layerRef.current?.setVisible(on)} />
+                <LayerPanel layers={scene.layers} scene={scene} parts={["stations"]} onStations={on => { layerRef.current?.setVisible(on); scene.sensors?.setVisible(on); }} />
               </Legend>) },
             ...(bundle.model ? [{ key: "model", label: "Models", icon: "model", node: (
               <div className="panel model-panel">

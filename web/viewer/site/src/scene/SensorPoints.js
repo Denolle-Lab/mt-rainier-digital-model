@@ -86,12 +86,19 @@ export class SensorPoints {
     const on = this.onAttr.array, past = this.pastAttr.array;
     this.sites.forEach((s, i) => { on[i] = passes(s, f) ? 1 : 0; past[i] = faded(s, f) ? 1 : 0; });
     this.onAttr.needsUpdate = this.pastAttr.needsUpdate = true;
-    this.fiber.visible = fiberOn(this.das, f) && (!f.kinds || f.kinds.has("das"));
+    this.fiber.visible = !this.hidden && fiberOn(this.das, f) && (!f.kinds || f.kinds.has("das"));
     this.filter = f;
+  }
+
+  // the legend's Stations switch: off hides every sensor (points and fiber) to leave the map clear
+  setVisible(on) {
+    this.hidden = !on; this.points.visible = on;
+    if (this.filter) this.setFilter(this.filter);
   }
 
   // nearest visible, unoccluded point within `px` of a screen position
   pick(cx, cy, px = 10) {
+    if (this.hidden) return null;
     const rs = this.rs, flat = rs.U.flat.value, on = this.onAttr.array, cam = rs.camera.position.toArray();
     const c = rs.U.clip.value, clipOn = rs.U.clipOn.value > 0.5;
     let best = null, bd = px * px;
