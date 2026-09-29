@@ -11,13 +11,20 @@ export async function loadSensors(base) {
   } catch { return null; }
 }
 
-export const DEFAULT_FILTER = { permanent: true, temporary: true, past: false, kinds: null };   // kinds: null = all
+// Current / Past split the sites by status. A site of a survey (sensors.json "surveys", configs/sensor_surveys.yaml)
+// follows its survey's toggle only. Permanent / temporary stays on each site for its glyph (disc / ring).
+export const DEFAULT_FILTER = { current: true, past: false, surveysOff: new Set(), kinds: null };   // kinds: null = all
+
+export const surveyOn = (f, key) => !f.surveysOff.has(key);
 
 export function passes(site, f) {
-  if (site.temporary ? !f.temporary : !f.permanent) return false;
-  if (site.status !== "operating" && !f.past) return false;
+  if (site.survey) { if (!surveyOn(f, site.survey)) return false; }
+  else if (site.status === "operating" ? !f.current : !f.past) return false;
   return !f.kinds || site.kinds.some(k => f.kinds.has(k));
 }
+
+// The DAS fiber: its survey's toggle, or Current (it is operating) in a bundle without surveys.
+export const fiberOn = (das, f) => !!das && (das.survey ? surveyOn(f, das.survey) : f.current);
 
 // Points to draw: inventory sites that are not station markers already (matched by NET.STA code), and, for sites
 // that are, a point with only the instrument kinds the marker does not show (e.g. a tiltmeter missing from the

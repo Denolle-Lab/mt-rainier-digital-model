@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import { KIND_BY_KEY } from "../data/kinds.js";
-import { passes } from "../data/sensors.js";
+import { fiberOn, passes } from "../data/sensors.js";
 import { occluded } from "./occlusion.js";
 
 // Every inventory site that is not a station marker, as one GPU point each: colour by instrument kind, filled
@@ -85,7 +85,7 @@ export class SensorPoints {
     const on = this.onAttr.array;
     this.sites.forEach((s, i) => { on[i] = passes(s, f) ? 1 : 0; });
     this.onAttr.needsUpdate = true;
-    this.fiber.visible = !!this.das && f.temporary && (!f.kinds || f.kinds.has("das"));
+    this.fiber.visible = fiberOn(this.das, f) && (!f.kinds || f.kinds.has("das"));
     this.filter = f;
   }
 

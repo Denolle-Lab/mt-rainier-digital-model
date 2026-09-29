@@ -1,9 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { DEFAULT_FILTER, classifyMarker, extraSites, isTemporaryNet, kindCounts, passes } from "./sensors.js";
+import { DEFAULT_FILTER, classifyMarker, extraSites, fiberOn, isTemporaryNet, kindCounts, passes } from "./sensors.js";
 
 const node = { id: "node-1", kinds: ["geophone"], temporary: true, status: "operating" };
 const old = { id: "XD.A1", kinds: ["seismometer"], temporary: true, status: "retired" };
 const gnss = { id: "gnss-P432", kinds: ["gnss"], temporary: false, status: "operating" };
+const z5 = { id: "Z5.001", kinds: ["geophone"], temporary: true, status: "retired", survey: "nodes_2025" };
 
 describe("sensors", () => {
   it("classifies FDSN temporary networks", () => {
@@ -11,12 +12,21 @@ describe("sensors", () => {
     expect(["UW", "CC", "PB", "NP"].some(isTemporaryNet)).toBe(false);
     expect(classifyMarker({ codes: ["UW.STAR"] }).temporary).toBe(false);
   });
-  it("filters by permanence, past deployments and kind", () => {
+  it("filters by status, survey and kind", () => {
     expect(passes(node, DEFAULT_FILTER)).toBe(true);
     expect(passes(old, DEFAULT_FILTER)).toBe(false);                       // past deployments off by default
     expect(passes(old, { ...DEFAULT_FILTER, past: true })).toBe(true);
-    expect(passes(node, { ...DEFAULT_FILTER, temporary: false })).toBe(false);
+    expect(passes(node, { ...DEFAULT_FILTER, current: false })).toBe(false);
     expect(passes(gnss, { ...DEFAULT_FILTER, kinds: new Set(["geophone"]) })).toBe(false);
+  });
+  it("shows a survey by its own toggle, whatever Current and Past say", () => {
+    expect(passes(z5, DEFAULT_FILTER)).toBe(true);                        // surveys on by default, though retired
+    expect(passes(z5, { ...DEFAULT_FILTER, current: false, past: false })).toBe(true);
+    expect(passes(z5, { ...DEFAULT_FILTER, surveysOff: new Set(["nodes_2025"]) })).toBe(false);
+    const das = { survey: "mora_das" };
+    expect(fiberOn(das, DEFAULT_FILTER)).toBe(true);
+    expect(fiberOn(das, { ...DEFAULT_FILTER, surveysOff: new Set(["mora_das"]) })).toBe(false);
+    expect(fiberOn({}, { ...DEFAULT_FILTER, current: false })).toBe(false);   // a bundle without surveys: Current
   });
   it("does not draw station-marker sites twice and counts per kind", () => {
     const sensors = { sites: [{ ...node, name: "Node 1" }, { ...gnss, name: "P432" }, { id: "UW.STAR", name: "UW.STAR", kinds: ["seismometer"], temporary: false, status: "operating" }] };

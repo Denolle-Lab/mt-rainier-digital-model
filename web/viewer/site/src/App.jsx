@@ -79,7 +79,7 @@ function Atlas({ bundle, onError }) {
         if (!inv || cancelled) return;
         const extras = extraSites(inv, bundle.stations);
         s.sensors = new SensorPoints(s, extras, inv.das); s.sensors.setFilter(DEFAULT_FILTER);
-        setSens({ all: [...bundle.stations.sites.filter(x => x.onMap).map(classifyMarker), ...extras], das: inv.das, points: s.sensors, notes: inv.notes ?? {}, virtual: inv.virtual ?? {} });
+        setSens({ all: [...bundle.stations.sites.filter(x => x.onMap).map(classifyMarker), ...extras], das: inv.das, points: s.sensors, notes: inv.notes ?? {}, virtual: inv.virtual ?? {}, surveys: inv.surveys ?? [] });
         layer.setVirtual(inv.virtual ?? {});
       });
       if (bundle.model) loadMassEvents(bundle.base).then(doc => {
@@ -126,7 +126,7 @@ function Atlas({ bundle, onError }) {
     setSfilter(f); sens?.points.setFilter(f);
     layerRef.current?.setFilter(x => passes(classifyMarker(x), f));
   };
-  const sensorLegend = sens && { filter: sfilter, onFilter: applyFilter, counts: kindCounts(sens.all, sfilter), das: sens.das, virtual: sens.virtual };
+  const sensorLegend = sens && { filter: sfilter, onFilter: applyFilter, counts: kindCounts(sens.all, sfilter), das: sens.das, surveys: sens.surveys, virtual: sens.virtual };
   const modelLayer = modelKey ? bundle.model.byKey[modelKey] : null;
   const flowLayer = bundle.model?.byKey.mass_flows;
   const showFlows = on => {   // the flow deposits are a draped model layer: the same slot as the layer menu

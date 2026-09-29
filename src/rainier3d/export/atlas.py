@@ -957,7 +957,23 @@ def export_sensors(atlas: Path, web_data: Path) -> dict:
         "source": "rainier3d S8 sensor inventory (EarthScope FDSN incl. the 2025 Z5 node array, "
         "EarthScope GNSS, Synoptic), exported by S11",
     }
+    apply_surveys(meta)
     (atlas / "model" / "sensors.json").write_text(json.dumps(meta, separators=(",", ":")))
+    return meta
+
+
+def apply_surveys(meta: dict) -> dict:
+    """configs/sensor_surveys.yaml -> meta["surveys"] and the "survey" of each site and of the DAS fiber."""
+    import yaml
+
+    from rainier3d.config.domain import REPO
+
+    cfg = yaml.safe_load((REPO / "configs" / "sensor_surveys.yaml").read_text()) or {}
+    meta["surveys"] = [{"key": k, "label": v["label"], "period": v["period"]} for k, v in cfg.items()]
+    nets = {v["network"]: k for k, v in cfg.items() if v.get("network")}
+    for s in meta["sites"]:
+        s["survey"] = nets.get(s["id"].split(".")[0]) if "." in s["id"] else None
+    meta["das"]["survey"] = next((k for k, v in cfg.items() if v.get("das")), None)
     return meta
 
 
@@ -1293,6 +1309,14 @@ def export_relocated(atlas: Path, catalog_csv: Path, dom, summary: dict | None =
     }
     (atlas / "quakes_relocated.json").write_text(json.dumps(meta, indent=1))
     return meta
+
+
+def tag_sensor_surveys(atlas: Path) -> list:
+    """Write configs/sensor_surveys.yaml into an existing bundle's model/sensors.json ("surveys")."""
+    p = atlas / "model" / "sensors.json"
+    meta = apply_surveys(json.loads(p.read_text()))
+    p.write_text(json.dumps(meta, separators=(",", ":")))
+    return meta["surveys"]
 
 
 def tag_virtual_sensors(atlas: Path) -> dict:
