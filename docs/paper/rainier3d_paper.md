@@ -180,6 +180,38 @@ The pipeline is published in full. Derived products are published unless a sourc
 
 `docs/data_policy.md` gives the tier of every source.
 
+## Code written with an AI assistant {#sec:ai}
+
+The code, the configuration and the first drafts of this paper were written with Claude (Anthropic, model Claude Opus 5.5), used as a coding agent in Claude Code under the direction of the first author. The work was divided as follows.
+- **The authors** designed the model; the assistant implemented it. The project started from D. Yao's three-dimensional mockup of the Rainier seismic network (terrain, summit lidar and earthquake layers; the first commits of the repository). From there the first author directed the whole design (the domain, the input data sets, the model units and their rules, the rock-physics law, the fusion and calibration strategy and the acceptance tests), collected verbal feedback from prospective users, and turned it into instructions for the assistant.
+- **The assistant** wrote the Python package `rainier3d`, the stage scripts and the tests from instructions given in conversation, ran them, and reported the results. It also drafted the text, tables and figure scripts of this paper, and resolved the DOIs of the registry.
+- **Aggregation into stages.** The assistant turned each task into a numbered script (`scripts/00_data_manifest.py` to `scripts/30_terrain_geometry.py`, stages S0 to S30) with a `pixi run` task. Shared code lives in the package, and each stage reads and writes the store through `rainier3d.io.store`. A new layer is therefore one script, one task and one test, not an edit of earlier stages.
+
+The rules that the assistant followed are those of `AGENTS.md` at the root of the repository, which apply to human and agent contributors alike: one locked environment, one domain loader, a registry key for every number, nearest-neighbour resampling for categorical rasters, and `pixi run all` and `pixi run test` before every pull request, with tolerances never loosened to make a test pass. Two of the principles of [@sec:data] exist to catch errors of the kind a language model makes. The registry turns an invented number into a missing key or an `m1_placeholder` that can be listed. The invariant tests reject a built model that violates physical bounds or disagrees with the map or the regional model, whoever wrote the code.
+
+| Record (git history of `main` at commit 70b2e72, 23–26 September 2026) | Count |
+|------------------------------------|-----|
+| Commits, excluding merges | 125 |
+| Commits made in an assistant session (trailer `Co-Authored-By: Claude`) | 90 |
+| Merged pull requests | 29 |
+| Merged pull requests reviewed automatically by GitHub Copilot | 28 |
+| Commits that answer an automated GitHub Copilot review of a pull request | 29 |
+| Lines of Python in `src/rainier3d`, `scripts` and `tests` | 8882, 5172 and 1501 |
+| Entries in the citation registry `docs/citations.csv` | 129 |
+| Registry DOIs recorded as taken from the assistant's memory, not resolved | 3 |
+| Registry sources with no identifier, recorded as not verified | 4 |
+
+: The development record, counted from the git history and from `docs/citations.csv`. {#tbl:ai}
+
+The trailer marks commits made in an assistant session. It does not measure how much of a commit the assistant wrote, and commits without it may also contain assisted code. The three-dimensional viewer was written by D. Yao; one of his 25 commits carries the trailer. The three DOIs from memory are those of `brocher_2005`, `glathida` and `rgi60`; the four sources without an identifier are `pnsn_1d_wa`, `canopy_lidar_chm`, `sentinel2_lai_2023` and `soil_map_image`. Every other entry cited in this paper was resolved at doi.org, Crossref or DataCite, or read from a local file, except `synoptic_catalog`, whose verification field is empty.
+
+The repository was created on 23 September 2026, and its full history, including every pull request and its review comments, is public. [TODO: the Claude Code session transcripts (four sessions, 23–29 September 2026) are the AI logs proper; state here whether and where they are deposited.]
+
+The authors checked the assistant's work in three ways.
+- **Rendering.** Each new layer was inspected in the three-dimensional viewer and in the figures, and layers derived from published maps and models were compared visually with the figures of their source publications.
+- **Seismology.** The first author checked the event locations and the travel-time residuals of the calibration and relocation ([@sec:calibration; @sec:relocation]).
+- **Code review.** After the first five commits (23–24 September 2026), every change reached `main` through a pull request. GitHub Copilot reviewed 28 of the 29 merged pull requests automatically; the first author read its comments, asked the assistant to address them, and merged after the assistant resubmitted.
+
 # Surface layers {#sec:surface}
 
 ## Elevation, geology and glaciers {#sec:surface-core}
@@ -1087,7 +1119,7 @@ Two inputs require attribution notices:
 - The imagery layers contain modified Copernicus Sentinel data (2023, 2025).
 - MRMS precipitation is NOAA open data, whose terms request attribution.
 
-The code and this paper were written with an AI coding assistant (Claude, Anthropic) under the direction of the authors. All numbers are produced by the scripts named in the text. DOIs were resolved at doi.org or against the Crossref and DataCite registries (`docs/citations.csv`) [TODO: check the DOIs of brocher_2005, glathida and rgi60, which the registry records as taken from memory].
+The code and this paper were written with an AI coding assistant (Claude, Anthropic) under the direction of the authors ([@sec:ai]). All numbers are produced by the scripts named in the text. DOIs were resolved at doi.org or against the Crossref and DataCite registries (`docs/citations.csv`) [TODO: check the DOIs of brocher_2005, glathida and rgi60, which the registry records as taken from memory].
 
 # Data sets {.appendix .unnumbered}
 
