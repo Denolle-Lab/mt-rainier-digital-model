@@ -37,27 +37,20 @@ export const faded = (site, f) => site.status !== "operating" && !inSurvey(site,
 // The DAS fiber, like a site: its survey's toggle, else Current / Past by its status.
 export const fiberOn = (das, f) => !!das && (inSurvey(das, f) || byStatus(das, f));
 
-// GNSS monuments can stand apart from a station's seismic vault: STAR 72 m from UW.STAR, MRSD 127 m from CC.PARA,
-// P431 183 m from UW.WATCH, while the next GNSS site is 3.7 km from any station. A GNSS site this close joins the
-// nearest station marker, like the instruments the inventory merged (within 60 m).
-export const GNSS_MERGE_M = 200;
-
-const distM = (a, b) => Math.hypot((a.lon - b.lon) * 111320 * Math.cos(a.lat * Math.PI / 180), (a.lat - b.lat) * 110540);
 const fdsnCode = p => /^\w+\.\w+$/.test(p);
 
-// The station marker an inventory site belongs to: by NET.STA code, or for a GNSS-only site by distance.
-function markerOf(s, byCode, stations) {
-  const hit = [s.id, ...s.name.split("+").map(c => c.trim())].map(c => byCode.get(c)).find(Boolean);
-  if (hit || s.kinds.join() !== "gnss") return hit;
-  const near = stations.sites.filter(m => distM(s, m) <= GNSS_MERGE_M);
-  return near.sort((m1, m2) => distM(s, m1) - distM(s, m2))[0];
+// The station marker an inventory site belongs to, by NET.STA code. Co-location is the inventory's (S8, 60 m): a GNSS
+// site farther from the vault keeps its own point (MRSD 127 m from CC.PARA, P431 183 m from UW.WATCH, STAR 72 m from
+// UW.STAR).
+function markerOf(s, byCode) {
+  return [s.id, ...s.name.split("+").map(c => c.trim())].map(c => byCode.get(c)).find(Boolean);
 }
 const codeIndex = stations => new Map(stations.sites.flatMap(s => s.codes.map(c => [c, s])));
 
 // Points to draw: the inventory sites that do not belong to a station marker.
 export function extraSites(sensors, stations) {
   const byCode = codeIndex(stations);
-  return sensors.sites.filter(s => !markerOf(s, byCode, stations));
+  return sensors.sites.filter(s => !markerOf(s, byCode));
 }
 
 // Instruments of the inventory sites that belong to a station marker and that the marker lacks (e.g. the GNSS MUIR,
@@ -67,7 +60,7 @@ export function extraSites(sensors, stations) {
 export function mergedKinds(sensors, stations) {
   const byCode = codeIndex(stations), out = new Map(), live = new Set();
   for (const s of sensors.sites) {
-    const hit = markerOf(s, byCode, stations);
+    const hit = markerOf(s, byCode);
     const kinds = hit ? s.kinds.filter(k => !hit.kinds.includes(k)) : [];
     if (!kinds.length) continue;
     const m = out.get(hit.id) ?? { kinds: [], names: [], retired: {} };
