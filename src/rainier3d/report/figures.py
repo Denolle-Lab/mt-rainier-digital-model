@@ -532,6 +532,72 @@ def fig_surface_layers(tree, dom, path):
     return path
 
 
+def fig_depth_to_rock(tree, dom, path):
+    """Depth to rock from two sources on one logarithmic scale, (a) SOLUS100 soil thickness and (b) SoilGrids
+    depth to bedrock, and (c) their distributions over the box with the Ma et al. (2026) water table."""
+    from matplotlib.colors import LogNorm
+
+    s = tree["surface"].to_dataset()
+    sx, sy = dom.summit_xy
+    ext = [(dom.x[0] - sx) / 1e3, (dom.x[-1] - sx) / 1e3, (dom.y[0] - sy) / 1e3, (dom.y[-1] - sy) / 1e3]
+    hs = LightSource(315, 40).hillshade(s["elevation"].values, dx=dom.surface_res_m, dy=dom.surface_res_m)
+    norm = LogNorm(0.3, 40)
+    fig = plt.figure(figsize=(7.2, 3.0), constrained_layout=True)
+    gs = fig.add_gridspec(1, 3, width_ratios=[1, 1, 1.15])
+    maps = [
+        ("soil_thickness", "(a) Soil thickness, SOLUS100"),
+        ("depth_to_bedrock", "(b) Depth to bedrock, SoilGrids 2017"),
+    ]
+    ax0 = None
+    for i, (var, title) in enumerate(maps):
+        ax = fig.add_subplot(gs[0, i], sharex=ax0, sharey=ax0)
+        ax0 = ax0 or ax
+        ax.imshow(hs, cmap="gray", origin="lower", extent=ext, vmin=0, vmax=1.2)
+        im = ax.imshow(
+            s[var].values,
+            cmap=cmc.lajolla,
+            norm=norm,
+            origin="lower",
+            extent=ext,
+            alpha=0.9,
+            interpolation="nearest",
+        )
+        ax.set_title(title, fontsize=7)
+        ax.set_aspect("equal")
+        ax.set_xlabel("km east of summit")
+        if i:
+            ax.tick_params(labelleft=False)
+        else:
+            ax.set_ylabel("km north of summit")
+    fig.colorbar(
+        im, ax=fig.axes, orientation="horizontal", shrink=0.5, pad=0.02, aspect=30, label="m below ground"
+    )
+    ax = fig.add_subplot(gs[0, 2])
+    curves = [
+        ("soil_thickness", "soil thickness, SOLUS100 (≤ 2.01 m)", CAT[1]),
+        ("water_table_depth", "water table, Ma et al. 2026", CAT[0]),
+        ("depth_to_bedrock", "depth to bedrock, SoilGrids 2017", CAT[2]),
+    ]
+    for var, label, col in curves:
+        if var not in s:
+            continue
+        a = s[var].values
+        a = np.sort(a[np.isfinite(a) & (a > 0)])
+        ax.plot(a, np.arange(1, a.size + 1) / a.size, color=col, lw=1.6, label=label)
+        ax.axvline(np.median(a), color=col, lw=0.6, ls=":")
+    ax.set_xscale("log")
+    ax.set_xlim(0.3, 100)
+    ax.set_ylim(0, 1)
+    ax.set_xlabel("depth below ground (m)")
+    ax.set_ylabel("fraction of cells shallower")
+    ax.set_title("(c) Distributions over the box (medians dotted)", fontsize=7)
+    ax.legend(fontsize=6, loc="upper center", bbox_to_anchor=(0.45, -0.3), ncol=1)
+    ax.grid(color=GRID, lw=0.5)
+    fig.savefig(path)
+    plt.close(fig)
+    return path
+
+
 def fig_vs_calibration(cal_yaml, pairs_csv, path):
     """(a) calibrated log-factor on the regional Vs against depth; (b) held-out S-P residuals before/after."""
     import yaml

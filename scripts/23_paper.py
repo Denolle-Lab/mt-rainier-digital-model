@@ -73,6 +73,7 @@ UNICODE = {
     "φ": r"\ensuremath{\phi}",
     "ε": r"\ensuremath{\varepsilon}",
     "α": r"\ensuremath{\alpha}",
+    "θ": r"\ensuremath{\theta}",
     "Ω": r"\ensuremath{\Omega}",
     "⁸": r"\ensuremath{^8}",
     "²": r"\ensuremath{^2}",
