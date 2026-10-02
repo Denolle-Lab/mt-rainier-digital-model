@@ -37,26 +37,49 @@ export const faded = (site, f) => site.status !== "operating" && !inSurvey(site,
 // The DAS fiber, like a site: its survey's toggle, else Current / Past by its status.
 export const fiberOn = (das, f) => !!das && (inSurvey(das, f) || byStatus(das, f));
 
-// Points to draw: the inventory sites that are not station markers already (matched by NET.STA code).
+// GNSS monuments can stand apart from a station's seismic vault: STAR 72 m from UW.STAR, MRSD 127 m from CC.PARA,
+// P431 183 m from UW.WATCH, while the next GNSS site is 3.7 km from any station. A GNSS site this close joins the
+// nearest station marker, like the instruments the inventory merged (within 60 m).
+export const GNSS_MERGE_M = 200;
+
+const distM = (a, b) => Math.hypot((a.lon - b.lon) * 111320 * Math.cos(a.lat * Math.PI / 180), (a.lat - b.lat) * 110540);
+const fdsnCode = p => /^\w+\.\w+$/.test(p);
+
+// The station marker an inventory site belongs to: by NET.STA code, or for a GNSS-only site by distance.
+function markerOf(s, byCode, stations) {
+  const hit = [s.id, ...s.name.split("+").map(c => c.trim())].map(c => byCode.get(c)).find(Boolean);
+  if (hit || s.kinds.join() !== "gnss") return hit;
+  const near = stations.sites.filter(m => distM(s, m) <= GNSS_MERGE_M);
+  return near.sort((m1, m2) => distM(s, m1) - distM(s, m2))[0];
+}
+const codeIndex = stations => new Map(stations.sites.flatMap(s => s.codes.map(c => [c, s])));
+
+// Points to draw: the inventory sites that do not belong to a station marker.
 export function extraSites(sensors, stations) {
-  const codes = new Set(stations.sites.flatMap(s => s.codes));
-  return sensors.sites.filter(s => ![s.id, ...s.name.split("+").map(c => c.trim())].some(c => codes.has(c)));
+  const byCode = codeIndex(stations);
+  return sensors.sites.filter(s => !markerOf(s, byCode, stations));
 }
 
-// Instruments the inventory merged into a station marker's site that the marker lacks (e.g. the GNSS MUIR, 17 m
-// from UW.RCM; a tiltmeter missing from the EarthScope "active" list): marker id -> { kinds, names }. They join the
-// marker (ring, card) instead of a second point, so no instrument is hidden and none is drawn twice.
+// Instruments of the inventory sites that belong to a station marker and that the marker lacks (e.g. the GNSS MUIR,
+// 17 m from UW.RCM; a tiltmeter missing from the EarthScope "active" list): marker id -> { kinds, names, retired }.
+// They join the marker (ring, cards) instead of a second point, so no instrument is hidden and none is drawn twice.
+// retired: the kinds that have ended there (all kinds of an ended site), with their dates.
 export function mergedKinds(sensors, stations) {
-  const byCode = new Map(stations.sites.flatMap(s => s.codes.map(c => [c, s])));
-  const out = new Map();
+  const byCode = codeIndex(stations), out = new Map(), live = new Set();
   for (const s of sensors.sites) {
-    const parts = s.name.split("+").map(c => c.trim());
-    const hit = [s.id, ...parts].map(c => byCode.get(c)).find(Boolean);
+    const hit = markerOf(s, byCode, stations);
     const kinds = hit ? s.kinds.filter(k => !hit.kinds.includes(k)) : [];
     if (!kinds.length) continue;
+    const m = out.get(hit.id) ?? { kinds: [], names: [], retired: {} };
+    const ended = s.status === "operating" ? (s.retiredKinds ?? {}) : Object.fromEntries(kinds.map(k => [k, [s.start, s.end]]));
+    for (const k of kinds) {
+      if (!m.kinds.includes(k)) m.kinds.push(k);
+      if (!ended[k]) { live.add(`${hit.id}|${k}`); delete m.retired[k]; }
+      else if (!live.has(`${hit.id}|${k}`)) m.retired[k] = ended[k];
+    }
     // the merged non-FDSN sites by name (e.g. "MUIR Camp Muir"); FDSN codes are on the marker already
-    const retired = Object.fromEntries(kinds.filter(k => s.retiredKinds?.[k]).map(k => [k, s.retiredKinds[k]]));
-    out.set(hit.id, { kinds, names: parts.filter(p => !/^\w+\.\w+$/.test(p)), retired });
+    m.names.push(...s.name.split("+").map(c => c.trim()).filter(c => !fdsnCode(c)));
+    out.set(hit.id, m);
   }
   return out;
 }

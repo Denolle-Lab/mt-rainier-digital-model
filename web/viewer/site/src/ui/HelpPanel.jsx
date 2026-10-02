@@ -26,7 +26,7 @@ export default function HelpPanel({ bundle, children }) {
         </div>
       ))}
       <div className="hc-note">
-        The buttons at the bottom rotate, tilt and zoom, and <b>N</b> turns north up.{touch ? "" : <> Arrow keys glide; <kbd>G</kbd> <kbd>S</kbd> <kbd>D</kbd> toggle the earthquake layers, <kbd>X</kbd> the cut, <kbd>T</kbd> stations, <kbd>W</kbd> streams.</>}
+        The buttons at the bottom rotate, tilt and zoom, and <b>N</b> turns north up.{touch ? "" : <> Arrow keys glide; <kbd>G</kbd> <kbd>S</kbd> <kbd>D</kbd> toggle the earthquake layers, <kbd>X</kbd> the cut, <kbd>T</kbd> all sensors (off for a clear map), <kbd>W</kbd> streams.</>}
         {" "}To look under the ground, tilt below the horizon, use <b>From below</b> in Go to, or open the <b>Models</b> panel
         and turn on <b>Section on the cut</b> or <b>Depth slice</b>.
       </div>

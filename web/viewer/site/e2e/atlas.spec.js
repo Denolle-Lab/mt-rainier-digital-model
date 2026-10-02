@@ -312,3 +312,14 @@ test("(v) the scale bar follows the zoom", async ({ page }) => {
   await page.getByRole("button", { name: "Summit crater" }).click();
   await expect.poll(label, { timeout: 15_000 }).toMatch(/ m$/);
 });
+
+test("(w) Stations off leaves the map clear: no station marker, sensor point or DAS fiber", async ({ page }) => {
+  await page.waitForFunction(() => !!window.__rainier.sensors, null, { timeout: 30_000 });
+  const state = () => page.evaluate(() => ({
+    points: window.__rainier.sensors.points.visible, fiber: window.__rainier.sensors.fiber.visible,
+    markers: [...document.querySelectorAll(".station")].filter(d => +getComputedStyle(d).opacity > 0).length }));
+  expect(await state()).toMatchObject({ points: true, fiber: true });
+  await dock(page, "Sensors");
+  await page.getByRole("switch", { name: /Stations/ }).click();
+  await expect.poll(state).toEqual({ points: false, fiber: false, markers: 0 });
+});
