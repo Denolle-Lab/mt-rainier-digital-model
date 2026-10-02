@@ -45,8 +45,14 @@ def main():
         "--figures-only", action="store_true", help="redraw from outputs/catalog/catalog_relocated.csv"
     )
     ap.add_argument("--viewer", default="", help="viewer atlas directory: also write quakes_relocated.*")
+    ap.add_argument(
+        "--viewer-only", action="store_true", help="only write quakes_relocated.* from the existing catalogue"
+    )
     a = ap.parse_args()
     dom = load_domain()
+    if a.viewer_only:  # the platform rebuild: read outputs/catalog, draw no figures
+        viewer(a.viewer, dom)
+        return
     if a.figures_only:
         figures(dom, dom.path("outputs") / "catalog")
         viewer(a.viewer, dom)
