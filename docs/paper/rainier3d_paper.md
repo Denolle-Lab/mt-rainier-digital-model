@@ -11,7 +11,7 @@ essd-authors:
   - {given: "Derek", family: "Yao", orcid: "0009-0003-2417-7062", affil: "2"}
   - {given: "Michael", family: "Hemmett", orcid: "0009-0007-9810-8800", affil: "1"}
   - {given: "Manuela", family: "Köpfli", orcid: "0000-0002-4678-730X", affil: "1"}
-  - {given: "Sangwoo", family: "Han", affil: "1"}
+  - {given: "Sangwoo", family: "Han", orcid: "0000-0001-5832-7127", affil: "1"}
   - {given: "Maleen", family: "Kidiwela", orcid: "0000-0002-3040-5469", affil: "1"}
 essd-affiliations:
   - {id: "1", name: "Department of Earth and Space Sciences, University of Washington, Seattle, WA, USA"}
