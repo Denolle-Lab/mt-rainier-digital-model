@@ -32,6 +32,38 @@ CC-BY 4.0. Every archive is listed with its SHA-256 in the release file `SHA256S
 | `mass_movements` | `rainier3d_mass_movements.zip` | 2 MB | Landslide, lahar, debris-flow and avalanche catalogue (GeoPackage, CSV) |
 | `gnss` | `rainier3d_gnss_2026-09-01.zip` | 4 MB | GNSS velocities and strain, snapshot of 2026-09-01; refreshed weekly in the release `gnss-latest` |
 
+### Checksums: `SHA256SUMS`
+
+Every release carries a file named `SHA256SUMS`: one line per published file, giving its SHA-256 checksum and its
+name.
+
+```
+43591a7b8d5749ecf938f2e310350a6db0f72e532a1860fb5724d3cfcc78c4e9  rainier3d_model.zarr.zip
+```
+
+A SHA-256 checksum is a 64-character fingerprint of a file's exact bytes: change one byte and the checksum changes
+completely. Checking it tells you that the file you have is the file that was published, not a truncated
+download, a corrupted copy or a different version. Run the check from the folder holding the downloads:
+
+```bash
+sha256sum -c SHA256SUMS --ignore-missing        # Linux
+shasum -a 256 -c SHA256SUMS --ignore-missing    # macOS
+```
+
+Each file reads `OK`, or `FAILED` if its bytes differ. `--ignore-missing` skips the archives you did not download.
+
+The same checksums tie every step of the project to exact bytes:
+
+| File | Written by | What it checks |
+|---|---|---|
+| `SHA256SUMS` of a `products-v*` release | S20 | the derived products; `src/rainier3d/products.json` carries the same values, `rainier3d fetch` checks them, and the Zenodo deposit (S27) checks the release against them |
+| `inputs.csv` of a `products-v*` release | S20 | every cached input file each product was made from, so a product remade with `REBUILD.md` can be traced to its inputs |
+| `docs/data_manifest.csv` | S0 (`pixi run manifest`) | the raw inputs in `data/raw/`; `pixi run manifest -- --check` lists any file whose bytes changed since the published build |
+| `SHA256SUMS` of the viewer bundle | S32 (`pixi run platform`) | the 3D viewer data; two rebuilds from the same inputs give the same list |
+
+A remade file matches its published checksum only if the step that makes it is byte-reproducible. Where it is
+not, `inputs.csv` and `docs/data_manifest.csv` still show whether the inputs were the same.
+
 ### 1. Direct download, no installation
 
 ```bash
@@ -100,10 +132,10 @@ of the layers you use; the Zenodo DOI plan is in `docs/doi.md`.
 |---|---|---|
 | S0 input manifest | `scripts/00_data_manifest.py` | `docs/data_manifest.csv`: size and SHA-256 of every cached input under `data/raw/`; `--check` compares a rebuilt cache |
 | S1 surface | `scripts/01_surface.py` | `surface.zarr`: elevation (3DEP), surface unit (DNR GeMS 1:100k via `configs/crosswalk_geology.json`), ice thickness |
-| S2 surface layers | `scripts/02_surface_layers.py` | `surface_layers.zarr`: soil thickness (SOLUS100), water-table depth (Ma et al. 2026 with `--ma`; Fan et al. 2017), NHDPlus HR stream order, canopy height (ETH), NLCD land cover, Sentinel-2 NDVI/NDSI |
+| S2 surface layers | `scripts/02_surface_layers.py` | `surface_layers.zarr`: soil thickness (SOLUS100); soil texture, bulk density, rock fragments, organic carbon and depth to restriction (SOLUS100), hydraulic conductivity and porosity (POLARIS), depth to bedrock (SoilGrids 2017), Vs30 (USGS) as 0–1 m means or 2D layers, with the depth profiles in `soil_profile.zarr` (`configs/soil.yaml`); water-table depth (Ma et al. 2026 with `--ma`; Fan et al. 2017), NHDPlus HR stream order, canopy height (ETH), NLCD land cover, Sentinel-2 NDVI/NDSI |
 | S3 geology | `scripts/03_geomodel.py` | `geomodel.zarr`: 3D unit and alteration on levels L1/L2/L3 (rules in `configs/units.yaml`) |
 | S4 properties | `scripts/04_properties.py` | `properties_geology.zarr`: Vp, Vs, ρ, Q from `configs/petrophysics.csv` and `configs/perturbations.yaml`, scaled by the `geology` block of `configs/velocity_calibration.yaml` |
-| S5 fusion | `scripts/05_fusion.py` | `model.zarr` (master product; `/surface` includes the S2 layers), `fusion_report.csv`; applies the `regional_bias` block of `configs/velocity_calibration.yaml` |
+| S5 fusion | `scripts/05_fusion.py` | `model.zarr` (master product; `/surface` includes the S2 layers, `/soil` the S2 soil profiles), `fusion_report.csv`; applies the `regional_bias` block of `configs/velocity_calibration.yaml` |
 | S6 PNSN check | `scripts/06_validate_pnsn.py` | `pnsn_report.txt`, `pnsn_residuals.csv`, `pnsn_stations.csv` (pykonal; `--solver fteikpy`) |
 | S7 export/viz | `scripts/07_export_viz.py` | `vtk/*.vti`, `*.vts`, sections, `rainier3d_view.png`/`.html` |
 | S8 sensor atlas | `scripts/08_atlas.py` | `web/atlas/data/`: sites, DAS fiber, PNSN events, overlay images; `data/processed/overlays/*.tif` |
@@ -156,7 +188,7 @@ https://denolle-lab.github.io/mt-rainier-digital-model/ and is licensed MIT (`we
 in `web/viewer/README.md`:
 
 ```
-pixi run viewer-data && pixi run s11          # data bundle (not in git)
+pixi run platform                              # data bundle (not in git), rebuilt from scratch at the data freeze
 cd web/viewer/site && npm ci && npm run dev    # http://127.0.0.1:5176/mt-rainier-digital-model/
 ```
 
@@ -232,5 +264,8 @@ model is USGS Cascadia CVM v1.7 to 9.9 km below ground, and CRESCENT Gen0 below.
 - `~/GitHub/cascadia_obs_ensemble/data/tomography/CRESCENT_Gen0.nc`
 - `~/GitHub/cascadia_obs_ensemble/data/vel_pnsn_wa.csv`: PNSN 1D model; which PNSN model this
   is remains unconfirmed.
+- The DAS channel table, the two KMZ overlays and the Synoptic station catalogue are copied once into `data/raw/`
+  by `pixi run platform` (`local_inputs` in `configs/platform.yaml`); after that, no step reads them from
+  `~/Downloads` or `~/GitHub`.
 
 License: BSD-3-Clause.

@@ -108,7 +108,7 @@ The database is compiled by code, not by hand, following five rules.
 
 1. **One registry.** `configs/sources.yaml` lists every data set and publication the model uses (99 entries). Each entry gives its DOI or service address, licence, the date and method of verification, and its role in the model. Every number in the configuration files names a registry key. A value chosen by the authors carries the key `m1_placeholder`, so the unsourced values can be listed and replaced. The bibliography of this paper is generated from the same registry (`pixi run bib`), with BibTeX keys equal to the registry keys.
 2. **Original archives, cached.** Each stage downloads what it needs from the original archive, clipped to the model box where the service allows it. Examples are a window of a cloud-optimised GeoTIFF, an OPeNDAP subset, a feature-service query or a staged file. Each download is cached under `data/raw/<source>/`, and reruns read the cache. The GNSS stage also writes a manifest with the URL, retrieval time, size and SHA-256 of each file.
-3. **A checksum for every cached file.** `scripts/00_data_manifest.py` records the size and SHA-256 of all cached files in the committed table `docs/data_manifest.csv` (2,073 files, 4.44 GB; [@tbl:raw]). `pixi run manifest -- --check` compares a rebuilt cache with it. Some services can return different bytes on a later request: ComCat can revise picks, and the USGS can re-stage NHDPlus. The check lists those files, so any difference between a rebuilt model and the published one can be traced to its input.
+3. **A checksum for every cached file.** `scripts/00_data_manifest.py` records the size and SHA-256 of all cached files in the committed table `docs/data_manifest.csv` (2,768 files, 5.16 GB; [@tbl:raw]). `pixi run manifest -- --check` compares a rebuilt cache with it. Some services can return different bytes on a later request: ComCat can revise picks, and the USGS can re-stage NHDPlus. The check lists those files, so any difference between a rebuilt model and the published one can be traced to its input.
 4. **One environment.** The software is pinned in `pixi.lock` for Linux and macOS (arm64). Two slim environments serve automation: `gnss` for the weekly strain refresh and `paper` for this report.
 5. **Invariants.** The test suite checks the built model against rules that must hold whatever the data:
     - no properties above the ground: on L1, L2 and L3, Vp, Vs and density are NaN in every air cell (unit 0) and finite in every other cell;
@@ -121,14 +121,24 @@ The database is compiled by code, not by hand, following five rules.
 | Source folder | Stage | Content | Files | Size (MB) |
 |------------|----|--------------------|----|-----|
 | `dem` | S1 | USGS 3DEP 1 arc-second (about 30 m) DEM [@usgs_3dep], fetched with py3dep over the box plus 0.02° (`3dep_30m_rainier-v0.tif`) | 1 | 59 |
-| `geology` | S1, S24 | Washington 1:100,000 geology (GeMS) map units (feature-service layer 11) and faults (layer 7) [@dnr_gems_100k]; Quaternary faults (Earthquakes and Faults map service, layer 12) [@dnr_quaternary_faults]; one GeoPackage each | 3 | 5 |
+| `geology` | S1, S24 | Washington 1:100,000 geology (GeMS) map units (feature-service layer 11) and faults (layer 7) [@dnr_gems_100k]; Quaternary faults (Earthquakes and Faults map service, layer 12) [@dnr_quaternary_faults]; one GeoPackage each; the Description of Map Units of the compiled quadrangle (layer 13, JSON), read for unit names and deposit thicknesses | 4 | 7 |
 | `glaciers` | S1 | IceBoost v2 per-glacier thickness and error GeoTIFFs for 219 glaciers [@iceboost_v2], RGI 6.0 glacier list and statistics (two CSV files) [@rgi60], GlaThiDa survey table [@glathida] | 222 | 44 |
 | `ecology` | S2 | ETH canopy height 2020, 10 m tile N45W123 clipped to the box plus 2 km [@eth_canopy_2020_article]; NLCD 2021 from the MRLC web coverage service on its native 30 m EPSG:5070 grid, box plus 1 km [@nlcd_2021] | 2 | 27 |
 | `hydrology` | S2 | NHDPlus HR geodatabases (HU4 1703, 1708, 1711) and the flowlines extracted from them [@nhdplus_hr], NHDPlus v2.1 flowlines [@nhdplus_v21], clips of the two water-table grids [@ma2026_wtd_article; @fan2017_wtd] | 7 | 924 |
 | `imagery` | S2 | Sentinel-2 L2A median composite, 1 August – 30 September 2025, bands B02, B03, B04, B08 and B11 at 20 m [@sentinel2_l2a] | 1 | 96 |
+| `soilgrids` | S2 | Window over the box plus 2 km of the SoilGrids250m 2017 absolute depth to bedrock (`BDTICM_M_250m_box.tif`) [@soilgrids_bdticm_article] | 1 | 0.3 |
+| `vs30` | S2 | Window over the box plus 0.05° of the USGS global hybrid Vs30 grid (`global_vs30_box.tif`) [@usgs_vs30_hybrid_article] | 1 | 0.01 |
+| `wells` | S31 | Washington Department of Ecology well reports (hydrogeological fields only) [@ecology_well_reports]; USGS groundwater sites and water levels [@usgs_nwis_gw]; Washington Geological Survey subsurface database [@wgs_subsurface_db]; records up to 23 September 2026 | 4 | 71 |
 | `regional` | S5 | Cascadia velocity model v1.7, levels L01 and L2 (0–9.9 km below the ground), clipped to the box plus 2 km (`cvm17_domain.nc`) [@cvm17] | 1 | 60 |
-| `pnsn` | S6, S13 | ComCat phase-data QuakeML for 91 events, the P and S picks extracted from them and a station table [@comcat_uw] | 93 | 21 |
-| `sensors` | S8 | FDSN station and channel metadata of all networks in the box [@earthscope_fdsn] and of the whole 2025 node array, network Z5 [@fdsn_z5_2025]; GNSS site metadata [@earthscope_gnss] | 3 | 1 |
+| `pnsn` | S6, S8, S13, S26 | ComCat phase-data QuakeML for 432 events (the 91 calibration events and the 2023–2025 events relocated by S26), the P and S picks extracted from them and station tables [@comcat_uw]; PNSN events of magnitude 0.5 or more from 2015 to the data freeze (S8) | 437 | 65 |
+| `sensors` | S8 | FDSN station and channel metadata of all networks in the box [@earthscope_fdsn] and of the whole 2025 node array, network Z5 [@fdsn_z5_2025]; GNSS site metadata [@earthscope_gnss]; the box query is frozen at 23 September 2026 and named by domain and date, and two earlier unfrozen copies remain | 5 | 2 |
+| `das` | S8, S10 | Paradise–Nisqually Entrance DAS channel table, staged from a project machine | 1 | 0.4 |
+| `overlays` | S8 | KMZ overlays of the USGS I-432 geologic map and the park soil-map poster, staged from a project machine | 2 | 26 |
+| `smart_sensing` | S8 | Synoptic weather, SNOTEL and streamflow station catalogues of the mt-rainier-smart-sensing project, staged | 66 | 12 |
+| `viewer_cache` | viewer | 3DEP terrain and 1 m summit lidar, National Map imagery, EarthScope stations and ComCat events for the 3D viewer, frozen at 23 September 2026 | 51 | 443 |
+| `mrms` | S29 | MRMS hourly precipitation, the 216 hours of the December 2025 storm [@mrms_qpe] | 216 | 120 |
+| `usgs_nwis` | S29 | USGS instantaneous discharge at the gauges of the box during the storm [@usgs_nwis_iv] | 1 | 1 |
+| `seis_hydro_2_sed` | S29 | Seismic discharge estimates and atmospheric-river windows [@seis_hydro_2_sed] | 5 | 3 |
 | `gnss` | S17 | 76 UNR daily position series (`.tenv3`) [@unr_ngl_gnss], the PANGA raw archive and its horizontal and vertical NAM20 velocity fields [@panga_gnss], download manifest | 80 | 218 |
 | `emc` | S21 | iMUSH local-earthquake tomography of @ulberg_2020_article, in the netCDF format of the EarthScope Earth Model Collaboration (EMC) | 1 | 5 |
 | `rainier_aerogeophysics` | S22 | 1996 USGS helicopter survey [@rystrom_2000]: apparent-resistivity grids at 33 kHz, 4737 Hz, 4341 Hz and 837 Hz (50 m), reduced-to-pole magnetic grid (62 m), electromagnetic (EM) and magnetic flight lines | 8 | 19 |
@@ -138,7 +148,7 @@ The database is compiled by code, not by hand, following five rules.
 | `dem_3dep_1m` | S24 | 1,638 3DEP 1 m windows around landslide polygons [@usgs_3dep]; one GeoPackage of 3DEP source footprints | 1,639 | 1,818 |
 | `canopy_storage` | S28 | GEDI L3 global 1 km grids of mean and standard deviation of relative height 100 and of shot counts, 18 April 2019 – 9 July 2025 [@gedi_l3], and four crops to the box (adding the standard error), written by the vendored canopy-storage code | 7 | 1,135 |
 
-: The raw input cache, from `docs/data_manifest.csv`. SOLUS100 soil thickness is read directly from its cloud-optimised GeoTIFFs and is not cached. {#tbl:raw}
+: The raw input cache, from `docs/data_manifest.csv`. SOLUS100 and POLARIS are read directly from their cloud-optimised GeoTIFFs and virtual rasters and are not cached. {#tbl:raw}
 
 Four inputs are not fetched by script:
 - **Cascadia velocity model v1.7** [@cvm17]. ScienceBase blocks scripted downloads with a captcha, so the files are downloaded by hand once: levels L01 (0–1200 m below the ground, 200 m spacing) and L2 (1500–9900 m, 300 m spacing) are read from a local path, clipped to the box plus 2 km and cached as `data/raw/regional/cvm17_domain.nc` (S5); level L3 (10.8–59.4 km) is not downloaded.
@@ -162,11 +172,15 @@ pixi run s17 && pixi run s18       # GNSS positions, velocities, strain, edifice
 pixi run s24                       # mass movements and faults: catalogue, figure, viewer layers (~1.8 GB of 1 m windows)
 pixi run -e canopy canopy          # canopy-storage pipeline: GEDI (Earthdata login), Sentinel-2 LAI (CDSE client)
 pixi run s9                        # uniform grids for ray tracing and location
+pixi run s31                       # wells and boreholes: water levels, bedrock picks, comparison with the grids
+pixi run platform                  # the 3D viewer bundle, deleted and rebuilt from data/raw and the model products
 pixi run manifest -- --check       # compare the rebuilt cache with docs/data_manifest.csv
 pixi run test                      # unit tests and the invariants of the built model
 ```
 
 The calibration (S13, about 26 min on a 10-core laptop) and the relocation comparisons (S14) are rerun as described in `docs/joint_calibration.md`.
+
+The platform is rebuilt, never patched. `pixi run platform` (S32, `configs/platform.yaml`) deletes the viewer bundle and the atlas data, copies the four inputs that exist only on a project machine (the DAS channel table, two KMZ overlays and the Synoptic station catalogue) into `data/raw/`, and runs the viewer, sensor, layer, catalogue and event steps in order. Every live query in these steps stops at one data-freeze date (23 September 2026), so a rebuild from the same cache gives the same files; S32 writes their SHA-256 to `SHA256SUMS` in the bundle and packs it into a tarball with fixed entry order, owner and time. The model products (the subsurface model and the other stores of S2–S30) are read, not recomputed, and a missing one stops the rebuild.
 
 ## Redistribution
 
@@ -256,6 +270,36 @@ Notes on individual layers:
 
 ![Environmental surface layers on the model grid, over a hillshade: (a) soil thickness, (b, c) water-table depth from two estimates on the same logarithmic scale, (d) canopy height, (e) land cover, (f) Strahler order of the NHDPlus HR flowlines. The rectangular step in (d) near 12 km west and 20 km north of the summit comes from the canopy product itself.](figures/fig8_surface_layers.png){#fig:surface width=100%}
 
+## Soil properties, regolith and Vs30 {#sec:surface-soil}
+
+S2 also reads the properties that a hydromechanical description of the critical zone needs: texture, density and coarse fragments from SOLUS100, hydraulic properties from POLARIS, the depth to bedrock from SoilGrids, and the Vs30 map of the USGS ([@tbl:soil]). The depth profiles keep their depth axis in a `/soil` node of `model.zarr`: SOLUS at its seven prediction depths (0, 5, 15, 30, 60, 100 and 150 cm) and POLARIS in its six layers (0–5, 5–15, 15–30, 30–60, 60–100 and 100–200 cm). The `/surface` node holds their means over 0–1 m (`configs/soil.yaml`, `rainier3d.surface.soil`). S2 writes the numbers quoted below to `outputs/soil_layers_summary.json`.
+
+| Layer | Source | Native resolution | Median (5th–95th percentile) |
+|---------|--------------------|-------|-----------|
+| Clay, sand and silt, 0–1 m | SOLUS100 [@solus100_article], depth-weighted mean over the soil column within 0–1 m; 97.1% of cells valid | 100 m | clay 7.4% (3.0–18.7%), sand 62% (37–69%), silt 31% (27–47%) |
+| Texture class | USDA class of the 0–1 m clay, sand and silt, rescaled to sum to 100% | – | sandy loam in 71.0% and loam in 27.0% of the cells with soil |
+| Bulk density, 0–1 m | SOLUS100, oven dry | 100 m | 0.98 g cm⁻³ (0.88–1.33) |
+| Rock fragments, 0–1 m | SOLUS100, fragments larger than 2 mm, by volume | 100 m | 22% (5–36%) |
+| Organic carbon, 0–1 m | SOLUS100 | 100 m | 2.2% (1.6–3.6%) |
+| Depth to a restrictive layer | SOLUS100, any restriction | 100 m | 1.32 m (0.67–1.73 m) |
+| Saturated hydraulic conductivity, 0–1 m | POLARIS v1.0 layer means [@polaris_article], block-averaged in log space (a geometric mean over the cell), then the thickness-weighted harmonic mean of the layers within 0–1 m; 97.4% of cells valid | 30 m | 1.6 × 10⁻⁵ m s⁻¹ (4.8 × 10⁻⁶ to 5.6 × 10⁻⁵) |
+| Porosity, 0–1 m | POLARIS saturated water content θs, thickness-weighted mean | 30 m | 0.65 (0.49–0.70) |
+| Depth to bedrock | SoilGrids250m 2017 absolute depth to bedrock [@soilgrids_bdticm_article], interpolated bilinearly; not redistributed until the licence of the 2017 release is confirmed | 250 m | 19.6 m (11.4–26.8 m) |
+| Vs30 | USGS global hybrid map [@usgs_vs30_hybrid_article], interpolated bilinearly | 30″ (about 900 m) | 685 m s⁻¹ (392–686 m s⁻¹) |
+
+: Soil, regolith and Vs30 layers (S2). Percentiles are over the cells of the box; the soil and regolith layers are empty on glacier ice. {#tbl:soil}
+
+**The two estimates of depth to rock disagree by an order of magnitude ([@fig:depthrock]).** SOLUS100 places the lithic contact at a median of 1.41 m (5–95%: 0.54–1.97 m) and cannot go deeper than 2.01 m ([@sec:surface-env]). SoilGrids places bedrock at a median of 19.6 m (11.4–26.8 m), deeper than 5 m in every cell, and 13.9 times the SOLUS depth at the median. The two products measure different things: SOLUS the soil profile described by the soil surveys, SoilGrids an absolute depth to the R horizon from a global model trained mainly on well logs, which are sparse on volcanic edifices. Neither is checked against local data on the volcano; in the lowland, the 23 bedrock picks of the borehole database lie deeper than both (median 40.5 m, [@sec:hydro]). The disagreement matters because the water table falls between them: the Ma et al. (2026) water table (median 10.1 m) lies below the SOLUS soil and above the SoilGrids bedrock in 92.8% of the cells. The unsaturated zone and the top of the saturated zone are thus in the layer that no data set in the box constrains, between 2 m and the 50 m cells of L1. The model keeps both estimates and chooses neither.
+
+![Depth to rock from two sources on one logarithmic scale: (a) SOLUS100 soil thickness (depth to a lithic contact, capped at 2.01 m); (b) SoilGrids250m 2017 depth to bedrock; (c) distributions over the box of the two depths and of the Ma et al. (2026) water-table depth, with medians dotted. Glacier cells are left empty. The order-of-magnitude gap between the two depths contains the water table.](figures/fig23_depth_to_rock.png){#fig:depthrock width=100%}
+
+Notes on these layers:
+
+- **Restrictive layers.** In 42.6% of the cells the restrictive layer lies more than 10 cm above the lithic contact.
+- **Porosity from two sources.** Porosity from the SOLUS bulk density and a grain density of 2.65 g cm⁻³ (1 − ρb/ρs, an `m1_placeholder` value) has a median of 0.63, against 0.65 for POLARIS θs; the two correlate at r = 0.68 over the cells with soil.
+- **Vs30.** Two values cover 56.9% of the box: 686 m s⁻¹ (50.0%) and 464 m s⁻¹ (6.9%). These are class values of the hybrid map, not local estimates, so the layer is a reference for comparison with the near-surface velocities of the model and not a constraint.
+- **Glaciers.** On the glacier cells of S1 (2.6% of the box), SOLUS returns surface values on 68%, POLARIS on all of them, and SoilGrids a median depth to bedrock of 11 m. S2 leaves the soil and regolith layers empty there (`mask_glaciers` in `configs/soil.yaml`, an author choice).
+
 ## Vegetation structure {#sec:surface-veg}
 
 Script S19 adds the vegetation products of the canopy-storage project (M. Köpfli, University of Washington) on the same grid ([@tbl:canopy], [@fig:canopy]). They describe the canopy that intercepts precipitation and loads the ground: height, cover, leaf and plant area, and aboveground biomass.
@@ -319,7 +363,7 @@ Units are extended to depth by explicit column rules, in the manner of the San F
 |--------------------|--------------------|
 | $d < 0$ | air |
 | $d <$ ice thickness (IceBoost v2 [@iceboost_v2]) | ice |
-| $d <$ ice + deposit thickness (water 5 m, glacial drift 15 m, alluvium and colluvium 10 m, lahar deposits 15 m) | mapped surface deposit, beneath any ice |
+| $d <$ ice + deposit thickness (from the map unit description where it states one; else water 5 m, glacial drift 15 m, alluvium and colluvium 10 m, lahar deposits 15 m) | mapped surface deposit, beneath any ice |
 | inside the edifice footprint, above the edifice base | Rainier andesite |
 | young volcanic rocks, or andesite outside the footprint, within 300 m below the base of the ice and deposits | that cap unit |
 | above the base of the bedrock unit (−4 km NAVD88 for supracrustal units, −10 km NAVD88 for the Miocene plutons) | bedrock unit (mapped, or nearest mapped basement unit) |
@@ -332,7 +376,20 @@ Units are extended to depth by explicit column rules, in the manner of the San F
     - The supracrustal units (the Ohanapecosh, Fifes Peak and Stevens Ridge formations, the Eocene volcanic rocks and the Puget Group, and also the pre-Tertiary Russell Ranch Formation) extend to 4 km below sea level (`supracrustal_base_z` = −4000 m NAVD88 in `configs/units.yaml`, an `m1_placeholder`); the middle crust fills the column below.
     - The Miocene plutons (Tatoosh, White River, Carbon River and Nisqually; map symbols starting `Mi`, `MOi`, `PLOi`, `PLMi`) extend to 10 km below sea level (`pluton_base_z` = −10000 m NAVD88 in `configs/units.yaml`, an `m1_placeholder`). They therefore continue through L2 into the top four 1 km layers of L3, where they cover about 700 km² in plan view (2800 L3 cells).
     - The Mashel Formation (Miocene sedimentary rocks, map symbols starting `Mc`) is capped at 300 m thickness below the ice and deposits (`max_thickness_m: 300` in `configs/units.yaml`, an `m1_placeholder`); below that, the column takes the nearest mapped basement unit other than the Mashel (`rainier3d.geomodel.rules.build_level`).
-- **Unconsolidated deposits.** They have fixed thicknesses beneath any ice, set per mapped surface unit (`geometry.unconsolidated_thickness_m` in `configs/units.yaml`, all `m1_placeholder`): glacial drift 15 m, alluvium and colluvium 10 m, lahar deposits 15 m, and 5 m for mapped open water, which is given the properties of saturated alluvium. All are thinner than the 50 m cells of L1, so they appear only where a cell centre falls inside them: 6189 of the 7.39 million L1 cells.
+- **Unconsolidated deposits.** Their thickness beneath any ice is set per map symbol where the Description of Map Units of the 1:100,000 map states one (`geometry.symbol_thickness_m` in `configs/units.yaml`), taking the midpoint of the stated range, from zero when only a maximum is given (an `m1_placeholder` rule). Eight symbols state a thickness ([@tbl:dmuthick]); they cover 7.0% of the box and 26.3% of its unconsolidated cells. Elsewhere the thickness is the default of the model unit (`geometry.unconsolidated_thickness_m`, all `m1_placeholder`): glacial drift 15 m, alluvium and colluvium 10 m, lahar deposits 15 m, and 5 m for mapped open water, which is given the properties of saturated alluvium. S1 writes the result as `unconsolidated_thickness` on the surface grid. Most deposits are thinner than half a 50 m L1 cell, so they appear only where a cell centre falls inside them: 6618 of the 7.39 million L1 cells (6189 with the unit defaults alone).
+
+| Map symbol | Unit | Stated in the map unit description | Thickness used |
+|----|------------|------------------|----|
+| Qap(h) | Hayden Creek Drift | 15 to 30 m thick | 22.5 m |
+| Qvl(o) | Osceola Mudflow | as much as 75 ft | 11.4 m |
+| Qvl(lc) | Lily Creek Formation, mudflows | maximum known thickness 273 ft | 41.6 m |
+| Qgos | Vashon Drift, outwash sand | commonly 2 to 50 m | 26.0 m |
+| Qao(e) | Evans Creek Drift, outwash | generally 3 to 8 m | 5.5 m |
+| Qapo(h) | Hayden Creek Drift, outwash | generally 3 to 5 m | 4.0 m |
+| Qvl(e) | Electron Mudflow | a few millimetres to at least 26 ft | 4.0 m |
+| Qp | peat | less than 1 ft to as much as 23 ft | 3.5 m |
+
+: Deposit thicknesses taken from the Description of Map Units of the Washington 1:100,000 geologic map [@dnr_gems_100k]. The largest unconsolidated units by area (Qs, Qa, the Vashon till Qgt and outwash Qgo) state no thickness and keep the unit defaults. {#tbl:dmuthick}
 - **Magma body.** A slow body below the summit is an ellipsoid centred beneath Columbia Crest at 11.5 km below sea level (`center_z` = −11500 m NAVD88), with semi-axes of 5 km horizontally and 6.5 km vertically, so it spans 5–18 km below sea level (`geometry.magma_body` in `configs/units.yaml`, source key `moran_1999`). As unit `magma_mush` it replaces every non-air unit it contains: 176 L2 cells and 646 L3 cells. It follows the low-Vp body imaged 5–18 km beneath the summit by @moran_1999. [TODO: confirm whether the 5–18 km of @moran_1999 is below sea level or below the summit; `configs/units.yaml` line 59 marks the depth reference as still to verify]
 
 ## Hydrothermal alteration from the helicopter electromagnetic survey {#sec:alteration}
@@ -781,7 +838,9 @@ The model compiles the hydrological information needed for a hydrological descri
 | Ice | glacier thickness and bed on the 100 m grid: 5.50 km³ of ice in 219 glaciers covering 97.3 km², at most 363 m thick | IceBoost v2 [@iceboost_v2], RGI 6.0 [@rgi60] | [@sec:surface-core] |
 | Snow | NDSI of the Sentinel-2 L2A median composite of 1 August – 30 September 2025, the end of the melt season: median −0.48 (5–95%: −0.60 to −0.24) | Sentinel-2 [@sentinel2_l2a] | [@sec:surface-env] |
 | Surface water | 60,174 flowlines (1:24,000) with Strahler order 1–8 and mean annual flow (EROM QAMA), rasterised to stream order on the 100 m grid | NHDPlus HR [@nhdplus_hr] | [@sec:surface-env] |
-| Soil storage | soil thickness (depth to a lithic contact): median 1.41 m (5–95%: 0.54–1.97 m), with the 2.01 m maximum read as ≥ 2 m | SOLUS100 [@solus100_article] | [@sec:surface-env] |
+| Soil storage | soil thickness (depth to a lithic contact): median 1.41 m (5–95%: 0.54–1.97 m), with the 2.01 m maximum read as ≥ 2 m; texture, bulk density and rock fragments at 0–1.5 m | SOLUS100 [@solus100_article] | [@sec:surface-env], [@sec:surface-soil] |
+| Soil hydraulics | saturated hydraulic conductivity and van Genuchten θs, θr, α and n in six layers to 2 m; 0–1 m harmonic-mean conductivity median 1.6 × 10⁻⁵ m s⁻¹, porosity 0.65 | POLARIS [@polaris_article] | [@sec:surface-soil] |
+| Regolith | depth to bedrock: median 19.6 m (5–95%: 11.4–26.8 m) | SoilGrids250m 2017 [@soilgrids_bdticm_article] | [@sec:surface-soil] |
 | Groundwater | water-table depth, two estimates block-averaged to 100 m: random forest, median 10.1 m (5–95%: 4.8–20.4 m); global model, median 23 m (0–306 m) | Ma et al. (2026) [@ma2026_wtd_article]; Fan et al. (2017) [@fan2017_wtd] | [@sec:surface-env] |
 | Interception and transpiration | canopy height (airborne lidar and ETH 2020 at 10 m, GEDI L3 at 1 km), lidar vegetation cover, Sentinel-2 leaf area index, GEDI L2B plant area index and GEDI L4B aboveground biomass | lidar, Sentinel-2, GEDI | [@sec:surface-veg] |
 | Hydrothermal fluids | alteration intensity (0–1) from apparent resistivity at four frequencies, sensed to at most 150 m below the ground or glacier bed; 10.6 km² of the 126 km² of surveyed edifice lava reach 0.5 or more | 1996 helicopter EM survey [@rystrom_2000] | [@sec:alteration] |
@@ -793,13 +852,28 @@ The model compiles the hydrological information needed for a hydrological descri
 - **Ma et al. (2026).** The random-forest estimate of @ma2026_wtd_article (ensemble mean on the ~24 m CONUS2 grid, block-averaged to 100 m by S2) keeps the water table within 20 m of the ground in 95% of the cells of the box (median 10.1 m, 95th percentile 20.4 m, maximum 117 m).
 - **Fan et al. (2017).** The global groundwater model of @fan2017_wtd (annual mean at 30″, about 1 km, block-averaged to 100 m) places it hundreds of metres down under ridges: median 23 m, 95th percentile 306 m, maximum 847 m, and deeper than 100 m in 27% of the box.
 
+**Water table and depth to rock.** The water table also sits between the two estimates of depth to rock ([@sec:surface-soil], [@fig:depthrock]): below the 1.41 m median SOLUS soil and above the 19.6 m median SoilGrids bedrock in 92.8% of the cells. Whether it lies in unconsolidated regolith or in fractured rock is therefore not known from the data.
+
 For the shallow seismic model the choice matters more than either value. A water table separates dry from saturated rock, and saturation raises Vp and Vp/Vs below it. The Ma et al. grid is used under its CC-BY-NC-ND licence for non-commercial research and is not redistributed. Its ensemble uncertainty is served through the HydroGEN platform and needs an account.
 
 **Groundwater observations.** No aquifer maps exist for the park. The groundwater study of the upper White River [@fuhrig2024] is the only park-scale assessment we found. The surficial hydrothermal system described by @frank1995 is represented only through the alteration it left.
 
+**Wells.** Script S31 (`scripts/31_wells.py`, `configs/wells.yaml`) fetches the water levels and borehole logs of the box once, up to 23 September 2026, and caches them under `data/raw/wells/`: the well reports of the Washington Department of Ecology [@ecology_well_reports], requested without owner names or addresses; the groundwater levels of the USGS [@usgs_nwis_gw], one median per well; and the subsurface database of the Washington Geological Survey [@wgs_subsurface_db], whose water wells are Ecology reports and are counted once. A static level deeper than the completed well or than 300 m is rejected. [@tbl:wells] compares the 5,591 accepted water levels with the two gridded water tables at the nearest 100 m cell; S31 writes the numbers to `outputs/wells/summary.json`.
+
+| Water table | Wells | Observed median | Gridded median | Median of gridded − observed | Median absolute difference | Spearman r |
+|----|----|----|----|----|----|----|
+| Ma et al. (2026), all | 5,591 | 5.8 m | 16.1 m | 2.7 m | 7.1 m | 0.27 |
+| Ma et al. (2026), at or above 600 m | 142 | 4.6 m | 9.1 m | 2.7 m | 3.5 m | 0.27 |
+| Fan et al. (2017), all | 5,591 | 5.8 m | 16.8 m | 3.3 m | 12.3 m | 0.27 |
+| Fan et al. (2017), at or above 600 m | 142 | 4.6 m | 6.4 m | 3.6 m | 8.5 m | −0.13 |
+
+: Water levels in wells against the gridded water tables (S31). Ecology 3,500 wells (719 levels rejected), USGS 1,944, Washington Geological Survey 147 boreholes that are not Ecology reports. The 600 m split separates the Puget lowland from the upland; only 142 wells lie above it. {#tbl:wells}
+
+Both grids place the water table deeper than the wells do, and both rank the wells poorly. The wells are a lowland sample: 97% lie below 600 m, so they test the grids where people drill, not on the volcano. The 23 bedrock picks of the borehole database, all in the lowland, have a median depth of 40.5 m, against 22.4 m for SoilGrids and the 2 m reach of SOLUS at the same cells.
+
 **How the layers can enter the seismic model.**
 - **Fluid substitution.** A water table would separate dry from saturated cells in Gassmann-type fluid substitution; at present the crack-closure law assumes hydrostatic pore pressure everywhere (water density 1000 kg m⁻³, [@sec:rockphysics]).
-- **Valley fill.** Valley fill along the mapped streams would appear as slow, high-Vp/Vs bodies; at present the unconsolidated deposits have fixed thicknesses (glacial drift and lahar deposits 15 m, alluvium and colluvium 10 m, [@sec:geology]).
+- **Valley fill.** Valley fill along the mapped streams would appear as slow, high-Vp/Vs bodies; at present the unconsolidated deposits take the thickness stated in the map unit description for eight map symbols and fixed defaults elsewhere (glacial drift and lahar deposits 15 m, alluvium and colluvium 10 m, [@sec:geology]).
 - **Hydrothermal core.** A fluid-saturated core would join the alteration field, which at present reaches only the top ~150 m sensed by the EM survey ([@sec:alteration]).
 - **Loading.** The annual strain signal (peak in late August) and the snow and water storage could be compared as a loading model; the model holds only end-of-season NDSI, not snow water equivalent.
 
@@ -954,15 +1028,17 @@ The derived products are published as assets of the release `products-v1.0.0` of
 
 | Product | Size | Content |
 |-----------|-----|-----------------------|
-| `model` | 110 MB | the subsurface model, `model.zarr` (xarray DataTree, zarr v3, UTM 10N and NAVD88): levels L1–L3 ([@tbl:grids]) with Vp, Vs, density, Qp, Qs, unit, alteration, and the geology and regional inputs, plus the surface node; the water-table depth of @ma2026_wtd (`surface/water_table_depth`, CC-BY-NC-ND) is removed |
+| `model` | 111 MB | the subsurface model, `model.zarr` (xarray DataTree, zarr v3, UTM 10N and NAVD88): levels L1–L3 ([@tbl:grids]) with Vp, Vs, density, Qp, Qs, unit, alteration, and the geology and calibrated regional inputs, plus the surface layers that rainier3d computes (units, deposit thickness, ice, alteration, vegetation indices and the 0–1 m soil summaries); third-party fields that are only resampled onto the grid (water tables, soil and bedrock depths, Vs30, land cover, canopy height, streams, the `/soil` profiles) are left out and rebuilt by S2 |
 | `grids` | 55 MB | the subsurface model on one uniform 500 m grid (S9): CF netCDF (vp, vs, rho, qp, qs, alteration, air, surface_elevation; UTM 10N, elevation up), EMC-style netCDF (longitude, latitude, depth), NonLinLoc P and S slowness grids |
 | `strain_3d` | 72 MB | strain in the volume (S25, [@sec:strain3d]) on a 500 m horizontal by 250 m vertical grid: GNSS strain rate carried down (areal, volumetric, maximum shear, shortening azimuth, right-lateral shear on planes parallel to the WRSZ) and the static strain of the edifice load (full tensor, volumetric, SHmax azimuth) |
 | `edifice_load` | 115 MB | stress from the weight of the edifice, Boussinesq half-space solution, on L1–L3 (S18) |
 | `alteration` | 1 MB | alteration from the 1996 helicopter electromagnetic survey (S22, [@sec:alteration]; @rystrom_2000; @finn_2001): 3D intensity in the top 200 m, bedrock elevation, resistivity and depth of investigation per frequency, apparent magnetisation; CF netCDF, UTM 10N |
-| `mass_movements` | 2 MB | the mass-movement catalogue (S24, [@sec:mass]): events, flow deposits, faults, the 1998 lahar hazard zones and a summary, GeoPackage and CSV; the Washington landslide inventory states no licence |
+| `mass_movements` | 1 MB | the mass-movement catalogue (S24, [@sec:mass]): events, flow deposits and a summary (the fault traces and the 1998 lahar zones are copies of their sources and are left out), GeoPackage and CSV; the Washington landslide inventory states no licence |
 | `gnss` | 4 MB | station velocities (MIDAS [@blewitt_2016_midas]) with quality flags, strain-rate grid, daily regional strain series and the download manifest (S17, S18); refreshed every Monday at 09:00 UTC in the rolling release `gnss-latest`, with dated copies; `products-v1.0.0` holds the copy of 2026-09-01 |
 
-: Downloadable products. {#tbl:products}
+: Downloadable products [TODO: sizes and contents of products-v1.1.0, the first release under this rule]. {#tbl:products}
+
+A products release holds only what rainier3d computes; `configs/products.yaml` classifies every variable of the model as computed, geometry or resampled, and a test fails on an unclassified one. Each release also carries `REBUILD.md`, which gives, for every product, the commit that made it, the data freeze, the stages to run from a clean clone and the inputs that must be obtained by hand, and `inputs.csv`, which lists every cached file each product reads with its SHA-256. S20 refuses to publish from a working tree with uncommitted changes, so the commit named in `REBUILD.md` is the code that made the products.
 
 The archives need no software from this project. The subsurface model is downloaded, checked and opened with standard tools:
 
@@ -1061,7 +1137,7 @@ In this period ComCat places one event above the ground. The problem of the 500 
 ## The three-dimensional viewer
 
 The viewer runs in a web browser, including on phones. It is a React and three.js application (MIT licence) published at <https://denolle-lab.github.io/mt-rainier-digital-model/>, and it draws the following on the terrain:
-- the 22 draped surface layers of [@sec:surface] (`model/layers.json` of the data release), from Sentinel-2 imagery, geology, ice and soil thickness to canopy, vegetation indices, land cover and water-table depth;
+- the 38 draped layers of `model/layers.json` in the data release ([@sec:surface]), from Sentinel-2 imagery, geology, ice and soil thickness to canopy, vegetation indices, land cover, water-table depth, soil texture and hydraulic properties, depth to bedrock, Vs30 and terrain geometry;
 - the alteration field at the surface and the apparent magnetisation from the 1996 helicopter survey ([@sec:alteration]);
 - the 970 sensor sites of the S8 inventory (EarthScope FDSN, including the 2025 node array Z5 [@fdsn_z5_2025]; EarthScope GNSS; Synoptic), 123 permanent and 847 temporary: seismometers, accelerometers, geophone nodes (813), infrasound, GNSS, strain and tilt meters, weather, snow and streamflow stations, and the Paradise–Nisqually Entrance distributed acoustic sensing (DAS) fibre with 3,191 channels, drawn as permanent or temporary and filtered as current or past, with the 2025 node array and the DAS fibre as surveys on their own toggles;
 - the PNSN seismicity from ComCat [@comcat_uw]: 15,660 events from 1980 to 23 September 2026, magnitude −1.6 to 4.9, in the overview box (46.58–47.12° N, 122.16–121.36° W), drawn at their hypocentres; the 439 that ComCat places above the viewer terrain are counted but not drawn;
@@ -1084,6 +1160,7 @@ Below the ground it shows Vs, Vp, Vp/Vs, density, units, alteration and the stra
 - **Depth coverage of the calibration.** Only 30 of the 88 events are deeper than 11 km. Larger pick sets, such as the curated PNSN dataset [@ni2023], and Rainier-specific models [@obrebski2015; @flinders2017] would constrain the deep correction.
 - **Reference 1D model.** The PNSN one-dimensional model used for comparison is read from a local table whose identity (P3 Puget Sound or C3 Cascades) is not documented [TODO: confirm with PNSN and cite].
 - **Regional model below 9.9 km.** The regional model there is CRESCENT Vs with Brocher's Vp; the deep level of the Cascadia model (10.8–59.4 km) is not used.
+- **Depth to rock.** The two estimates differ by a factor of 13.9 at the median (SOLUS100 1.41 m, capped at 2.01 m; SoilGrids 2017 19.6 m), and the water table lies between them in 92.8% of the cells ([@sec:surface-soil]). No local data constrain the thickness of soil, regolith and weathered rock between 2 m and the top cells of L1, and the unconsolidated deposits of the geology model take map-unit thicknesses for eight symbols and fixed defaults (10–15 m) for the rest.
 - **Resolution.** L1 is 250 m × 50 m, so thin deposits fall below the cell size.
 - **Glaciers.** IceBoost exceeds the 1981 radar thicknesses on Emmons and Winthrop glaciers; its total should be compared with the lidar-based ice volume of @sisson2011.
 - **Relocated catalogue.** Only the 2023–2025 events of magnitude 1 or larger are relocated. The 500 older ComCat events at or above the ground wait for their picks to be cached, and 12 events stop at the base of the search volume in rainier3d.
@@ -1142,7 +1219,10 @@ The code and this paper were written with an AI coding assistant (Claude, Anthro
 | Paradise–Nisqually Entrance DAS channel table | fibre route | [TODO: citable reference; registry key das_paradise_nisqually is a local file with no BibTeX entry] |
 | Synoptic weather, SNOTEL and streamflow stations (gaia-hazlab catalogue) | sensor inventory in the viewer | @synoptic_catalog [TODO: licence] |
 | PANGA and UNR GNSS daily positions | velocities, strain | @panga_gnss; @unr_ngl_gnss |
-| SOLUS100 | soil thickness | @solus100 |
+| SOLUS100 | soil thickness; texture, bulk density, rock fragments and organic carbon at 0–1.5 m; depth to a restrictive layer | @solus100 |
+| POLARIS v1.0 | soil hydraulic conductivity and van Genuchten parameters to 2 m | @polaris_article |
+| SoilGrids250m 2017 depth to bedrock | regolith thickness | @soilgrids_bdticm_article [TODO: licence] |
+| USGS global hybrid Vs30 | Vs30 | @usgs_vs30_hybrid_article |
 | US water-table depth | water table | @ma2026_wtd |
 | Global water-table depth | water table, comparison | @fan2017_wtd |
 | NHDPlus High Resolution | streams | @nhdplus_hr |

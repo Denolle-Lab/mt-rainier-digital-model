@@ -3,9 +3,9 @@ anderson_pitlick_2014,10.1002/2013jf002933,doi,web-2026-09-25 (Crossref),cached,
 obrebski2015,10.1002/2014gc005581,doi,web-2026-09-25 (DOI resolved),cached,configs/sources.yaml; docs/data_inventory.md; docs/paper/rainier3d_paper.md
 desiena2014,10.1002/2014jb011372,doi,,cached,docs/data_inventory.md; scripts/15_bibliography.py
 blewitt_2016_midas,10.1002/2015jb012552,doi,web-2026-09-24 (DOI resolved),cached,configs/gnss.yaml; configs/sources.yaml; docs/paper/rainier3d_paper.md; src/rainier3d/geodesy/velocity.py
-shangguan2017,10.1002/2016ms000686,doi,,cached,docs/data_inventory.md
+soilgrids_bdticm_article,10.1002/2016ms000686,doi,"web-2026-10-02 (windowed read of the global GeoTIFF, DOI resolved)",cached,configs/sources.yaml; docs/data_inventory.md; docs/paper/rainier3d_paper.md
 shelly2013,10.1002/grl.50354,doi,,cached,docs/data_inventory.md
-solus100_article,10.1002/saj2.20769,doi,"web-2026-09-24 (COG read, DataCite and Crossref)",cached,configs/sources.yaml; docs/paper/rainier3d_paper.md
+solus100_article,10.1002/saj2.20769,doi,"web-2026-09-24 (COG read, DataCite and Crossref); web-2026-10-02 (bucket listing, Final_Layer_Table_20231215.csv scalars)",cached,configs/sources.yaml; docs/paper/rainier3d_paper.md
 lomax_2000,10.1007/978-94-015-9536-0_5,doi,web-2026-09-24 (Crossref),cached,configs/sources.yaml; configs/velocity_calibration.yaml; configs/velocity_calibration_v1.yaml; docs/joint_calibration.md; docs/paper/rainier3d_paper.md; scripts/13_joint_calibration.py
 watters2000,10.1007/s000240050012,doi,web-2026-09-25 (DOI resolved),cached,configs/sources.yaml; docs/data_inventory.md; docs/joint_calibration.md; docs/paper/rainier3d_paper.md; scripts/15_bibliography.py
 heap2021,10.1007/s00445-021-01447-2,doi,web-2026-09-25 (DOI resolved),cached,configs/sources.yaml; docs/alteration.md; docs/data_inventory.md; docs/joint_calibration.md; docs/paper/rainier3d_paper.md
@@ -18,11 +18,14 @@ tolan2024,10.1016/j.rse.2023.113888,doi,,cached,docs/data_inventory.md
 dubayah2020,10.1016/j.srs.2020.100002,doi,,cached,docs/data_inventory.md
 johnson_1985,10.1017/cbo9781139171731,doi,web-2026-09-24 (DOI resolved),cached,configs/gnss.yaml; configs/sources.yaml; docs/paper/rainier3d_paper.md
 moran_1999,10.1029/1999jb900036,doi,web-2026-09-23,cached,configs/sources.yaml; configs/units.yaml; docs/data_inventory.md; docs/paper/rainier3d_paper.md
+saar2004,10.1029/2003jb002855,doi,,cached,docs/critical_zone.md
 burtin_2008,10.1029/2007jb005034,doi,web-2026-09-26 (doi.org),cached,configs/sources.yaml; docs/paper/rainier3d_paper.md
 calkins2011,10.1029/2010jb007657,doi,,cached,docs/data_inventory.md
 tsai_2012,10.1029/2011gl050255,doi,web-2026-09-26 (doi.org),cached,configs/sources.yaml; docs/paper/rainier3d_paper.md
 unr_ngl_gnss,10.1029/2018eo104623,doi,web-2026-09-24 (download; 54 sites not in PANGA plus 20 shared),cached,configs/gnss.yaml; configs/sources.yaml; docs/paper/rainier3d_paper.md; scripts/15_bibliography.py
+clements2018,10.1029/2018gl077706,doi,,cached,docs/critical_zone.md
 delph2018,10.1029/2018gl079518,doi,,cached,docs/data_inventory.md
+polaris_article,10.1029/2018wr022797,doi,"web-2026-10-02 (Readme units, per-variable VRT windowed read, DOI resolved)",cached,configs/sources.yaml; docs/paper/rainier3d_paper.md
 ulberg_2020_article,10.1029/2019gc008888,doi,web-2026-09-24 (EMC file and metadata read; authors from Crossref),cached,configs/sources.yaml; docs/data_inventory.md; docs/joint_calibration.md; docs/paper/rainier3d_paper.md
 florea2021,10.1029/2020jd033565,doi,,cached,docs/data_inventory.md
 heap2021a,10.1029/2021jb022514,doi,,cached,docs/data_inventory.md
@@ -48,14 +51,17 @@ fan2017_wtd,10.1073/pnas.1712381114,doi,web-2026-09-24 (OPeNDAP clip),cached,con
 caine_1980,10.1080/04353676.1980.11879996,doi,web-2026-09-26 (doi.org),cached,configs/sources.yaml; docs/paper/rainier3d_paper.md
 lam_2023_graphcast,10.1126/science.adi2336,doi,web-2026-09-26 (doi.org),cached,configs/sources.yaml; docs/events.md; docs/paper/rainier3d_paper.md
 vallance_scott_1997,10.1130/0016-7606(1997)109<0143:tomfmr>2.3.co;2,doi,web-2026-09-25 (Crossref),cached,configs/sources.yaml; docs/paper/rainier3d_paper.md; scripts/15_bibliography.py; src/rainier3d/export/atlas.py
+ingebritsen1999,10.1130/0091-7613(1999)027<1107:gioapd>2.3.co;2,doi,,cached,docs/critical_zone.md
 sisson2011,10.1130/g31902.1,doi,web-2026-09-25 (DOI resolved),cached,configs/sources.yaml; docs/data_inventory.md; docs/paper/rainier3d_paper.md
 mrms_qpe,10.1175/bams-d-14-00174.1,doi,"web-2026-09-25 (bucket listed; 2025-12-09 12:00 UTC file read, box maximum 4.2 mm)",cached,configs/events.yaml; configs/sources.yaml; docs/events.md; docs/paper/rainier3d_paper.md; src/rainier3d/hydromet/events.py
 radford_2025_mlwp,10.1175/bams-d-24-0057.1,doi,"web-2026-09-26 (doi.org; archive listed, GraphCast 2025-12-08 00 UTC run read over the domain)",cached,configs/sources.yaml; docs/events.md; docs/paper/rainier3d_paper.md
+usgs_vs30_hybrid_article,10.1177/8755293020911137,doi,"web-2026-10-02 (HTTP range read of the HDF5 grid, DOI resolved)",cached,configs/sources.yaml; docs/paper/rainier3d_paper.md
 huber_1964,10.1214/aoms/1177703732,doi,web-2026-09-24 (Crossref),cached,configs/sources.yaml; configs/velocity_calibration.yaml; docs/joint_calibration.md; docs/paper/rainier3d_paper.md; scripts/13_joint_calibration.py
-solus100,10.15482/usda.adc/25033856,doi,"web-2026-09-24 (COG read, DataCite and Crossref)",cached,configs/sources.yaml; docs/paper/rainier3d_paper.md; src/rainier3d/surface/layers.py
+solus100,10.15482/usda.adc/25033856,doi,"web-2026-09-24 (COG read, DataCite and Crossref); web-2026-10-02 (bucket listing, Final_Layer_Table_20231215.csv scalars)",cached,configs/soil.yaml; configs/sources.yaml; docs/paper/rainier3d_paper.md; src/rainier3d/surface/layers.py
 ulberg_2020,10.17611/dp/emc.2020.imushloceq.1,doi,web-2026-09-24 (EMC file and metadata read; authors from Crossref),cached,configs/sources.yaml; docs/joint_calibration.md; docs/paper/rainier3d_paper.md
 brocher_2005,10.1785/0120050077,doi,"no: DOI from survey memory; relations coded from the paper's Eqs. 1, 6 and 9",cached,configs/sources.yaml; docs/data_inventory.md; docs/joint_calibration.md; docs/paper/rainier3d_paper.md; src/rainier3d/petro/relations.py
 shen_2015_strain,10.1785/0120140247,doi,web-2026-09-24 (DOI resolved),cached,configs/gnss.yaml; configs/sources.yaml; docs/paper/rainier3d_paper.md; src/rainier3d/geodesy/strain.py
+ahdi2017,10.1785/0120160335,doi,,cached,configs/sources.yaml
 white_2020,10.1785/0220190318,doi,web-2026-09-24 (Crossref),cached,configs/sources.yaml; configs/velocity_calibration.yaml; docs/joint_calibration.md; docs/paper/rainier3d_paper.md; scripts/13_joint_calibration.py
 kopfli2024,10.1785/0220240079,doi,,cached,docs/data_inventory.md
 kramer_2024,10.1785/0220240112,doi,web-2026-09-25 (Crossref),cached,configs/sources.yaml; docs/paper/rainier3d_paper.md
@@ -89,32 +95,36 @@ dewitz2023,10.5066/p9jz7ao3,doi,,cached,docs/data_inventory.md
 rgiconsortium2023,10.5067/f6jmovy5navz,doi,,cached,docs/data_inventory.md
 gedi_l2b,10.5067/gedi/gedi02_b.002,doi,web-2026-09-24 (DOI resolved),cached,configs/canopy_products.yaml; configs/sources.yaml; docs/canopy_pipeline.md; docs/paper/rainier3d_paper.md; scripts/28_canopy_pipeline.py
 opentopography2005,10.5069/g9cc0xmc,doi,,cached,docs/data_inventory.md
-ma2026_wtd,10.5281/zenodo.18504963,doi,"web-2026-09-24 (Zenodo record, windowed read)",cached,configs/sources.yaml; docs/paper/rainier3d_paper.md; scripts/02_surface_layers.py; src/rainier3d/surface/layers.py
+ma2026_wtd,10.5281/zenodo.18504963,doi,"web-2026-09-24 (Zenodo record, windowed read)",cached,configs/sources.yaml; docs/data_policy.md; docs/paper/rainier3d_paper.md; scripts/02_surface_layers.py; src/rainier3d/surface/layers.py
 10.5281/zenodo.x,10.5281/zenodo.x,doi,,failed,scripts/27_zenodo_deposit.py
 glathida,10.5904/wgms-glathida-2020-10,doi,web-2026-09-23 (file); DOI from memory,cached,configs/sources.yaml; docs/paper/rainier3d_paper.md
 crescent_gen0_data,10.6084/m9.figshare.31902061,doi,web-2026-09-23 (citation); local file ~/GitHub/cascadia_obs_ensemble/data/tomography/CRESCENT_Gen0.nc,cached,configs/sources.yaml; docs/paper/rainier3d_paper.md
-rgi60,10.7265/n5-rgi-60,doi,web-2026-09-23 (file); DOI from memory,cached,configs/sources.yaml; docs/paper/rainier3d_paper.md; scripts/15_bibliography.py; src/rainier3d/surface/glaciers.py
+rgi60,10.7265/n5-rgi-60,doi,web-2026-09-23 (file); DOI from memory,cached,configs/sources.yaml; docs/paper/rainier3d_paper.md; scripts/15_bibliography.py; src/rainier3d/surface/glaciers.py; src/rainier3d/surface/terrain.py
 conner2023,10.7914/3wth-ea89,doi,,cached,docs/data_inventory.md
-fdsn_z5_2025,10.7914/mcd3-ph92,doi,"web-2026-09-28 (DataCite; EarthScope station service, 240 stations 001-240, 248 epochs, 191 inside the model domain)",ok,configs/sensor_families.yaml; configs/sources.yaml; docs/paper/rainier3d_paper.md
+fdsn_z5_2025,10.7914/mcd3-ph92,doi,"web-2026-09-28 (DataCite; EarthScope station service, 240 stations 001-240, 248 epochs, 191 inside the model domain)",cached,configs/sensor_families.yaml; configs/sensor_surveys.yaml; configs/sources.yaml; docs/paper/rainier3d_paper.md
 conner2021,10.7914/sn/6n_2021,doi,,cached,docs/data_inventory.md
-dnr_gems_100k,,url,web-2026-09-23,,configs/sources.yaml; docs/mass_movements.md; docs/paper/rainier3d_paper.md; scripts/24_mass_movements.py; src/rainier3d/export/atlas.py; src/rainier3d/surface/geology.py; src/rainier3d/surface/glaciers.py; src/rainier3d/surface/mass_movements.py
+dnr_gems_100k,,url,web-2026-09-23,,configs/sources.yaml; configs/units.yaml; docs/mass_movements.md; docs/paper/rainier3d_paper.md; scripts/24_mass_movements.py; src/rainier3d/export/atlas.py; src/rainier3d/surface/geology.py; src/rainier3d/surface/glaciers.py; src/rainier3d/surface/mass_movements.py
 dnr_quaternary_faults,,url,web-2026-09-25 (service queried; 4 features in the model box),,configs/sources.yaml; docs/mass_movements.md; docs/paper/rainier3d_paper.md; scripts/24_mass_movements.py; src/rainier3d/surface/mass_movements.py
 nps_gri_mora,,url,web-2026-09-23,,configs/sources.yaml
 rainier_dem_smart_sensing,,internal,local file read 2026-09-23 (max 4392.4 m),,configs/sources.yaml
-usgs_3dep,,url,web-2026-09-23,,configs/sources.yaml; docs/mass_movements.md; docs/paper/rainier3d_paper.md; src/rainier3d/surface/dem.py; src/rainier3d/surface/mass_movements.py
+usgs_3dep,,url,web-2026-09-23,,configs/sources.yaml; configs/terrain.yaml; docs/mass_movements.md; docs/paper/rainier3d_paper.md; src/rainier3d/surface/dem.py; src/rainier3d/surface/mass_movements.py; src/rainier3d/surface/terrain.py
 pnsn_1d_wa,,internal,no: which PNSN model this is (P3 Puget Sound or C3 Cascades) is not documented in the file; ask PNSN,,configs/sources.yaml; docs/paper/rainier3d_paper.md
 pnsn_quarterly_2003a,,url,web-2026-09-23,,configs/sources.yaml
 comcat_uw,,url,web-2026-09-23 (89 M>=2 events in domain 2015-2026 with phase-data),,configs/gnss.yaml; configs/sources.yaml; configs/velocity_calibration.yaml; configs/velocity_calibration_v1.yaml; configs/vs_calibration.yaml; docs/paper/rainier3d_paper.md; scripts/12_calibrate_vs.py; scripts/13_joint_calibration.py
 fdsn_iris_stations,,url,web-2026-09-23,,configs/sources.yaml
-m1_placeholder,,internal,n/a,,AGENTS.md; README.md; configs/gnss.yaml; configs/perturbations.yaml; configs/sources.yaml; configs/units.yaml; docs/paper/rainier3d_paper.md; src/rainier3d/surface/glaciers.py
+m1_placeholder,,internal,n/a,,AGENTS.md; README.md; configs/gnss.yaml; configs/perturbations.yaml; configs/sensor_surveys.yaml; configs/soil.yaml; configs/sources.yaml; configs/terrain.yaml; configs/units.yaml; configs/wells.yaml; docs/critical_zone.md; docs/paper/rainier3d_paper.md; src/rainier3d/surface/geology.py; src/rainier3d/surface/glaciers.py
+han_terrain_2026,,internal,"n/a (author choice, no DOI)",,configs/sources.yaml; configs/terrain.yaml; src/rainier3d/surface/terrain.py
 earthscope_fdsn,,url,"web-2026-09-23 (864 stations, 3969 channel epochs)",,configs/sources.yaml; docs/paper/rainier3d_paper.md
 earthscope_gnss,,url,web-2026-09-23 (14 sites); ellipsoidal heights from the service not used (values implausible),,configs/sources.yaml; docs/paper/rainier3d_paper.md
 synoptic_catalog,,url,,,configs/sources.yaml; docs/paper/rainier3d_paper.md
 das_paradise_nisqually,,internal,"local file read 2026-09-23 (4494 channels; 3191 with coordinates, 30.5 km optical)",,configs/sources.yaml; docs/paper/rainier3d_paper.md
-usgs_i432_kmz,,internal,"local file read 2026-09-23 (single GroundOverlay, 10000 x 10000 px)",,configs/sources.yaml
+usgs_i432_kmz,,internal,"local file read 2026-09-23 (single GroundOverlay, 10000 x 10000 px)",,configs/overlays.yaml; configs/platform.yaml; configs/sources.yaml
 nrcs_soil_poster_kmz,,internal,"local file read 2026-09-23; the whole poster is placed over a lon/lat box (hand georeferencing), cropped to the map panel",,configs/sources.yaml
 aws_terrain_tiles,,url,web-2026-09-23,,configs/sources.yaml
-iceboost_v2,,url,web-2026-09-23 (files downloaded; metadata read from GeoTIFF tags),,configs/sources.yaml; configs/units.yaml; docs/paper/rainier3d_paper.md; scripts/01_surface.py; src/rainier3d/export/atlas.py; src/rainier3d/surface/glaciers.py
+iceboost_v2,,url,web-2026-09-23 (files downloaded; metadata read from GeoTIFF tags),,configs/sources.yaml; configs/terrain.yaml; configs/units.yaml; docs/paper/rainier3d_paper.md; scripts/01_surface.py; src/rainier3d/export/atlas.py; src/rainier3d/surface/glaciers.py; src/rainier3d/surface/terrain.py
+ecology_well_reports,,url,"web-2026-10-02 (16,122 reports in lon -122.30 to -121.40, lat 46.50 to 47.15, 3,192 with a static water level; 19,742 in the lon/lat envelope of the UTM model box that S31 queries; requests need a user agent)",,configs/sources.yaml; configs/wells.yaml; docs/paper/rainier3d_paper.md; src/rainier3d/hydromet/wells.py
+usgs_nwis_gw,,url,"web-2026-10-02 (1,685 groundwater sites with water levels in the box; OGC API bbox and datetime filters checked)",,configs/sources.yaml; configs/wells.yaml; docs/paper/rainier3d_paper.md
+wgs_subsurface_db,,url,"web-2026-10-02 (file geodatabase, June 2026 release; layers borehole_information, hydrologic, bedrock, layer_data, in_situ_test_data)",,configs/sources.yaml; configs/wells.yaml; docs/paper/rainier3d_paper.md
 nhdplus_v21,,url,web-2026-09-24 (query),,configs/sources.yaml; docs/paper/rainier3d_paper.md; scripts/02_surface_layers.py; src/rainier3d/surface/layers.py
 nlcd_2021,,url,web-2026-09-24 (WCS GetCoverage),,configs/sources.yaml; docs/paper/rainier3d_paper.md; src/rainier3d/surface/layers.py
 nhdplus_hr,,url,"web-2026-09-24 (staged GDB download; 60,174 flowlines in the domain)",,configs/sources.yaml; docs/paper/rainier3d_paper.md; scripts/02_surface_layers.py

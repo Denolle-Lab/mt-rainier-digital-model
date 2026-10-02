@@ -251,14 +251,71 @@ glathida:
   role: check of modeled thickness (7 Rainier glaciers, mean and max)
 
 solus100:
-  title: Nauman et al. 2024, SOLUS100 soil landscapes of the United States at 100 m, depth to any lithic contact (anylithicdpt_cm_p)
+  title: Nauman et al. 2024, SOLUS100 soil landscapes of the United States at 100 m (depth to any lithic contact, depth to restriction, and clay, sand, silt, bulk density, rock fragments and organic carbon at 0-150 cm)
   doi: 10.15482/USDA.ADC/25033856
   article_doi: 10.1002/saj2.20769
   url: https://storage.googleapis.com/solus100pub/anylithicdpt_cm_p.tif
   license: CC-BY-4.0
-  verified: web-2026-09-24 (COG read, DataCite and Crossref)
-  note: uint8 cm, nodata 255; WKT named "unknown" with EPSG:5070 parameters; max over the domain is exactly 201 cm, read as ">= 2 m" (cap not documented)
-  role: soil thickness (surface layer soil_thickness)
+  verified: web-2026-09-24 (COG read, DataCite and Crossref); web-2026-10-02 (bucket listing, Final_Layer_Table_20231215.csv scalars)
+  note: uint8 cm, nodata 255; WKT named "unknown" with EPSG:5070 parameters; max over the domain is exactly 201 cm, read as ">= 2 m" (cap not documented). Properties are <property>_<depth>_cm_p.tif (stored value = value x scalar of the layer table); the bucket has no texture-class raster
+  role: soil thickness (soil_thickness), depth to restriction, soil profiles on /soil and their 0-100 cm means on /surface (configs/soil.yaml)
+
+polaris:
+  title: Chaney et al. 2019, POLARIS soil properties, 30 m probabilistic maps of the contiguous United States, v1.0 (ksat, theta_s, theta_r, van Genuchten alpha and n; layer means 0-200 cm)
+  article_doi: 10.1029/2018WR022797
+  url: http://hydrology.cee.duke.edu/POLARIS/PROPERTIES/v1.0/
+  license: CC-BY-4.0 (POLARIS/license.txt)
+  verified: web-2026-10-02 (Readme units, per-variable VRT windowed read, DOI resolved)
+  note: ksat in log10(cm/hr) and alpha in log10(kPa-1), converted to log10(m s-1) and log10(m-1); 1x1 degree tiles glued by one VRT per variable, layer and statistic
+  role: soil hydraulic profiles on /soil and 0-100 cm ksat and porosity on /surface (configs/soil.yaml)
+
+soilgrids_bdticm:
+  title: Shangguan et al. 2017, absolute depth to bedrock (BDTICM, cm), SoilGrids250m 2017-03-10 release, ISRIC
+  article_doi: 10.1002/2016MS000686
+  url: https://files.isric.org/soilgrids/former/2017-03-10/data/BDTICM_M_250m_ll.tif
+  license: "provider terms, to verify (no licence file in the 2017 release folder)"
+  verified: web-2026-10-02 (windowed read of the global GeoTIFF, DOI resolved)
+  note: global 8.5 GB GeoTIFF in single-row strips; S2 caches a window over the box (data/raw/soilgrids/)
+  role: depth to bedrock (surface layer depth_to_bedrock)
+  redistribute_derived: false   # until the terms of the 2017 release are confirmed
+
+ecology_well_reports:
+  title: Washington State Department of Ecology, well reports (Well Construction Map Service, layer 16 "Well Reports")
+  url: https://gis.ecology.wa.gov/serverext/rest/services/WR/Well_Construction_Map_Service/MapServer/16
+  bib_author: "{Washington State Department of Ecology}"   # live service: year accessed
+  bib_year: 2026
+  license: "provider terms, to verify"
+  verified: web-2026-10-02 (16,122 reports in lon -122.30 to -121.40, lat 46.50 to 47.15, 3,192 with a static water level; 19,742 in the lon/lat envelope of the UTM model box that S31 queries; requests need a user agent)
+  note: StaticWaterLvl and CompletedDepth are text fields in feet; locations are often section or quarter-quarter centroids. S31 requests hydrogeological fields only (no owner names, addresses or parcels)
+  role: well water levels (S31)
+
+usgs_nwis_gw:
+  title: U.S. Geological Survey, National Water Information System, groundwater field measurements (parameter 72019) and monitoring locations, Water Data OGC API
+  url: https://api.waterdata.usgs.gov/ogcapi/v0/collections/field-measurements
+  bib_author: "{U.S. Geological Survey}"   # live service: year accessed
+  bib_year: 2026
+  license: public domain (USGS)
+  verified: web-2026-10-02 (1,685 groundwater sites with water levels in the box; OGC API bbox and datetime filters checked)
+  role: well water levels and well depths (S31)
+
+wgs_subsurface_db:
+  title: Washington Geological Survey, subsurface geology database (boreholes, layers, depth to water, depth to bedrock), geologic portal download
+  url: https://fortress.wa.gov/dnr/geologydata/publications/data_download/ger_portal_subsurface_database.zip
+  bib_author: "{Washington Geological Survey}"   # live service: year accessed
+  bib_year: 2026
+  license: "provider terms, to verify"
+  verified: web-2026-10-02 (file geodatabase, June 2026 release; layers borehole_information, hydrologic, bedrock, layer_data, in_situ_test_data)
+  note: the download is the current release, not a versioned file; the cached zip is pinned by its SHA-256 in docs/data_manifest.csv
+  role: borehole depth to water and to bedrock (S31)
+
+usgs_vs30_hybrid:
+  title: USGS global hybrid Vs30 map, 30 arcsec (Heath et al. 2020), global_vs30.grd of the ShakeMap geodata
+  article_doi: 10.1177/8755293020911137
+  url: https://apps.usgs.gov/shakemap_geodata/vs30/global_vs30.grd
+  license: public domain (USGS)
+  verified: web-2026-10-02 (HTTP range read of the HDF5 grid, DOI resolved)
+  note: slope-based global default with regional inserts; the file history reads "grdconvert global_vs30_ca_waor_ut_jp_tw.grd", i.e. a Washington-Oregon insert (Ahdi et al. 2017, 10.1785/0120160335, to confirm against Heath et al. 2020)
+  role: Vs30 (surface layer vs30)
 
 ma2026_wtd:
   title: Ma, Condon, Koch, Bennett, Defnet, Tijerina-Kreuzer, Melchior & Maxwell 2026, High resolution US water table depth estimates reveal quantity of accessible groundwater, Commun. Earth Environ. 7, 45
