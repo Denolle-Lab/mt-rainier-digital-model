@@ -282,9 +282,10 @@ def surface_derived(tree: xr.DataTree) -> dict[str, np.ndarray]:
             continue
         v = np.where(top, l1[var].values, 0.0).sum(0) / np.maximum(n, 1)
         v = np.where(n > 0, v, np.nan)
-        # L1 is coarser than the surface grid: repeat cells onto it
-        fy, fx = s.sizes["y"] // v.shape[0], s.sizes["x"] // v.shape[1]
-        out[key] = np.repeat(np.repeat(v, fy, 0), fx, 1)
+        # L1 is coarser than the surface grid, and not by a whole factor (250 m vs 100 m): each surface cell
+        # takes the L1 cell around its centre
+        v = xr.DataArray(v, coords={"y": l1.y.values, "x": l1.x.values}, dims=("y", "x"))
+        out[key] = v.sel(y=s.y.values, x=s.x.values, method="nearest").values
     return out
 
 
