@@ -33,6 +33,7 @@ from rainier3d.export.atlas import (
     append_canopy_layers,
     append_mass_movements,
     append_terrain_layers,
+    check_overview,
     export_layers,
     export_sensors,
     export_strain,
@@ -53,6 +54,7 @@ def main():
     atlas = Path(a.atlas).expanduser()
     dom = load_domain()
     manifest = json.loads((atlas / "manifest.json").read_text())
+    check_overview(manifest, dom)
     tree = read_tree(dom.path("processed") / "model.zarr")
     hr = dom.path("raw") / "hydrology" / "nhdplus_hr_flowlines.gpkg"
     fl = L.fetch_flowlines_hr(dom) if hr.exists() else L.fetch_flowlines(dom)

@@ -42,3 +42,10 @@ def test_a_short_catalog_is_refused_before_anything_is_written(tmp_path):
     with pytest.raises(ValueError, match="only 3 events"):
         quakes.build_quakes(tmp_path, tmp_path / "cache", lambda x, z: 1.5, get=lambda url, path: CSV.encode(), min_events=1000)
     assert not (tmp_path / "quakes.bin").exists() and not (tmp_path / "quakes.json").exists()
+
+
+def test_events_off_the_map_are_dropped(tmp_path):
+    # a catalog cached for the first, larger map (to 121.36 W) keeps only the events on this one
+    wider = CSV + "2022-05-01T00:00:00.000Z,46.7,-121.38,5,1.5,md,,,,,uw,uw6,,x,earthquake,,,,,reviewed,uw,uw\n"
+    meta = quakes.build_quakes(tmp_path, tmp_path / "cache", lambda x, z: 1.5, get=lambda url, path: wider.encode(), min_events=0)
+    assert meta["count"] == 3

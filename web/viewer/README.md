@@ -93,7 +93,7 @@ loads only when it is picked.
 
 | Layer | Source | License |
 |---|---|---|
-| Terrain, 60 × 60 km | USGS 3DEP elevation, 1800 × 1215 samples (≈35–50 m) | public domain |
+| Terrain, 58 × 60 km | USGS 3DEP elevation, 1710 × 1215 samples (≈35–50 m) | public domain |
 | Summit, 8.4 × 8.2 km | USGS 3DEP 1 m lidar in 8 / 4 / 2 / 1 m tiles | public domain |
 | Imagery | USGS The National Map, USGSImageryOnly | public domain |
 | Stations | EarthScope FDSN station service, active channels as of the build date | open |

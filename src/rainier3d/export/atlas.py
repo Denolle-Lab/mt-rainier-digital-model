@@ -27,8 +27,9 @@ from rasterio.warp import Resampling, reproject
 
 from rainier3d.report.figures import UNIT_COLORS
 
-TEX_WIDTH = 2040
-VAL_WIDTH = 1020
+# drape and value-grid widths: whole numbers of square-degree pixels on the 0.76 x 0.54 deg overview box
+TEX_WIDTH = 1938
+VAL_WIDTH = 988
 
 UNIT_LABELS = {
     1: "Glacier ice",
@@ -200,6 +201,18 @@ def overview_grid(manifest: dict, width: int) -> tuple[Affine, int, int]:
     return Affine(deg, 0, b["west"], 0, -deg, b["north"]), width, height
 
 
+def check_overview(manifest: dict, dom) -> None:
+    """Stop unless the overview box lies inside the model grid, where every drape and rain frame has data."""
+    from pyproj import Transformer
+
+    b = manifest["extent"]["overview"]
+    lon, lat = np.meshgrid(np.linspace(b["west"], b["east"], 50), np.linspace(b["south"], b["north"], 50))
+    x, y = Transformer.from_crs(4326, dom.crs, always_xy=True).transform(lon, lat)
+    x0, y0, x1, y1 = dom.bounds
+    if not ((x >= x0) & (x <= x1) & (y >= y0) & (y <= y1)).all():
+        raise ValueError(f"overview box {b} is not inside the model grid {dom.bounds} ({dom.crs})")
+
+
 def to_lonlat(
     a: np.ndarray, dom, manifest: dict, width: int, categorical: bool, src_transform: Affine | None = None
 ) -> np.ndarray:
@@ -288,7 +301,7 @@ def surface_derived(tree: xr.DataTree) -> dict[str, np.ndarray]:
     return out
 
 
-def imagery_texture(src: str, manifest: dict, width: int = 4080) -> np.ndarray:
+def imagery_texture(src: str, manifest: dict, width: int = 2 * TEX_WIDTH) -> np.ndarray:
     """Sentinel-2 true colour (seis-hydro-2-sed stretch) warped from its 20 m UTM grid to the overview box."""
     import rasterio
 
@@ -452,7 +465,7 @@ def export_layers(tree: xr.DataTree, dom, manifest: dict, out: Path, flowlines=N
     return meta
 
 
-def _streams_png(flowlines, manifest: dict, path: Path, width: int = 4080) -> dict:
+def _streams_png(flowlines, manifest: dict, path: Path, width: int = 2 * TEX_WIDTH) -> dict:
     """Draw flowlines at 2x the drape width; line width and opacity grow with Strahler order."""
     t, w, h = overview_grid(manifest, width)
     img = Image.new("RGBA", (w, h), (0, 0, 0, 0))
@@ -1008,7 +1021,7 @@ CANOPY_STYLE = {
 }
 
 
-def rgb_texture(src: str, manifest: dict, width: int = 4080) -> np.ndarray:
+def rgb_texture(src: str, manifest: dict, width: int = 2 * TEX_WIDTH) -> np.ndarray:
     """A 3-band image (any CRS) warped to the overview box; alpha 0 where all bands are 0 or 255 (masked).
     Nearest-neighbour, so a rendered map keeps its exact legend colours and its mask."""
     import rasterio
