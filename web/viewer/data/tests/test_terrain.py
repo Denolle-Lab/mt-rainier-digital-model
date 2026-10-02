@@ -39,20 +39,29 @@ def test_build_overview_writes_heights_image_and_meta(tmp_path):
     def get(url, path):
         urls.append(url)
         if "exportImage" in url:
-            a = np.full((1215, 1800), 1500, np.float32)
+            a = np.full((1215, 1710), 1500, np.float32)
             a[0, 0] = -3.4e38                      # NODATA fills with the grid minimum
             return write_tiff(a, tile=512)
         return b"\xff\xd8jpeg"
     meta = terrain.build_overview(tmp_path / "out", tmp_path / "cache", get=get)
     h = np.fromfile(tmp_path / "out" / "terrain" / "overview.bin", "<i2")
-    assert h.size == 1800 * 1215 and (h == 1500).all()
+    assert h.size == 1710 * 1215 and (h == 1500).all()
     assert (tmp_path / "out" / "terrain" / "overview.jpg").read_bytes() == b"\xff\xd8jpeg"
-    assert meta["cols"] == 1800 and meta["rows"] == 1215
-    assert meta["dx"] == pytest.approx(0.8 * E.KX / 1800) and meta["x0"] == pytest.approx(E.to_x(-122.16))
+    assert meta["cols"] == 1710 and meta["rows"] == 1215
+    assert meta["dx"] == pytest.approx(0.76 * E.KX / 1710) and meta["x0"] == pytest.approx(E.to_x(-122.16))
     assert meta["z0"] == pytest.approx(E.to_z(E.OVERVIEW.north))
     assert json.loads((tmp_path / "out" / "terrain" / "terrain.json").read_text()) == meta
-    assert any("size=1800,1215" in u for u in urls) and any("size=4080,2754" in u for u in urls)
+    assert any("size=1710,1215" in u for u in urls) and any("size=3876,2754" in u for u in urls)
 
+
+def test_overview_rasters_are_cached_per_box(tmp_path):
+    # rasters cached for another box (the first map reached 121.36 W) must not be reused for this one
+    paths = []
+    def get(url, path):
+        paths.append(path)
+        return write_tiff(np.full((1215, 1710), 1500, np.float32), tile=512) if "exportImage" in url else b"\xff\xd8jpeg"
+    terrain.build_overview(tmp_path / "out", tmp_path / "cache", get=get)
+    assert {q.parent.name for q in paths} == {terrain.bbox(E.OVERVIEW)}
 
 def test_get_does_not_cache_a_body_that_fails_validation(tmp_path):
     with pytest.raises(fetch.FetchError):
