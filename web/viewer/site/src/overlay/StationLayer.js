@@ -26,6 +26,14 @@ export class StationLayer {
   setVisible(on) { this.hiddenAll = !on; }
   setFilter(pred) { this.pred = pred; }   // (site) => boolean, from the sensor legend
 
+  // redraw the rings after instruments merged from the rainier3d inventory joined a site's kinds
+  refreshKinds() {
+    for (const it of this.items) {
+      it.size = ringSize(it.site.kinds.length);
+      it.d.querySelector("svg").outerHTML = ringSvg(it.site.kinds, it.size);
+    }
+  }
+
   // virtual sensors (configs/virtual_sensors.yaml): a "V" badge on the marker of every site holding one
   setVirtual(virtual = {}) {
     for (const it of this.items) {

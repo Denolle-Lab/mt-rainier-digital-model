@@ -1,0 +1,18 @@
+# Surveys: named deployments with their own toggle in the viewer's Sensors legend, on by default and shown
+# whatever the Current / Past switches say (S11 -> model/sensors.json "surveys", each site's "survey").
+# Add an entry to give a new survey its toggle.
+#   label    legend text
+#   period   dates shown next to the label (YYYY-MM)
+#   network  FDSN network: its sites (NET.*) belong to the survey
+#   das      true: the DAS fiber belongs to the survey
+#   source   key in configs/sources.yaml
+nodes_2025:
+  label: Nodal array
+  period: 2025-07 – 2025-08   # main deployment 2025-07-10 to 2025-08-17; Z5.149 has earlier epochs from 2025-06-24
+  network: Z5                 # the 2025 epoch (configs/sensor_families.yaml nodes_2025)
+  source: fdsn_z5_2025
+mora_das:
+  label: MORA DAS
+  period: 2023-08 – 2024-09, 2025
+  das: true                   # the Paradise–Nisqually Entrance fiber
+  source: m1_placeholder      # open: the dates are to be read from the DAS data files, which are not in the repository

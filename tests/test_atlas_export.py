@@ -53,3 +53,36 @@ def test_viewer_kinds():
     assert viewer_kind("borehole strainmeter", "strain") == "strainmeter"
     assert viewer_kind("GNSS receiver", "gnss") == "gnss"
     assert viewer_kind("", "meteorology") == "hydromet"
+
+
+def test_surveys_tag_their_sites_and_the_das_fiber():
+    import yaml
+
+    from rainier3d.config.domain import REPO
+    from rainier3d.export.atlas import apply_surveys
+
+    meta = {"sites": [{"id": "Z5.001"}, {"id": "2N.1"}, {"id": "UW.RCM"}, {"id": "gnss-P432"}], "das": {}}
+    apply_surveys(meta)
+    assert [s["survey"] for s in meta["sites"]] == ["nodes_2025", None, None, None]
+    assert meta["das"]["survey"] == "mora_das"
+    assert [s["key"] for s in meta["surveys"]] == ["nodes_2025", "mora_das"]
+    reg = yaml.safe_load((REPO / "configs" / "sources.yaml").read_text())
+    cfg = yaml.safe_load((REPO / "configs" / "sensor_surveys.yaml").read_text())
+    assert all(v["source"] in reg for v in cfg.values())  # every survey names a registry key
+
+
+def test_retired_kinds_at_a_running_site():
+    from rainier3d.export.atlas import retired_kinds
+
+    pr01 = [  # CC.PR01: the broadband runs, the infrasound microphone ended in 2020
+        {"family": "seismic", "kind": "broadband seismometer", "status": "operating", "start": "2016-11-03"},
+        {
+            "family": "infrasound",
+            "kind": "infrasound microphone",
+            "status": "retired",
+            "start": "2018-10-04",
+            "end": "2020-06-08",
+        },
+    ]
+    assert retired_kinds(pr01, "seismic") == {"infrasound": ["2018-10-04", "2020-06-08"]}
+    assert retired_kinds([dict(pr01[1])], "infrasound") == {}  # a past site: nothing singled out

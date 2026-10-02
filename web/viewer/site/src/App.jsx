@@ -22,7 +22,8 @@ import { MassEventPoints } from "./scene/MassEventPoints.js";
 import { DEFAULT_MASS_FILTER, loadMassEvents, massCounts } from "./data/massEvents.js";
 import MassFilter from "./ui/MassFilter.jsx";
 import MassTip from "./ui/MassTip.jsx";
-import { DEFAULT_FILTER, classifyMarker, extraSites, kindCounts, loadSensors, passes } from "./data/sensors.js";
+import { DEFAULT_FILTER, classifyMarker, extraSites, kindCounts, loadSensors, mergedKinds, passes } from "./data/sensors.js";
+import { KINDS } from "./data/kinds.js";
 import { ModelVolume, loadVolumeMeta } from "./scene/ModelVolume.js";
 import HelpPanel, { HelpHint, markHelpSeen } from "./ui/HelpPanel.jsx";
 import HudDock from "./ui/HudDock.jsx";
@@ -78,8 +79,14 @@ function Atlas({ bundle, onError }) {
       loadSensors(bundle.base).then(inv => {
         if (!inv || cancelled) return;
         const extras = extraSites(inv, bundle.stations);
+        for (const [id, m] of mergedKinds(inv, bundle.stations)) {   // e.g. the GNSS MUIR joins the UW.RCM marker
+          const st = bundle.stations.sites.find(x => x.id === id);
+          st.kinds = KINDS.map(k => k.key).filter(k => st.kinds.includes(k) || m.kinds.includes(k));
+          st.merged = m; st.retiredKinds = m.retired;
+        }
+        layer.refreshKinds();
         s.sensors = new SensorPoints(s, extras, inv.das); s.sensors.setFilter(DEFAULT_FILTER);
-        setSens({ all: [...bundle.stations.sites.filter(x => x.onMap).map(classifyMarker), ...extras], das: inv.das, points: s.sensors, notes: inv.notes ?? {}, virtual: inv.virtual ?? {} });
+        setSens({ all: [...bundle.stations.sites.filter(x => x.onMap).map(classifyMarker), ...extras], das: inv.das, points: s.sensors, notes: inv.notes ?? {}, virtual: inv.virtual ?? {}, surveys: inv.surveys ?? [] });
         layer.setVirtual(inv.virtual ?? {});
       });
       if (bundle.model) loadMassEvents(bundle.base).then(doc => {
@@ -126,7 +133,7 @@ function Atlas({ bundle, onError }) {
     setSfilter(f); sens?.points.setFilter(f);
     layerRef.current?.setFilter(x => passes(classifyMarker(x), f));
   };
-  const sensorLegend = sens && { filter: sfilter, onFilter: applyFilter, counts: kindCounts(sens.all, sfilter), das: sens.das, virtual: sens.virtual };
+  const sensorLegend = sens && { filter: sfilter, onFilter: applyFilter, counts: kindCounts(sens.all, sfilter), das: sens.das, surveys: sens.surveys, virtual: sens.virtual };
   const modelLayer = modelKey ? bundle.model.byKey[modelKey] : null;
   const flowLayer = bundle.model?.byKey.mass_flows;
   const showFlows = on => {   // the flow deposits are a draped model layer: the same slot as the layer menu
