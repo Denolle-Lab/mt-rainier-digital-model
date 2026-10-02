@@ -186,11 +186,13 @@ synoptic_catalog:
   note: elevations are in feet; converted to m
   role: meteorology and hydrology sites
 
-nodes_2025:
-  title: 2025 Rainier node deployment sheet (UW; serial, lat/lon, deployers, date, notes)
-  url: file://~/Downloads/Rainier Deployment Final.xlsx
-  verified: local file read 2026-09-23 (240 nodes; 191 inside the model domain)
-  role: geophone node sites
+fdsn_z5_2025:
+  title: Schmandt 2025, Rainier NP wide-aperture node array 2025, FDSN network Z5 (2025)
+  doi: 10.7914/mcd3-ph92
+  url: https://www.fdsn.org/networks/detail/Z5_2025/
+  license: "provider terms, to verify (see url); waveforms restricted, station metadata open"
+  verified: web-2026-09-28 (DataCite; EarthScope station service, 240 stations 001-240, 248 epochs, 191 inside the model domain)
+  role: geophone node sites (replaces the 2025 deployment spreadsheet, which duplicated these stations)
 
 das_paradise_nisqually:
   title: Paradise-Nisqually Entrance DAS channel table (per-channel lat/lon/elevation, lithology, notices)

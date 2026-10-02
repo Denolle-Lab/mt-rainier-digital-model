@@ -21,6 +21,7 @@ from matplotlib.colors import BoundaryNorm, LightSource, ListedColormap  # noqa:
 from pyproj import Transformer  # noqa: E402
 
 from rainier3d.petro.table import unit_names  # noqa: E402
+from rainier3d.sensors.inventory import families, is_node_2025  # noqa: E402
 
 CAT = ["#2a78d6", "#eb6834", "#1baf7a", "#eda100", "#e87ba4", "#008300", "#4a3aa7", "#e34948"]
 INK, MUTED, GRID = "#1b1b1a", "#6b6a66", "#d9d8d3"
@@ -207,10 +208,11 @@ def fig_map(tree, dom, sites, events, das, path, sec_a, sec_b):
                 zorder=5,
                 label=f"{label} ({len(p)})",
             )
+    cfg = families()
     nodes = [
         tf.transform(*f["geometry"]["coordinates"])
         for f in sites["features"]
-        if f["properties"]["id"].startswith("node-")
+        if is_node_2025(f["properties"]["id"], cfg)
     ]
     p = np.array(nodes) / 1e3
     ax.scatter(

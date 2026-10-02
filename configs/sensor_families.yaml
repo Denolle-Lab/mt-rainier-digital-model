@@ -27,6 +27,8 @@ fdsn_rules:                     # [regex on channel code, family, label]
   - ['^[LRVBU]F[ZNE123XYZ]$', mt, magnetometer]
   - ['^[LRVBU]Q[ZNE123XYZ]$', mt, electric-field dipole]
 
-nodes_2025:
-  source: ~/Downloads/Rainier Deployment Final.xlsx
-  label: 2025 Rainier node deployment (UW)
+nodes_2025:                     # FDSN network kept whole, also where it extends beyond the model domain
+  network: Z5
+  start: "2025-01-01"           # the Z5 code is reused; this epoch is the Rainier NP node array
+  end: "2025-12-31"
+  source: fdsn_z5_2025

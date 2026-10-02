@@ -214,7 +214,8 @@ def main():
     ap.add_argument("--das", default=str(Path.home() / "Downloads/Paradise2NisquallyEntrace_Channels.csv"))
     a = ap.parse_args()
     dom = load_domain()
-    fam = inv.families()["families"]
+    cfg = inv.families()
+    fam = cfg["families"]
 
     sites = inv.inventory(dom)
     write("sites.geojson", {"type": "FeatureCollection", "features": site_features(sites, fam)})
@@ -246,7 +247,7 @@ def main():
         if box is None:
             box = list(dom.bbox_4326)
         elif box == "nodes":
-            nl = [(s["lon"], s["lat"]) for s in sites if s["id"].startswith("node-")]
+            nl = [(s["lon"], s["lat"]) for s in sites if inv.is_node_2025(s["id"], cfg)]
             box = [min(p[0] for p in nl), min(p[1] for p in nl), max(p[0] for p in nl), max(p[1] for p in nl)]
         n = sum(box[0] <= s["lon"] <= box[2] and box[1] <= s["lat"] <= box[3] for s in sites)
         regions.append(

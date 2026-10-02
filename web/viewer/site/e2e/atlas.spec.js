@@ -181,18 +181,18 @@ test("(o) strain properties draw their orientation bars on the depth slice", asy
   await expect.poll(shown).toEqual([]);
 });
 
-test("(m) the sensor legend filters: geophones show the 2025 nodes, Past adds earlier deployments", async ({ page }) => {
+test("(m) the sensor legend filters: no geophone operates now, Past adds the nodal deployments", async ({ page }) => {
   await page.waitForFunction(() => !!window.__rainier.sensors, null, { timeout: 30_000 });
   const on = () => page.evaluate(() => Array.from(window.__rainier.sensors.onAttr.array).filter(v => v > 0).length);
-  // the 2025 UW nodes that sit on the terrain box (the rest lie west of it and are not drawn)
+  // the 2025 node array (FDSN Z5, ended August 2025) on the terrain box (the rest lie outside it and are not drawn)
   const nodes2025 = await page.evaluate(() => window.__rainier.sensors.sites.filter(s =>
-    s.kinds.includes("geophone") && s.status === "operating" && s.source.startsWith("2025")).length);
+    s.kinds.includes("geophone") && s.id.startsWith("Z5.")).length);
   expect(nodes2025).toBeGreaterThan(150);
   await dock(page, "Sensors");
   await page.locator(".sf-kind", { hasText: "Geophone" }).click();
-  expect(await on()).toBe(nodes2025);                             // operating geophones = the 2025 nodes
+  expect(await on()).toBe(0);                                     // no geophone node is operating
   await page.getByRole("button", { name: "Past", exact: true }).click();
-  expect(await on()).toBeGreaterThan(nodes2025 + 300);            // + retired nodal deployments (2N, XD, Z5, ...)
+  expect(await on()).toBeGreaterThan(nodes2025 + 300);            // Z5 + earlier nodal deployments (2N, XD, ...)
   await page.getByRole("button", { name: "Temporary", exact: true }).click();
   expect(await on()).toBe(0);                                     // all nodes are temporary
   expect(await page.evaluate(() => window.__rainier.sensors.fiber.visible)).toBe(false);
