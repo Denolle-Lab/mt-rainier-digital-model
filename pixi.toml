@@ -80,6 +80,9 @@ viewer-bundle = "mkdir -p outputs && tar czf outputs/viewer-atlas-bundle.tar.gz 
 atlas = "python -m http.server 8765 --bind 127.0.0.1 --directory web/atlas"
 all = { depends-on = ["s1", "s2", "s3", "s4", "s5", "s6", "s7", "s8"] }
 s22 = "python scripts/22_alteration_finn2001.py"
+s31 = "python scripts/31_wells.py"
+# Rebuild the 3D viewer bundle and atlas data from scratch at the data freeze of configs/platform.yaml
+platform = "python scripts/32_platform.py"
 s24 = "python scripts/24_mass_movements.py"
 s29 = "python scripts/29_flood_event.py"
 s30 = "python scripts/30_terrain_geometry.py"
