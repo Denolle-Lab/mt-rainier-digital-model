@@ -9,6 +9,10 @@ The products of rainier3d are published under CC-BY 4.0 as assets of the GitHub 
   `products-v1.0.0` holds a fixed snapshot of it, cut on 2026-09-01.
 - **Licences and attribution:** `docs/data_policy.md`. Inputs whose licence forbids redistributing derivatives
   are left out, so the model has no `water_table_depth`.
+- **Only what rainier3d computes** (from the release after `products-v1.0.0`): third-party fields that are only
+  resampled onto the grid are left out (`configs/products.yaml`) and rebuilt by `pixi run s2`.
+- **Remaking a product:** each release carries `REBUILD.md` (the commit, the data freeze, the stages to run and
+  the inputs to obtain by hand) and `inputs.csv` (every cached input file of each product, with its SHA-256).
 
 ## Install the client
 

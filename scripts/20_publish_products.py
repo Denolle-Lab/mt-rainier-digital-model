@@ -44,6 +44,11 @@ from rainier3d.io import store
 REPOSITORY = "Denolle-Lab/mt-rainier-digital-model"
 CATALOG = REPO / "src" / "rainier3d" / "products.json"
 PRODUCTS = ["model", "gnss", "edifice_load", "strain_3d", "grids", "alteration", "mass_movements"]
+SPEC = REPO / "configs" / "products.yaml"
+
+
+def spec() -> dict:
+    return yaml.safe_load(SPEC.read_text())
 
 
 def restricted_keys() -> set[str]:
@@ -73,17 +78,79 @@ def sha256(p: Path) -> str:
 
 
 def package_model(dom, tmp: Path, out: Path, bad: set[str]):
+    """Only what rainier3d computes (configs/products.yaml): resampled third-party fields and variables whose
+    sources may not be redistributed are dropped, and listed in the archive's excluded_variables."""
+    sp = spec()["model"]
+    resampled = {"surface": set(sp["surface"]["resampled"])}
+    resampled |= {lev: set(sp["levels"]["resampled"]) for lev in ("L1", "L2", "L3")}
     tree = xr.open_datatree(dom.path("processed") / "model.zarr", engine="zarr", consolidated=False)
     nodes, dropped = {}, []
-    for name in ("surface", "L1", "L2", "L3"):
+    for name in sp["nodes"]:
         ds = tree[name].to_dataset()
         drop = [v for v in ds.data_vars if set(str(ds[v].attrs.get("gaia:source_keys", "")).split(",")) & bad]
+        drop = sorted(set(drop) | (resampled.get(name, set()) & set(ds.data_vars)))
         dropped += [f"{name}/{v}" for v in drop]
         nodes[f"/{name}"] = ds.drop_vars(drop)
     t = xr.DataTree.from_dict(nodes)
     t.attrs = dict(tree.attrs) | {"excluded_variables": ", ".join(dropped), "license": "CC-BY-4.0 (derived)"}
     store.write(t, tmp / "model.zarr")
     return zip_dir(tmp / "model.zarr", out / "rainier3d_model.zarr.zip", "model.zarr"), dropped
+
+
+def rebuild_docs(dom, tag: str, built: dict, out: Path) -> list[Path]:
+    """REBUILD.md (how to remake each product from a clean clone) and inputs.csv (the cached raw files each
+    product reads, with their SHA-256 from docs/data_manifest.csv) for the release and its Zenodo deposit."""
+    import csv
+
+    from rainier3d.config.platform import as_of
+
+    rb = spec()["rebuild"]
+    reg = yaml.safe_load((REPO / "configs" / "sources.yaml").read_text())
+    manifest = list(csv.DictReader((REPO / "docs" / "data_manifest.csv").open()))
+    commit = subprocess.run(
+        ["git", "rev-parse", "HEAD"], cwd=REPO, capture_output=True, text=True
+    ).stdout.strip()
+    repo, short = f"https://github.com/{REPOSITORY}", commit[:12]
+    rows, md = (
+        [],
+        [
+            f"# Remaking the rainier3d derived products ({tag})\n",
+            f"Built from commit {commit} of {repo}, data freeze {as_of()}.",
+            "Each product holds only what rainier3d computes (configs/products.yaml); resampled",
+            "third-party fields are rebuilt by the stages below from their original archives.",
+            "From a clean clone:\n",
+            "```bash",
+            f"git clone {repo} && cd mt-rainier-digital-model && git checkout {short}",
+            "pixi install",
+            "pixi run manifest -- --check   # after the stages: compare the inputs with inputs.csv",
+            "```\n",
+        ],
+    )
+    for key in [k for k in PRODUCTS if k in built]:
+        r = rb[key]
+        md.append(f"## {key}\n")
+        if r.get("needs"):
+            md.append(f"Needs: {', '.join(r['needs'])} (rebuild it first).\n")
+        md.append("```bash\n" + "\n".join(f"pixi run {s}" for s in r["stages"]) + "\n```\n")
+        for m in r.get("manual", []):
+            e = reg[m]
+            md.append(f"- Manual input `{m}`: {e.get('title', '')} ({e.get('doi') or e.get('url')}).")
+        if r.get("note"):
+            md.append(f"\n{r['note']}\n")
+        for row in manifest:
+            if row["path"].split("/")[0] in r.get("raw", []):
+                rows.append({"product": key, **row})
+        md.append("")
+    md.append("Inputs: inputs.csv lists every cached file each product reads, with its size and SHA-256.\n")
+    p_md, p_csv = out / "REBUILD.md", out / "inputs.csv"
+    p_md.write_text("\n".join(md))
+    with p_csv.open("w", newline="") as f:
+        w = csv.DictWriter(
+            f, fieldnames=["product", "source", "path", "bytes", "sha256"], lineterminator="\n"
+        )
+        w.writeheader()
+        w.writerows(rows)
+    return [p_md, p_csv]
 
 
 def package_gnss(dom, tmp: Path, out: Path):
@@ -140,6 +207,9 @@ def main():
     ap.add_argument("--only", nargs="+", choices=PRODUCTS, help="default: all")
     ap.add_argument("--rolling", action="store_true", help="replace the assets of an existing release")
     a = ap.parse_args()
+    dirty = subprocess.run(["git", "status", "--porcelain"], cwd=REPO, capture_output=True, text=True).stdout
+    if a.upload and dirty.strip():  # REBUILD.md names the commit: it must be the code that made the products
+        raise SystemExit("uncommitted changes: commit them before publishing a products release")
     dom = load_domain()
     out = dom.path("outputs") / "products"
     tmp = out / "staging"
@@ -183,7 +253,9 @@ def main():
         )
     mm = dom.path("outputs") / "mass_movements"
     if "mass_movements" in only and mm.exists():
-        built["mass_movements"] = (package_files("mass_movements", sorted(mm.iterdir()), out), [])
+        skip = set(spec()["mass_movements"]["exclude_files"])  # copies of third-party layers
+        files = [p for p in sorted(mm.iterdir()) if p.name not in skip]
+        built["mass_movements"] = (package_files("mass_movements", files, out), sorted(skip))
 
     snapshots = []
     for key, (path, dropped) in built.items():
@@ -230,6 +302,7 @@ def main():
             logging.info("uploaded %d files to release %s", len(files), a.tag)
         return
     assets = [p for k, (p, _) in built.items() if not catalog["products"][k].get("rolling")] + snapshots
+    assets += rebuild_docs(dom, a.tag, built, out)
     sums = out / "SHA256SUMS"
     sums.write_text("".join(f"{sha256(p)}  {p.name}\n" for p in assets))
     for p in assets:
