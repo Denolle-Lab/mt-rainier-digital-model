@@ -145,6 +145,21 @@ rystrom_2000:
   verified: web-2026-09-24 (grids and flight lines downloaded; registration checked against topography and ice)
   role: apparent resistivity (33 kHz, 4737 Hz, 4341 Hz, 837 Hz) and reduced-to-pole magnetic grids for the alteration field (S22)
 
+blakely_2024:
+  title: Blakely, Bennett, Staisch & Wells 2024, High-resolution aeromagnetic survey over Packwood, Washington, and surrounding areas, USGS data release
+  doi: 10.5066/P9UJHQU1
+  url: https://www.sciencebase.gov/catalog/item/656e3da9d34e7ca10833fc94
+  license: public domain (USGS)
+  verified: web-2026-10-01 (DataCite; grid, flight lines, metadata and data dictionary downloaded; registration checked against topography)
+  role: 2022 total-field anomaly grid and drape surface for the merged apparent magnetisation (S31)
+
+igrf13:
+  title: Alken et al. 2021, International Geomagnetic Reference Field, the thirteenth generation, Earth, Planets and Space 73
+  doi: 10.1186/s40623-020-01288-x
+  url: https://www.ngdc.noaa.gov/IAGA/vmod/coeffs/igrf13coeffs.txt
+  verified: web-2026-10-01 (Crossref); field direction from the IAGA coefficients, which reproduce the survey's IGRF channel to 1.3 nT when IGRF-12 is used as the contractor did
+  role: inclination and declination of the field over the 2022 survey, for its reduction to the pole (S31)
+
 john_2008:
   title: John, Sisson, Breit, Rye & Vallance 2008, JVGR, hydrothermal alteration at Mount Rainier
   doi: 10.1016/j.jvolgeores.2008.04.004
