@@ -16,8 +16,10 @@ Usage: pixi run python scripts/26_relocate_catalog.py [--start 2023-01-01 --end 
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import logging
+import shutil
 
 import numpy as np
 import pandas as pd
@@ -86,6 +88,16 @@ def main():
     for v, ph in (("vp", "P"), ("vs", "S")):
         g1[v] = (g[v].dims, pnsn.pnsn_1d(zz, ph).astype(np.float32))
     grids.write_nll(g1, nd / "model" / "pnsn1d")
+    # travel times and locations are reused only for the same velocity grid: a changed model discards them
+    for m, gm in (("rainier3d", g), ("pnsn1d", g1)):
+        h = hashlib.sha256(
+            b"".join(np.ascontiguousarray(gm[v].values).tobytes() for v in ("vp", "vs"))
+        ).hexdigest()
+        stamp = nd / "model" / f"{m}.sha256"
+        if not stamp.exists() or stamp.read_text() != h:
+            for f in (*(nd / "time").glob(f"{m}.*"), *(nd / "loc").glob(f"{m}.*")):
+                f.unlink() if f.is_file() else shutil.rmtree(f)
+            stamp.write_text(h)
     s = tree["surface"].to_dataset()
     topo = N.write_topo_grd(s["elevation"].values, s.x.values, s.y.values, nd / "topo_km.grd")
 
