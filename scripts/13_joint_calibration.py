@@ -33,6 +33,7 @@ import datetime as dt
 import json
 import logging
 import time
+from pathlib import Path
 
 import numpy as np
 import xarray as xr
@@ -40,6 +41,7 @@ import yaml
 from scipy.linalg import block_diag
 
 from rainier3d.config.domain import REPO, load_domain
+from rainier3d.cz.level import context_from_disk
 from rainier3d.fusion import build, regional
 from rainier3d.io.store import read_tree
 from rainier3d.petro.table import perturbations, petro_table, rock_unit_ids, unit_names
@@ -64,11 +66,17 @@ def main():
     ap.add_argument("--no-geology", action="store_true")
     ap.add_argument("--skin", type=int, default=1)
     ap.add_argument("--lam-d", type=float, default=0.01)
+    ap.add_argument("--no-cz", action="store_true", help="trial models without the critical zone (as in M1)")
+    ap.add_argument("--out", default=str(OUT_YAML), help="calibration file to write")
+    ap.add_argument(
+        "--outputs", default="joint_calibration", help="folder under outputs/ for the diagnostics"
+    )
     a = ap.parse_args()
     t_start = time.time()
     dom = load_domain()
     vc, fc = dom.cfg["validation"], dom.cfg["fusion"]
-    out_dir = dom.path("outputs") / "joint_calibration"
+    out_dir = dom.path("outputs") / a.outputs
+    out_yaml = Path(a.out)
     out_dir.mkdir(parents=True, exist_ok=True)
 
     grid, picks, stations, sta_xyd, events = L.setup(dom, REPO / "configs" / "validation_events.csv")
@@ -81,6 +89,7 @@ def main():
         for n, lev in dom.levels.items()
     }
     surf = geo["surface"].to_dataset()
+    cz = None if a.no_cz else context_from_disk(dom, geo)  # the critical zone inside every trial model
     ground = L.ground_on_grid(geo, grid)
     xs, ys, zs = grid.xs, grid.ys, grid.zs
     depth = C.depth_below_ground(geo, xs, ys, zs)
@@ -111,7 +120,7 @@ def main():
         nodes = {"/surface": surf}
         for n, lev in dom.levels.items():
             gl = geo[n].to_dataset()
-            p = assign(gl, table, pert, g)
+            p = assign(gl, table, pert, g, cz)
             reg = build.apply_bias(reg0[n], gl["depth"].values, cal)
             nodes[f"/{n}"], _ = build.fuse_level(gl, p, reg, lev, fc, q, n, full=False)
         tree = xr.DataTree.from_dict(nodes)
@@ -326,8 +335,8 @@ def main():
         "runtime_min": round((time.time() - t_start) / 60, 1),
         "date": dt.date.today().isoformat(),
     }
-    OUT_YAML.write_text(yaml.safe_dump(rec, sort_keys=False))
-    logging.info("wrote %s (%.1f min)", OUT_YAML, rec["runtime_min"])
+    out_yaml.write_text(yaml.safe_dump(rec, sort_keys=False))
+    logging.info("wrote %s (%.1f min)", out_yaml, rec["runtime_min"])
 
 
 if __name__ == "__main__":

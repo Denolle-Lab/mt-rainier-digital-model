@@ -6,7 +6,8 @@
 # tests/test_products.py fails if a variable of model.zarr is not classified here.
 
 model:
-  nodes: [surface, L1, L2, L3]          # /soil holds SOLUS100 and POLARIS profiles resampled by S2: not packaged
+  nodes: [surface, cz, L1, L2, L3]      # /cz: the S4 critical-zone columns; /soil holds resampled SOLUS100 and
+                                        # POLARIS profiles (S2): not packaged
   surface:
     geometry: [elevation]
     computed:

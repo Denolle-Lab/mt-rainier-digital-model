@@ -52,6 +52,8 @@ def main():
     if env.exists():  # S2 environmental layers share the surface grid
         surf = surf.merge(read(env), compat="override", combine_attrs="drop_conflicts")
     nodes, report = {"/surface": surf}, []
+    if "cz" in props:  # the S4 critical-zone columns on the L1 grid
+        nodes["/cz"] = props["cz"].to_dataset()
     soil = dom.path("processed") / "soil_profile.zarr"
     if soil.exists():  # S2 soil profiles (SOLUS points, POLARIS layers), surface grid, depth below ground
         nodes["/soil"] = read(soil)

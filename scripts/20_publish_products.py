@@ -86,6 +86,8 @@ def package_model(dom, tmp: Path, out: Path, bad: set[str]):
     tree = xr.open_datatree(dom.path("processed") / "model.zarr", engine="zarr", consolidated=False)
     nodes, dropped = {}, []
     for name in sp["nodes"]:
+        if name not in tree:
+            continue
         ds = tree[name].to_dataset()
         drop = [v for v in ds.data_vars if set(str(ds[v].attrs.get("gaia:source_keys", "")).split(",")) & bad]
         drop = sorted(set(drop) | (resampled.get(name, set()) & set(ds.data_vars)))
