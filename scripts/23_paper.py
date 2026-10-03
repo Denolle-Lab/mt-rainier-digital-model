@@ -93,6 +93,8 @@ UNICODE = {
     "…": r"\ldots{}",
     "·": r"\textperiodcentered{}",
     "é": r"\'e",
+    "É": r"\'E",
+    "ô": r"\^o",
     "á": r"\'a",
     "è": r"\`e",
     "ö": '\\"o',

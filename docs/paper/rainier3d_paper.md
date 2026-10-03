@@ -49,7 +49,7 @@ Mount Rainier is the most hazardous volcano in the Cascade Range, for two reason
 
 rainier3d connects these scales in one model with three properties:
 - it is tied to the mapped geology at the surface: the 149 map symbols of the Washington 1:100,000 geologic map in the box [@dnr_gems_100k] are assigned to 14 surface model units by the rules of `configs/units.yaml` (S1) and extended to depth by explicit geometry rules (S3, [@sec:subsurface]), and an invariant test requires the top rock cell of the finest level (L1) to carry the mapped unit in at least 95% of bedrock columns;
-- it is consistent with regional tomography at depth: S5 merges the geology model in the wavenumber domain with the USGS Cascadia velocity model v1.7 down to 9.9 km below the ground [@cvm17_article] and CRESCENT Gen0 below it [@crescent_gen0], keeping the regional model at wavelengths longer than a cutoff of 6 km at the surface, 10 km at 2 km depth and 20 km at 10 km depth (placeholder values in `configs/domain.yaml`), the geology model alone above 300 m depth, and a linear taper between 300 and 1000 m; the root-mean-square (RMS) difference of ln V between the low-passed fused and regional models is at most 0.012, against a tolerance of 0.03;
+- it is consistent with regional tomography at depth: S5 merges the geology model in the wavenumber domain with the USGS Cascadia velocity model v1.7 down to 9.9 km below the ground [@cvm17_article] and CRESCENT Gen0 below it [@crescent_gen0], keeping the regional model at wavelengths longer than a cutoff of 6 km at the surface, 10 km at 2 km depth and 20 km at 10 km depth (placeholder values in `configs/domain.yaml`), the geology model alone above 300 m depth, and a linear taper between 300 and 1000 m; the root-mean-square (RMS) difference of ln V between the low-passed fused and regional models is at most 0.013, against a tolerance of 0.03;
 - it reproduces the travel times of the Pacific Northwest Seismic Network (PNSN): calibrated in S13 on 1823 P and 1280 S analyst picks from 88 PNSN earthquakes (M 2.0–3.4, 1 January 2015 to 1 September 2026) [@comcat_uw], each relocated in 3D in every trial model, it lowers the RMS residual of held-out events after relocation from 0.121 to 0.093 s for P and from 0.317 to 0.188 s for S ([@sec:subsurface]).
 
 The same grids carry the surface layers that describe soil, water, vegetation and ice, the geodetic strain field, and the stress of the edifice load. The model is a digital model rather than a digital twin: it assimilates no time-dependent data. Only the GNSS product is refreshed on a schedule.
@@ -113,7 +113,7 @@ The database is compiled by code, not by hand, following five rules.
 5. **Invariants.** The test suite checks the built model against rules that must hold whatever the data:
     - no properties above the ground: on L1, L2 and L3, Vp, Vs and density are NaN in every air cell (unit 0) and finite in every other cell;
     - Vp/Vs and density within physical bounds: Vp/Vs between 1.5 and 3.0 in rock cells (air, ice and magma mush excluded), fused Vp/Vs between the geology and regional ratios of the same cell (relative tolerance 10⁻⁴), and density between 900 and 3100 kg m⁻³ in every non-air cell;
-    - the long wavelengths of the fused model equal those of the regional model within a tolerance: per level and for Vp and Vs, the RMS of ln V between the low-passed fused and low-passed regional models is at most `lowpass_rms_tol` = 0.03 (`configs/domain.yaml`), checked on the report that S5 writes to `outputs/fusion_report.csv` (current maximum 0.012, L1 Vs);
+    - the long wavelengths of the fused model equal those of the regional model within a tolerance: per level and for Vp and Vs, the RMS of ln V between the low-passed fused and low-passed regional models is at most `lowpass_rms_tol` = 0.03 (`configs/domain.yaml`), checked on the report that S5 writes to `outputs/fusion_report.csv` (current maximum 0.013, L1 Vs);
     - the surface unit matches the unit of the top model cell: where bedrock (plutonic, supracrustal or cap units) crops out, the top non-air L1 cell carries the mapped surface unit in at least 95% of columns.
 
    Tolerances are fixed in the configuration and are not relaxed to make a run pass.
@@ -444,7 +444,118 @@ with bulk density $\rho_b$ = 2500 kg m⁻³, water density $\rho_w$ = 1000 kg m�
 | Russell Ranch Formation | 4.00 | 6.00 | 40 | Brocher | Nafe–Drake |
 | Middle crust | 6.00 | 6.50 | 50 | Brocher | Nafe–Drake |
 
-: Unit parameters of the crack-closure law (`configs/petrophysics.csv`). For the rock units (Rainier andesite to middle crust, and the magma body), the calibration multiplies V₀ by 1.31 (capped at 0.98 V∞), P* by 0.91 and Vs by 0.976. Ice and the unconsolidated deposits keep their table values. {#tbl:units}
+: Unit parameters of the crack-closure law (`configs/petrophysics.csv`). For the rock units (Rainier andesite to middle crust, and the magma body), the calibration multiplies V₀ by 1.47 (capped at 0.98 V∞), P* by 1.79 and Vs by 0.961. Ice and the unconsolidated deposits keep their table values. {#tbl:units}
+
+## The critical zone in the model {#sec:cz}
+
+The crack-closure law of [@sec:rockphysics] describes rock under confining pressure. In the top tens of metres the
+medium is soil, glacial and volcanic deposits and weathered rock, partly saturated, whose stiffness depends on the
+water content as much as on depth. The model resolves this critical zone with fine columns and joins them to the
+rock below with one rock-physics law, so that the near surface and the volcano share one effective stress and one
+water table (S4, `rainier3d.cz.medium`, `rainier3d.cz.level`, `configs/cz.yaml`). The construction follows the
+geophysical studies of the critical zone in granitic and volcanic terrain [@holbrook_2014; @st_clair_2015;
+@flinchum_2018; @riebe_2017; @karlstrom_2025] and the rock-physics chain used for surface waves in partly saturated
+soil [@solazzi_2021; @shi_2026].
+
+**Columns and layers.** Every L1 cell (250 m) carries a column from the ground, or from the glacier bed, down to
+150 m, in 52 layers growing geometrically from 5 cm to 16 m. Each column has four layers whose bases are $z_1 <
+z_2 < z_3 < z_4$:
+
+| Layer | Base | Source |
+|---|---|---|
+| Soil | $z_1$: SOLUS100 soil thickness, at most 2.01 m | [@sec:surface-soil] |
+| Quaternary cover (drift, alluvium, lahar deposits) | $z_2$: the deposit thickness of the map unit | [@sec:geology] |
+| Weathered rock | $z_3 = \max(z_2 + 2\ \mathrm{m},\ f\,D_{\mathrm{SG}})$ | SoilGrids 2017 depth to bedrock $D_{\mathrm{SG}}$ |
+| Fractured rock | $z_4 = z_3 + 15$ m | `m1_placeholder` |
+
+: Layers of the critical-zone columns. The factor $f$ carries the weathering drivers listed below. {#tbl:czlayers}
+
+**Weathering index.** A weathering index $W$ is 1 in soil, cover and weathered rock and falls linearly to 0 across
+the fractured zone:
+$$W(z) = \min\!\left[1,\ \max\!\left(0,\ \frac{z_4 - z}{z_4 - z_3}\right)\right].$$ {#eq:windex}
+It sets the porosity, $\phi = W\phi_g + (1 - W)\phi_r$, with granular porosity $\phi_g$ from the SOLUS100 bulk
+density in soil, 0.35 in cover and 0.30 to 0.15 down the weathered layer, and a fracture porosity $\phi_r$ = 0.03 in
+rock (`m1_placeholder`).
+
+**Weathering drivers.** The factor $f$ on the SoilGrids depth encodes three controls, all `m1_placeholder` values
+to be replaced by calibration:
+- glaciation: $f$ = 0 under present ice, where the column starts with fractured rock at the bed; young glacial
+  drift and alluvium have $f$ = 0.5 and lahar deposits 0.3, since deposition restarts the weathering clock
+  [@wang_2020_cz];
+- lithology: consolidated rock at the surface (Rainier andesite, the other volcanic rocks, the plutons and the
+  supracrustal units) has $f$ = 0.5, because the SoilGrids prior is trained largely on deeply weathered profiles;
+- forest: $f$ is multiplied by 1.2 under canopy taller than 20 m, for root-driven weathering.
+
+On the 23 borehole bedrock picks of the Puget lowland (S35), none of three alternative estimators (a terrain
+regression, the curvature regression of @flinchum_2025, and SoilGrids itself) beats a constant median, so
+SoilGrids remains the prior.
+
+**Water and effective stress.** Pressure head $h$ is hydrostatic below the water table of @fan2017_wtd, which is
+placed at the glacier bed under ice. (The estimate of Ma et al. fits the wells better, [@sec:hydro], but its
+licence forbids derivatives.) Above the water table the suction head $\psi = -h$ sets the effective saturation by
+the retention curve of @van_genuchten_1980,
+$$S_e = \left[1 + (\alpha\psi)^n\right]^{-(1 - 1/n)},$$ {#eq:vg}
+with $\alpha$ and $n$ from POLARIS in soil and placeholder classes below. The effective stress is
+$$\sigma' = \sigma_v - u, \qquad u = \begin{cases} \rho_w g h, & h > 0,\\ -\rho_w g \psi S_e\, W, & h \le 0,
+\end{cases}$$ {#eq:sigeff}
+where $\sigma_v$ is the overburden of the column, including the weight of glacier ice, and the second line is the
+suction stress of @lu_godt_wu_2010 with $\chi = S_e$ [@lu_likos_2006], which stiffens the unsaturated granular
+frame. The crack-closure pressure $P$ of [@eq:crack] in every L1 to L3 cell uses the same water table.
+
+**Granular frame.** The dry frame of soil, cover and weathered rock follows the soft-sand model of
+@dvorkin_nur_1996: at the critical porosity $\phi_c$ = 0.40 a random pack of spheres has the Hertz–Mindlin moduli
+[@mindlin_1949; @walton_1987]
+$$K_{\mathrm{HM}} = \left[\frac{C^2(1-\phi_c)^2\mu_s^2}{18\pi^2(1-\nu_s)^2}\,\sigma'\right]^{1/3}, \qquad
+\mu_{\mathrm{HM}} = \frac{2 + 3f_s - \nu_s(1 + 3f_s)}{5(2 - \nu_s)}
+\left[\frac{3C^2(1-\phi_c)^2\mu_s^2}{2\pi^2(1-\nu_s)^2}\,\sigma'\right]^{1/3},$$ {#eq:hm}
+with coordination number $C$ = 9 and slip fraction $f_s$ = 0.5, which reduces the shear stiffness that the pure
+Hertz–Mindlin model overpredicts [@makse_1999]. Below $\phi_c$ the frame joins the mineral along the modified
+Hashin–Shtrikman lower bound [@dvorkin_nur_1996; @mavko_2020]. The grain moduli $K_s$, $\mu_s$ and Poisson's ratio
+$\nu_s$ are the Hill average [@hill_1952] of clay (21 and 7 GPa) and quartz–feldspar (40 and 25 GPa) for the SOLUS100
+clay fraction. The pore fluid has the patchy-mixing modulus of @brie_1995,
+$K_f = (K_w - K_a)S^{e} + K_a$ with $e$ = 3, and the saturated bulk modulus follows Gassmann's equation
+[@mavko_2020],
+$$K_g = K_d + \frac{(1 - K_d/K_s)^2}{\phi_g/K_f + (1-\phi_g)/K_s - K_d/K_s^2}, \qquad \mu_g = \mu_d,$$
+{#eq:gassmann}
+valid at seismic frequencies, which lie in the low-frequency limit of Biot's theory [@biot_1956]. All rock-physics
+parameters are `m1_placeholder` values within the ranges of @mavko_2020.
+
+**One medium from soil to rock.** At each depth the rock end member is the crack-closure law of the unit beneath,
+evaluated at the same effective stress $\sigma'$. The bulk and shear moduli of the medium are the Hill average of the
+granular and rock moduli, weighted by $W$,
+$$M = \tfrac12\left[W M_g + (1-W)M_r\right] + \tfrac12\left[\frac{W}{M_g} + \frac{1-W}{M_r}\right]^{-1}, \qquad
+\rho = W\rho_g + (1-W)\rho_r,$$ {#eq:blend}
+for $M = K, \mu$, so that velocity varies continuously with effective stress and saturation from soil to fresh rock,
+and where $W$ = 0 the medium is exactly the rock law of [@sec:rockphysics]. Permeability blends in the same way, from
+the conductivity of POLARIS and the cover and weathered classes to the crustal permeability–depth curve of
+@ingebritsen_manning_1999 in rock, capped at 10⁻¹² m².
+
+**Upscaling into the levels.** An L1, L2 or L3 cell that reaches into the columns takes the travel-time average of
+their Vp and Vs and their mean density; the columns are stored as the `/cz` node of `model.zarr` with the van
+Genuchten parameters, saturation, effective stress, porosity and permeability, the state on which a groundwater
+model and a data-assimilation scheme can later run. In the top 50 m of L1 the median Vs is 0.58 of the rock
+value without the critical zone, and at the base of the columns Vs is within 1% (median 0.3%, 90th percentile 0.8%) of the L1 cell below. Because
+the travel-time average is dominated by the slowest layers, the top L1 cell of a column whose weathered layer is
+saturated reaches Vp/Vs above 3: 2,544 cells in unconsolidated units (at most 4.70, within the 4 to 4.5 of
+saturated sediment, @pasquet_2015) and 6,403 cells (0.39% of the consolidated-rock cells, at most 3.97) in
+consolidated units.
+
+**Calibration with the critical zone.** The rock calibration of [@sec:calibration] was refitted with the critical
+zone in every trial model. It fits the PNSN picks as well as without it (held-out RMS 0.0921 s for P and 0.1866 s
+for S, against 0.0924 and 0.1877 s without the critical zone), with the zero-pressure Vp multiplier rising from 1.31 to
+1.47 to compensate for the slower near surface ([@sec:calibration]). The
+critical-zone parameters themselves are not calibrated: the travel times barely constrain the top 50 m, and their
+calibration waits for near-surface observations (surface-wave dispersion, H/V and dv/v).
+
+**Synthetic observables.** As a demonstration of what the columns predict, and not as data, the model gives
+Rayleigh-wave dispersion, depth kernels and dv/v at the 46 permanent stations, the 191 nodes of the 2025 array in
+the domain and every 25th channel of the Paradise fibre (S33), and dv/v through the December 2025 storm from a
+mass-conservative Richards solver [@celia_1990] driven by MRMS rain (S34). These are simulations from the model; the
+nodes and the fibre were not recording during the storm. At 40 Hz half of the Vs sensitivity lies within the top 4
+to 5 m, and the simulated storm lowers dv/v at 40 Hz by a median of about 2% at the permanent stations, the
+order of the seasonal and rain-driven changes measured by noise interferometry on permanent stations and fibre
+[@clements_denolle_2023; @shen_2024; @shi_2026]. The columns have no lateral drainage or snow yet, so these
+numbers illustrate the coupling, not a prediction.
 
 ## Fusion with the regional models {#sec:fusion}
 
@@ -525,35 +636,35 @@ where $s$ is slowness, $\phi_k$ the linear interpolation weight of knot $k$ at d
 
 | Iteration | P, fitting (s) | P, held out (s) | S, fitting (s) | S, held out (s) | ln V₀ | ln P* | ln Vs |
 |---|---|---|---|---|---|---|---|
-| 0 (uncalibrated) | 0.124 | 0.121 | 0.314 | 0.317 | 0 | 0 | 0 |
-| 1 | 0.099 | 0.094 | 0.195 | 0.189 | 0.131 | 0.268 | 0.017 |
-| 2 | 0.097 | 0.093 | 0.192 | 0.188 | 0.162 | 0.297 | 0.033 |
-| 3 | 0.097 | 0.092 | 0.193 | 0.188 | 0.267 | 0.403 | 0.016 |
-| 4 | 0.097 | 0.093 | 0.192 | 0.188 | 0.256 | 0.176 | −0.003 |
-| final (all events) | 0.095 | 0.092 | 0.190 | 0.188 | 0.270 | −0.099 | −0.024 |
+| 0 (uncalibrated) | 0.124 | 0.120 | 0.313 | 0.316 | 0 | 0 | 0 |
+| 1 | 0.098 | 0.094 | 0.194 | 0.187 | 0.126 | 0.261 | 0.036 |
+| 2 | 0.097 | 0.092 | 0.191 | 0.185 | 0.267 | 0.394 | 0.028 |
+| 3 | 0.094 | 0.093 | 0.191 | 0.185 | 0.310 | 0.619 | −0.015 |
+| 4 | 0.093 | 0.092 | 0.192 | 0.186 | 0.358 | 0.533 | −0.028 |
+| final (all events) | 0.093 | 0.092 | 0.189 | 0.187 | 0.385 | 0.583 | −0.039 |
 
-: Gauss–Newton iterations of the calibration (S13, `outputs/joint_calibration/history.json`): RMS after relocation and the geology parameters. Most of the misfit reduction happens in the first iteration. {#tbl:iterations}
+: Gauss–Newton iterations of the calibration (S13 with the critical zone of [@sec:cz] in every trial model, `outputs/joint_calibration_cz/history.json`): RMS after relocation and the geology parameters. Most of the misfit reduction happens in the first iteration. {#tbl:iterations}
 
-The fit is resolved as follows ([@tbl:multipliers], [@tbl:bias], [@fig:calibration], [@fig:law]).
+The fit is resolved as follows ([@tbl:multipliers], [@tbl:bias], [@fig:calibration], [@fig:law]). [TODO: [@fig:calibration] and [@fig:law], the Vp/Vs and model-agreement numbers of the regional-correction bullets, the alteration check below, and the validation and relocation sections still come from the calibration without the critical zone (`configs/velocity_calibration_v2.yaml`); rerun S10, S6, S14 and S26 on the current model and update them.]
 
-- **V₀.** It is the parameter the data require: ×1.31 ± 0.02. The table rock is too slow near the surface. With the multiplier, surface Vp is 3.7 km s⁻¹ for Rainier andesite and 4.5 km s⁻¹ for the Ohanapecosh Formation. Because the multiplier is global, the Miocene plutons reach 5.90 km s⁻¹ at the surface (4.5 × 1.31), just below the cap of 0.98 V∞ = 6.08 km s⁻¹, and 6.07 km s⁻¹ at 2 km, so they are nearly uniform from the surface down (L1 medians of `data/processed/properties_geology.zarr`).
-- **P\*.** It is not resolved: its log-multiplier ranged from +0.40 to −0.10 across the iterations while the misfit changed by less than 1 ms, and it trades off against the regional correction at 2 km.
-- **Rock Vs.** It falls by 2.4 ± 1.2% (ln multiplier −0.024 with posterior s.d. 0.012, against a prior s.d. of 0.1), a change of about two standard deviations. Because it acts at fixed Vp, it raises the Vp/Vs of every rock unit by about 2.4%.
+- **V₀.** It is the parameter the data require: ×1.47 ± 0.03 (×1.31 without the critical zone). The table rock is too slow near the surface, and the slower critical zone above it raises the multiplier further. With it, the zero-pressure Vp of the rock law is 4.1 km s⁻¹ for Rainier andesite and 5.0 km s⁻¹ for the Ohanapecosh Formation. Because the multiplier is global, the Miocene plutons reach the cap of 0.98 V∞ = 6.08 km s⁻¹ at zero pressure (4.5 × 1.47 = 6.6), so their rock law is uniform from the surface down; the velocity drop toward the surface comes from the critical zone alone.
+- **P\*.** It is not resolved: its log-multiplier ranged from +0.26 to +0.62 across the iterations (final ×1.79, posterior s.d. 0.21 in ln) while the held-out misfit changed by less than 2 ms, and it trades off against the regional correction at 2 km.
+- **Rock Vs.** It falls by 3.9 ± 1.0% (ln multiplier −0.039 with posterior s.d. 0.010, against a prior s.d. of 0.1). Because it acts at fixed Vp, it raises the Vp/Vs of every rock unit by about 4%.
 - **Regional correction.** It changes Vp by less than 3.5% at every depth. It makes Vs 5–9% faster at 2–7 km and 5–8% slower at 16–25 km, which lowers Vp/Vs at 2–4 km depth from 1.83 to 1.74.
 - **Agreement between the two models.** After calibration, the geology model and the corrected regional model agree to within 3.5% between 0.3 and 4 km depth. Uncalibrated, they differ by up to 24%, and the fusion invariant exceeds its tolerance in L1 (0.032). These are mean ln(V_geology / V_regional) by depth below ground over L1–L3 without ice, from `model_nocal.zarr` and `model_v2.zarr`; the largest uncalibrated difference is −0.238 in Vp at 0.3–1 km, and the invariant values are 0.0316 for Vp and 0.0326 for Vs (`outputs/relocation/s5_nocal.log`). In the top 300 m, which the fused model takes from the geology alone, the calibrated rock remains 21% faster in Vp and 30% faster in Vs than the regional model.
 
 | Parameter | Multiplier | Posterior s.d. (ln) | Resolved |
 |-----------|------|------|------|
-| V₀, zero-pressure Vp | 1.31 | 0.018 | yes |
-| P*, crack-closure pressure | 0.91 | 0.098 | no |
-| Vs of rock units | 0.976 | 0.012 | marginally |
+| V₀, zero-pressure Vp | 1.47 | 0.020 | yes |
+| P*, crack-closure pressure | 1.79 | 0.21 | no |
+| Vs of rock units | 0.961 | 0.010 | yes |
 
-: Geology multipliers (`configs/velocity_calibration.yaml`, block `geology`). Posterior standard deviations are linearised and scaled by the reduced χ². {#tbl:multipliers}
+: Geology multipliers (`configs/velocity_calibration.yaml`, block `geology`), fitted with the critical zone in every trial model; the calibration without it is kept as `configs/velocity_calibration_v2.yaml` (V₀ ×1.31, P* ×0.91, Vs ×0.976). Posterior standard deviations are linearised and scaled by the reduced χ². {#tbl:multipliers}
 
 | Depth below ground (km) | 2 | 4 | 7 | 11 | 16 | 25 |
 |---|---|---|---|---|---|---|
-| Factor on regional Vp | 1.022 | 1.005 | 0.968 | 0.975 | 0.979 | 0.973 |
-| Factor on regional Vs | 1.049 | 1.086 | 1.060 | 0.990 | 0.952 | 0.925 |
+| Factor on regional Vp | 1.019 | 1.002 | 0.967 | 0.974 | 0.978 | 0.973 |
+| Factor on regional Vs | 1.045 | 1.081 | 1.060 | 0.990 | 0.951 | 0.921 |
 
 : Static correction of the regional models (block `regional_bias`). Formal standard deviations of the log-factors are 0.003–0.016. The deepest knots rest on few rays: 30 events are deeper than 11 km and 8 deeper than 16 km below sea level (36 and 11 below the ground, the depth axis of the table). {#tbl:bias}
 
