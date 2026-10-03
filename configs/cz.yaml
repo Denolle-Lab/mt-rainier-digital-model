@@ -1,0 +1,91 @@
+# Critical-zone columns and seismic synthetics at the stations (S33, rainier3d.cz; design in docs/critical_zone.md).
+# Every number below is an author choice (m1_placeholder) unless a source key is named; the build plan replaces the
+# placeholders by calibration against dv/v, dispersion and H/V.
+
+source_keys:
+  layers: [solus100, polaris, soilgrids_bdticm, dnr_gems_100k, ma2026_wtd, m1_placeholder]
+  rock_physics: [m1_placeholder]   # Hertz-Mindlin, soft-sand, Gassmann-Brie, suction stress: docs/critical_zone.md
+  rock_hydraulics: [ingebritsen_manning_1999, m1_placeholder]
+
+sites:
+  permanent: {families: [seismic, strong]}  # operating, non-temporary FDSN sites
+  nodes: {network: Z5}                       # the 2025 node array (configs/sensor_families.yaml nodes_2025)
+  das_every: 25                              # every Nth channel of the Paradise-Nisqually fibre
+
+column:
+  base_m: 60                  # the fine column; L1 continues below it
+  top_m: 0.05                 # thickness of the first layer
+  growth: 1.12                # geometric growth of layer thickness with depth
+  min_effective_stress_kpa: 1.0
+  deep_layer_m: 50            # L1 cells below the column, down to its base, then a half-space
+
+layers:
+  cover_porosity: 0.35                 # Quaternary cover (drift, lahar, alluvium)
+  weathered_porosity: [0.30, 0.15]     # top and base of the weathered layer
+  weathered_min_thickness_m: 2.0
+  weathered_base: depth_to_bedrock     # SoilGrids 2017, a weak prior until the depth estimators (build step 2)
+  fractured_thickness_m: 15.0          # Vs and Vp grade log-linearly to L1 across it
+  # van Genuchten parameters below the soil (POLARIS covers the soil): [theta_r, theta_s, alpha (1/m), n]
+  vg_cover: [0.05, 0.35, 3.0, 1.6]
+  vg_weathered: [0.03, 0.25, 1.0, 1.4]
+  ksat_ms: {cover: 1.0e-5, weathered: 1.0e-6, fractured: 1.0e-7}   # below the soil (POLARIS covers the soil)
+
+rock_physics:
+  grain_density_kgm3: 2650
+  quartz_feldspar_moduli_gpa: [40.0, 25.0]   # K, mu of the non-clay grains
+  clay_moduli_gpa: [21.0, 7.0]               # K, mu of clay
+  coordination_number: 9.0
+  slip_fraction: 0.5                         # 1 = no slip (Hertz-Mindlin), 0 = frictionless
+  critical_porosity: 0.40
+  brie_exponent: 3.0
+  water_modulus_gpa: 2.25
+  air_modulus_gpa: 0.000142
+  water_density_kgm3: 1000
+
+synthetics:
+  frequencies_hz: [1, 2, 3, 5, 7, 10, 15, 20, 30, 40]
+  water_table_shift_m: [-1.0, 1.0]           # scenarios: water table 1 m shallower, 1 m deeper
+  kernel_fractions: [0.5, 0.9]               # depths holding these shares of the Vs sensitivity
+
+# Build step 3: 1D Richards per column under the December 2025 storm (rainier3d.cz.richards, S34)
+richards:
+  event: dec2025_ar
+  base_m: 30                  # the Richards domain; the water table prior is the bottom boundary when shallower
+  dt_s: [0.1, 900]            # adaptive time step, min and max (0.1 s: columns saturated to the ground)
+  picard_tol_m: 1.0e-4
+  picard_max: 100
+  output_every_h: 3
+  frequencies_hz: [5, 10, 20, 40]
+
+# The critical zone inside the subsurface model (S4, rainier3d.cz.medium and rainier3d.cz.level): one medium from soil
+# to fresh rock. A weathering index W (1 in soil, cover and weathered rock; falling linearly to 0 across the fractured
+# zone) blends the granular frame (above) with the rock law of S4 (crack closure, rainier3d.properties.assign) at the
+# same effective stress, by a Hill average of the moduli. The near-surface cells of L1-L3 are the travel-time
+# average of these columns; porosity, permeability and the van Genuchten class are carried through for a future
+# groundwater model.
+medium:
+  # water table of the effective stress (a /surface variable). Ma et al. 2026 fits the wells better (S31) but its
+  # CC-BY-NC-ND licence forbids derivatives, so the published model uses Fan et al. 2017. Under glacier ice the water
+  # table is at the bed.
+  water_table: water_table_depth_fan
+  fine_base_m: 150            # depth below the ground (or the glacier bed) of the fine columns
+  ice_density_kgm3: 917
+  weathering:
+    prior: depth_to_bedrock   # SoilGrids 2017 (S35: no estimator beats it on the 23 picks)
+    under_ice: 0.0            # present glaciers: no weathered layer, fractured rock at the bed
+    # young surfaces restart the weathering clock (surface unit: factor on the prior)
+    surface_unit_factor: {glacial_drift: 0.5, lahar_deposits: 0.3, alluvium_colluvium: 0.5}
+    # consolidated rock at the surface (unit kinds edifice, cap, pluton, supracrustal) weathers slower than the
+    # granite and schist profiles behind the SoilGrids prior: a shallower weathered layer (placeholder, to calibrate)
+    consolidated_kinds: [edifice, cap, pluton, supracrustal]
+    consolidated_factor: 0.5
+    forest: {canopy_height_m: 20.0, factor: 1.2}   # roots deepen weathering under tall forest
+  rock_hydraulics:
+    porosity: 0.03            # fracture porosity of fresh rock
+    # permeability-depth curve of the continental crust, log10 k = -14 - 3.2 log10(z / 1 km) (Ingebritsen and
+    # Manning 1999), capped near the surface
+    log10_k_at_1km: -14.0
+    log10_k_slope: -3.2
+    log10_k_cap: -12.0
+    vg: [0.01, 0.05, 0.5, 1.3]   # van Genuchten of fractured rock: theta_r, theta_s, alpha (1/m), n
+  water_viscosity_pa_s: 1.0e-3

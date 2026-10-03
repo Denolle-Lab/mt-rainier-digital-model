@@ -1,7 +1,8 @@
 """S5: fuse the geology model with the regional model -> data/processed/model.zarr.
 
-model.zarr is the master product: /surface plus /L1, /L2, /L3 with unit, alteration, depth, the
-fused vp, vs, rho, qp, qs, and the two inputs (``*_geology``, ``*_regional``) for comparison.
+model.zarr is the master product: /surface, /soil (the S2 soil profiles) and /L1, /L2, /L3 with unit,
+alteration, depth, the fused vp, vs, rho, qp, qs, and the two inputs (``*_geology``, ``*_regional``) for
+comparison.
 Vs and Vp/Vs are fused (Vp = Vs * Vp/Vs).
 The regional Vp and Vs are first multiplied by the static bias of configs/velocity_calibration.yaml
 (S13); without that file, by the Vs-only factor of configs/vs_calibration.yaml (S12). The geology part
@@ -51,6 +52,11 @@ def main():
     if env.exists():  # S2 environmental layers share the surface grid
         surf = surf.merge(read(env), compat="override", combine_attrs="drop_conflicts")
     nodes, report = {"/surface": surf}, []
+    if "cz" in props:  # the S4 critical-zone columns on the L1 grid
+        nodes["/cz"] = props["cz"].to_dataset()
+    soil = dom.path("processed") / "soil_profile.zarr"
+    if soil.exists():  # S2 soil profiles (SOLUS points, POLARIS layers), surface grid, depth below ground
+        nodes["/soil"] = read(soil)
     for name, lev in dom.levels.items():
         g, p = geo[name].to_dataset(), props[name].to_dataset()
         reg = build.regional_level(lev, g["depth"].values, cvm, cres, cal)

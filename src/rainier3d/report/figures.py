@@ -532,6 +532,135 @@ def fig_surface_layers(tree, dom, path):
     return path
 
 
+def fig_depth_to_rock(tree, dom, path):
+    """Depth to rock from two sources on one logarithmic scale, (a) SOLUS100 soil thickness and (b) SoilGrids
+    depth to bedrock, and (c) their distributions over the box with the Ma et al. (2026) water table."""
+    from matplotlib.colors import LogNorm
+
+    s = tree["surface"].to_dataset()
+    sx, sy = dom.summit_xy
+    ext = [(dom.x[0] - sx) / 1e3, (dom.x[-1] - sx) / 1e3, (dom.y[0] - sy) / 1e3, (dom.y[-1] - sy) / 1e3]
+    hs = LightSource(315, 40).hillshade(s["elevation"].values, dx=dom.surface_res_m, dy=dom.surface_res_m)
+    norm = LogNorm(0.3, 40)
+    fig = plt.figure(figsize=(7.2, 3.0), constrained_layout=True)
+    gs = fig.add_gridspec(1, 3, width_ratios=[1, 1, 1.15])
+    maps = [
+        ("soil_thickness", "(a) Soil thickness, SOLUS100"),
+        ("depth_to_bedrock", "(b) Depth to bedrock, SoilGrids 2017"),
+    ]
+    ax0 = None
+    for i, (var, title) in enumerate(maps):
+        ax = fig.add_subplot(gs[0, i], sharex=ax0, sharey=ax0)
+        ax0 = ax0 or ax
+        ax.imshow(hs, cmap="gray", origin="lower", extent=ext, vmin=0, vmax=1.2)
+        im = ax.imshow(
+            s[var].values,
+            cmap=cmc.lajolla,
+            norm=norm,
+            origin="lower",
+            extent=ext,
+            alpha=0.9,
+            interpolation="nearest",
+        )
+        ax.set_title(title, fontsize=7)
+        ax.set_aspect("equal")
+        ax.set_xlabel("km east of summit")
+        if i:
+            ax.tick_params(labelleft=False)
+        else:
+            ax.set_ylabel("km north of summit")
+    fig.colorbar(
+        im, ax=fig.axes, orientation="horizontal", shrink=0.5, pad=0.02, aspect=30, label="m below ground"
+    )
+    ax = fig.add_subplot(gs[0, 2])
+    curves = [
+        ("soil_thickness", "soil thickness, SOLUS100 (≤ 2.01 m)", CAT[1]),
+        ("water_table_depth", "water table, Ma et al. 2026", CAT[0]),
+        ("depth_to_bedrock", "depth to bedrock, SoilGrids 2017", CAT[2]),
+    ]
+    for var, label, col in curves:
+        if var not in s:
+            continue
+        a = s[var].values
+        a = np.sort(a[np.isfinite(a) & (a > 0)])
+        ax.plot(a, np.arange(1, a.size + 1) / a.size, color=col, lw=1.6, label=label)
+        ax.axvline(np.median(a), color=col, lw=0.6, ls=":")
+    ax.set_xscale("log")
+    ax.set_xlim(0.3, 100)
+    ax.set_ylim(0, 1)
+    ax.set_xlabel("depth below ground (m)")
+    ax.set_ylabel("fraction of cells shallower")
+    ax.set_title("(c) Distributions over the box (medians dotted)", fontsize=7)
+    ax.legend(fontsize=6, loc="upper center", bbox_to_anchor=(0.45, -0.3), ncol=1)
+    ax.grid(color=GRID, lw=0.5)
+    fig.savefig(path)
+    plt.close(fig)
+    return path
+
+
+def fig_cz_section(tree, dom, path, at_y, half_km=35.0, zmax=80.0):
+    """The critical zone along A-A' (the /cz columns, S4): ground and ice, then Vs, saturation and the
+    weathering index against depth below the ground or glacier bed, with layer bases and water table."""
+    from matplotlib.colors import LogNorm
+
+    cz = tree["cz"].to_dataset().sel(y=at_y, method="nearest")
+    sx, _ = dom.summit_xy
+    cz = cz.where(np.abs(cz.x - sx) <= half_km * 1e3, drop=True)
+    d = (cz.x.values - sx) / 1e3
+    z = cz["cz_depth"].values
+    surf = tree["surface"].to_dataset().sel(y=at_y, method="nearest").interp(x=cz.x.values)
+    fig, axs = plt.subplots(
+        4, 1, figsize=(7.2, 7.4), sharex=True, constrained_layout=True, height_ratios=[0.55, 1, 1, 1]
+    )
+    ax = axs[0]
+    elev = surf["elevation"].values / 1e3
+    ice = np.nan_to_num(cz["ice_thickness"].values) / 1e3
+    ax.fill_between(d, elev - ice, elev, color="#9fc9e8", lw=0, label="glacier ice")
+    ax.fill_between(  # ice-covered columns: no weathered layer, fractured rock saturated from the bed
+        d,
+        0,
+        1,
+        where=ice > 0,
+        transform=ax.get_xaxis_transform(),
+        color="#9fc9e8",
+        alpha=0.25,
+        lw=0,
+        step="mid",
+        label="ice-covered columns",
+    )
+    ax.plot(d, elev, color=INK, lw=0.8)
+    ax.set_ylabel("elevation (km)")
+    ax.set_title("(a) Ground surface along A–A′", fontsize=7, loc="left")
+    ax.legend(fontsize=6, loc="upper left", frameon=False)
+    lines = [
+        ("z_cover", "cover base", "#eda100", "-"),
+        ("z_weathered", "weathered base", "#e34948", "-"),
+        ("z_fractured", "fractured base (W = 0)", INK, "--"),
+        ("water_table", "water table (Fan et al. 2017)", "#2a78d6", ":"),
+    ]
+    panels = [
+        ("vs", "(b) Vs (m s⁻¹)", cmc.roma, LogNorm(150, 3500)),
+        ("saturation", "(c) Water saturation", cmc.devon_r, None),
+        ("weathering_index", "(d) Weathering index W", cmc.lajolla, None),
+    ]
+    for ax, (var, title, cmap, norm) in zip(axs[1:], panels, strict=True):
+        v = cz[var].transpose("cz_depth", "x").values
+        kw = {"norm": norm} if norm is not None else {"vmin": 0, "vmax": 1}
+        m = ax.pcolormesh(d, z, v, cmap=cmap, shading="nearest", rasterized=True, **kw)
+        for name, lab, col, ls in lines:
+            if name in cz:
+                ax.plot(d, cz[name].values, color=col, lw=0.9, ls=ls, label=lab)
+        ax.set_ylim(zmax, 0)
+        ax.set_ylabel("depth below ground\nor glacier bed (m)")
+        ax.set_title(title, fontsize=7, loc="left")
+        fig.colorbar(m, ax=ax, pad=0.01, aspect=12)
+    axs[1].legend(fontsize=6, loc="lower left", ncol=4, frameon=True, framealpha=0.85)
+    axs[-1].set_xlabel("km east of summit, section A–A′")
+    fig.savefig(path)
+    plt.close(fig)
+    return path
+
+
 def fig_vs_calibration(cal_yaml, pairs_csv, path):
     """(a) calibrated log-factor on the regional Vs against depth; (b) held-out S-P residuals before/after."""
     import yaml

@@ -75,3 +75,17 @@ def test_crack_closure_limits():
     assert np.isclose(rel.crack_closure(3.0, 6.0, 0.0, 30.0), 3.0)
     assert np.isclose(rel.crack_closure(3.0, 6.0, 1e4, 30.0), 6.0)
     assert np.all(np.diff(rel.crack_closure(3.0, 6.0, np.linspace(0, 200, 20), 30.0)) > 0)
+
+
+def test_symbol_thicknesses_are_dmu_midpoints_of_unconsolidated_symbols():
+    import json
+
+    import yaml
+
+    from rainier3d.config.domain import REPO
+
+    geo = yaml.safe_load((REPO / "configs" / "units.yaml").read_text())["geometry"]
+    cw = json.loads((REPO / "configs" / "crosswalk_geology.json").read_text())
+    for sym, v in geo["symbol_thickness_m"].items():
+        assert cw[sym]["unit_id"] in geo["unconsolidated_thickness_m"], sym  # a surface deposit
+        assert abs(v["thickness_m"] - sum(v["range_m"]) / 2) < 0.06, sym  # midpoint of the DMU range

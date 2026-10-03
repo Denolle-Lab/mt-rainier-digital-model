@@ -36,7 +36,11 @@ def test_physical_ranges(tree, lev):
     u = ds["unit"].values
     rock = (u != AIR) & (u != ICE) & (u != MAGMA)
     r = (ds["vp"] / ds["vs"]).values
-    assert np.nanmin(r[rock]) >= 1.5 and np.nanmax(r[rock]) <= 3.0
+    # consolidated rock stays below 3; saturated unconsolidated cover of the critical zone reaches Vp/Vs 4
+    # to 4.5 (Pasquet et al. 2015, saturated loess), bounded here at 5
+    loose = np.isin(u, [k for k, v in kinds(units_config()).items() if v == "unconsolidated"])
+    assert np.nanmin(r[rock]) >= 1.5 and np.nanmax(r[rock & ~loose]) <= 3.0
+    assert np.nanmax(r[rock & loose], initial=0) <= 5.0
     # fused Vp/Vs lies between the geology and regional ratios (CVM v1.7 itself reaches 2.22 at >1 km)
     rg = (ds["vp_geology"] / ds["vs_geology"]).values
     rr = (ds["vp_regional"] / ds["vs_regional"]).values

@@ -107,7 +107,7 @@ def main(argv=None) -> int:
     if "quakes" in only:
         ov = np.fromfile(out / "terrain" / "overview.bin", "<i2").reshape(terrain["rows"], terrain["cols"]).astype(float)
         ground = lambda x, z: float(sample(ov, terrain, np.array(x), np.array(z))) / 1000
-        build_quakes(out, a.cache, ground)
+        build_quakes(out, a.cache, ground, as_of=a.as_of)
     # quakes are optional in the bundle: check them when built now or already present, so --only without
     # quakes works on a fresh output directory
     have_quakes = "quakes" in only or (out / "quakes.json").exists()
@@ -117,7 +117,8 @@ def main(argv=None) -> int:
         return 1
     size = sum(p.stat().st_size for p in out.rglob("*") if p.is_file())
     manifest = {
-        "built": dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds"),
+        # the data freeze, not the wall clock, so the same inputs give the same bundle
+        "built": a.as_of or dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds"),
         "sizeBytes": size,
         "sources": [
             {"name": "USGS 3DEP elevation (overview and 1 m summit lidar)", "url": "https://elevation.nationalmap.gov/arcgis/rest/services/3DEPElevation/ImageServer", "license": "public domain"},

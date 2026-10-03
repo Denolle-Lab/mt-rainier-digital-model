@@ -91,7 +91,8 @@ def surface_on_level(surf: xr.Dataset, lev: Level) -> xr.Dataset:
     alt = [v for v in surf.data_vars if v.startswith(("alt_a_", "alt_doi_"))]  # S22 maps, when present
     cont = surf[["elevation", "ice_thickness", "edifice_base", *alt]]
     cont = cont.interp(x=lev.x, y=lev.y, method="linear")
-    cat = surf[["surface_unit", "bedrock_unit", "bedrock_unit_under", "footprint"]]
+    cat_vars = ["surface_unit", "bedrock_unit", "bedrock_unit_under", "footprint"]
+    cat = surf[cat_vars + [v for v in ("unconsolidated_thickness",) if v in surf]]
     cat = cat.sel(x=lev.x, y=lev.y, method="nearest")
     cat = cat.assign_coords(x=lev.x, y=lev.y)
     return xr.merge([cont, cat], compat="override")
@@ -110,9 +111,12 @@ def build_level(
     base = s["edifice_base"].values[None]
     foot = s["footprint"].values[None].astype(bool)
 
-    t_unc = np.zeros_like(su, dtype=float)
-    for uid, t in geo["unconsolidated_thickness_m"].items():
-        t_unc = np.where(su == int(uid), float(t), t_unc)
+    if "unconsolidated_thickness" in s:  # S1: per map symbol (DMU), else the unit default
+        t_unc = s["unconsolidated_thickness"].values[None].astype(float)
+    else:
+        t_unc = np.zeros_like(su, dtype=float)
+        for uid, t in geo["unconsolidated_thickness_m"].items():
+            t_unc = np.where(su == int(uid), float(t), t_unc)
 
     thin = np.zeros_like(br, dtype=float)
     for uid, t in geo["max_thickness_m"].items():
