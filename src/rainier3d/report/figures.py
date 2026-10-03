@@ -598,6 +598,69 @@ def fig_depth_to_rock(tree, dom, path):
     return path
 
 
+def fig_cz_section(tree, dom, path, at_y, half_km=35.0, zmax=80.0):
+    """The critical zone along A-A' (the /cz columns, S4): ground and ice, then Vs, saturation and the
+    weathering index against depth below the ground or glacier bed, with layer bases and water table."""
+    from matplotlib.colors import LogNorm
+
+    cz = tree["cz"].to_dataset().sel(y=at_y, method="nearest")
+    sx, _ = dom.summit_xy
+    cz = cz.where(np.abs(cz.x - sx) <= half_km * 1e3, drop=True)
+    d = (cz.x.values - sx) / 1e3
+    z = cz["cz_depth"].values
+    surf = tree["surface"].to_dataset().sel(y=at_y, method="nearest").interp(x=cz.x.values)
+    fig, axs = plt.subplots(
+        4, 1, figsize=(7.2, 7.4), sharex=True, constrained_layout=True, height_ratios=[0.55, 1, 1, 1]
+    )
+    ax = axs[0]
+    elev = surf["elevation"].values / 1e3
+    ice = np.nan_to_num(cz["ice_thickness"].values) / 1e3
+    ax.fill_between(d, elev - ice, elev, color="#9fc9e8", lw=0, label="glacier ice")
+    ax.fill_between(  # ice-covered columns: no weathered layer, fractured rock saturated from the bed
+        d,
+        0,
+        1,
+        where=ice > 0,
+        transform=ax.get_xaxis_transform(),
+        color="#9fc9e8",
+        alpha=0.25,
+        lw=0,
+        step="mid",
+        label="ice-covered columns",
+    )
+    ax.plot(d, elev, color=INK, lw=0.8)
+    ax.set_ylabel("elevation (km)")
+    ax.set_title("(a) Ground surface along A–A′", fontsize=7, loc="left")
+    ax.legend(fontsize=6, loc="upper left", frameon=False)
+    lines = [
+        ("z_cover", "cover base", "#eda100", "-"),
+        ("z_weathered", "weathered base", "#e34948", "-"),
+        ("z_fractured", "fractured base (W = 0)", INK, "--"),
+        ("water_table", "water table (Fan et al. 2017)", "#2a78d6", ":"),
+    ]
+    panels = [
+        ("vs", "(b) Vs (m s⁻¹)", cmc.roma, LogNorm(150, 3500)),
+        ("saturation", "(c) Water saturation", cmc.devon_r, None),
+        ("weathering_index", "(d) Weathering index W", cmc.lajolla, None),
+    ]
+    for ax, (var, title, cmap, norm) in zip(axs[1:], panels, strict=True):
+        v = cz[var].transpose("cz_depth", "x").values
+        kw = {"norm": norm} if norm is not None else {"vmin": 0, "vmax": 1}
+        m = ax.pcolormesh(d, z, v, cmap=cmap, shading="nearest", rasterized=True, **kw)
+        for name, lab, col, ls in lines:
+            if name in cz:
+                ax.plot(d, cz[name].values, color=col, lw=0.9, ls=ls, label=lab)
+        ax.set_ylim(zmax, 0)
+        ax.set_ylabel("depth below ground\nor glacier bed (m)")
+        ax.set_title(title, fontsize=7, loc="left")
+        fig.colorbar(m, ax=ax, pad=0.01, aspect=12)
+    axs[1].legend(fontsize=6, loc="lower left", ncol=4, frameon=True, framealpha=0.85)
+    axs[-1].set_xlabel("km east of summit, section A–A′")
+    fig.savefig(path)
+    plt.close(fig)
+    return path
+
+
 def fig_vs_calibration(cal_yaml, pairs_csv, path):
     """(a) calibrated log-factor on the regional Vs against depth; (b) held-out S-P residuals before/after."""
     import yaml

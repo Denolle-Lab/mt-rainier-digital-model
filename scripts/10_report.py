@@ -57,6 +57,8 @@ def figures(dom):
     ]
     if "depth_to_bedrock" in tree["surface"]:
         made.append(F.fig_depth_to_rock(tree, dom, FIG / "fig23_depth_to_rock.png"))
+    if "cz" in tree:
+        made.append(F.fig_cz_section(tree, dom, FIG / "fig24_cz_section.png", sy))
     canopy = dom.path("processed") / "surface_canopy.zarr"
     if canopy.exists():
         made.append(

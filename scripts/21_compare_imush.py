@@ -4,9 +4,9 @@
 A test of the S13 static bias on CVM v1.7 / CRESCENT: at every Ulberg node inside the domain that the EMC
 file leaves unmasked (checkerboard recovery for 20 km features), sample
   regional      CVM v1.7 / CRESCENT as distributed        (vp_regional, vs_regional of model_nocal.zarr)
-  regional_bias the same with the S13 static bias          (vp_regional, vs_regional of model_v2.zarr)
+  regional_bias the same with the S13 static bias          (vp_regional, vs_regional of model.zarr)
   fused_uncal   the fused model before calibration          (vp, vs of model_nocal.zarr)
-  fused_v2      the fused model after S13 v2                (vp, vs of model_v2.zarr)
+  fused_v2      the fused model after S13 (critical zone)   (vp, vs of model.zarr)
 and report ln(V_Ulberg / V_model) by depth below the ground, for the whole domain and for its south
 (< 46.65 N, inside the iMUSH array) and north (>= 46.75 N, Rainier). Vp/Vs is compared with Ulberg's
 'matched' Vp and Vs
@@ -41,9 +41,9 @@ BINS = np.array([0, 1000, 2000, 3000, 4000, 6000, 8000, 11000, 15000, 20000])
 SOUTH_MAX, NORTH_MIN = 46.65, 46.75
 MODELS = {
     "regional": ("data/processed/model_nocal.zarr", "{v}_regional"),
-    "regional_bias": ("data/processed/model_v2.zarr", "{v}_regional"),
+    "regional_bias": ("data/processed/model.zarr", "{v}_regional"),
     "fused_uncal": ("data/processed/model_nocal.zarr", "{v}"),
-    "fused_v2": ("data/processed/model_v2.zarr", "{v}"),
+    "fused_v2": ("data/processed/model.zarr", "{v}"),
 }
 
 
@@ -109,7 +109,7 @@ def figure(tab: pd.DataFrame, path):
     styles = {
         "regional": ("#d98c2b", "CVM v1.7 / CRESCENT"),
         "regional_bias": ("#8a5cc2", "same + S13 static bias"),
-        "fused_v2": ("#2a78d6", "rainier3d (S13 v2)"),
+        "fused_v2": ("#2a78d6", "rainier3d"),
     }
     mid = {f"{a}-{b}": (a + b) / 2e3 for a, b in zip(BINS[:-1], BINS[1:], strict=True)}
     fig, ax = plt.subplots(1, 3, figsize=(12, 5.2), sharey=True, constrained_layout=True)
@@ -133,9 +133,7 @@ def figure(tab: pd.DataFrame, path):
             t.vpvs_ulberg_matched, z, ls, color="k", marker="o", ms=3, label=f"Ulberg 2020, matched{sfx}"
         )
         ax[2].plot(t.vpvs_regional, z, ls, color="#d98c2b", label=f"CVM v1.7 / CRESCENT{sfx}")
-        ax[2].plot(
-            t.vpvs_fused_v2, z, ls, color="#2a78d6", marker="o", ms=3, label=f"rainier3d (S13 v2){sfx}"
-        )
+        ax[2].plot(t.vpvs_fused_v2, z, ls, color="#2a78d6", marker="o", ms=3, label=f"rainier3d{sfx}")
     ax[2].set(xlabel="Vp/Vs (median, matched nodes)", title="(c) Vp/Vs")
     ax[0].set_ylabel("depth below ground (km)")
     ax[0].invert_yaxis()
@@ -148,7 +146,7 @@ def main():
     dom = load_domain()
     df = ulberg_nodes(dom)
     trees = {p: read_tree(REPO / p) for p in {p for p, _ in MODELS.values()}}  # each file read once
-    surf = trees["data/processed/model_v2.zarr"]["surface"].to_dataset()["elevation"]
+    surf = trees["data/processed/model.zarr"]["surface"].to_dataset()["elevation"]
     g = surf.interp(x=xr.DataArray(df.x.values, dims="p"), y=xr.DataArray(df.y.values, dims="p")).values
     df["depth_bg"] = g - df.z.values
     df = df[df.depth_bg > 0].reset_index(drop=True)
