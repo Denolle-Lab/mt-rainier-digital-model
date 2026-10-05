@@ -29,7 +29,7 @@ import shutil
 import subprocess
 import sys
 import tarfile
-from datetime import datetime
+from datetime import UTC, datetime
 from pathlib import Path
 
 from rainier3d.config.domain import REPO, load_domain
@@ -131,7 +131,7 @@ def main():
         raise SystemExit("platform check failed:\n" + "\n".join(errs))
     files = sorted(p for p in atlas.rglob("*") if p.is_file() and p.name != "SHA256SUMS")
     (atlas / "SHA256SUMS").write_text("".join(f"{sha256(p)}  {p.relative_to(atlas)}\n" for p in files))
-    mtime = int(datetime.fromisoformat(day).timestamp())
+    mtime = int(datetime.fromisoformat(day).replace(tzinfo=UTC).timestamp())  # same in every timezone
     tarball(atlas, REPO / v["bundle"], mtime)
     out = dom.path("outputs") / "platform"
     out.mkdir(parents=True, exist_ok=True)
