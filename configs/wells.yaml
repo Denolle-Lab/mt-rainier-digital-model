@@ -1,0 +1,33 @@
+# S31 wells: in-situ water levels and borehole logs in the model box, frozen at as_of so a rebuild reads the same
+# records. Raw responses are cached once under data/raw/wells/ and checksummed in docs/data_manifest.csv.
+
+source_keys:
+  ecology: [ecology_well_reports]
+  nwis: [usgs_nwis_gw]
+  wgs: [wgs_subsurface_db]
+  comparison: [m1_placeholder]       # elevation split and QC thresholds are choices
+
+as_of: "2026-09-23"   # records completed (Ecology) or measured (NWIS) after this date are not requested
+
+ecology:
+  url: https://gis.ecology.wa.gov/serverext/rest/services/WR/Well_Construction_Map_Service/MapServer/16/query
+  # Hydrogeological fields only: owner names, addresses and parcel numbers are never requested.
+  fields: [OBJECTID, ID, WellTagNr, WellProjectType, WellSubType, CompletedDepth, StaticWaterLvl, FlowType,
+           WorkCompletionDate, LatitudeDecimalQuantity, LongitudeDecimalQuantity, FileName]
+  page: 500                         # object ids per request
+
+nwis:
+  api: https://api.waterdata.usgs.gov/ogcapi/v0/collections
+  parameter_code: "72019"            # depth to water level, ft below land surface
+  page: 10000
+
+wgs:
+  url: https://fortress.wa.gov/dnr/geologydata/publications/data_download/ger_portal_subsurface_database.zip
+  point_layers: [borehole_information, water_wells]   # geotechnical borings and test pits; water wells
+  layers: [hydrologic, bedrock]                       # joined on BOREHOLE_ID
+
+qc:
+  max_depth_to_water_m: 300          # a static level deeper than this, or than the completed depth, is dropped
+
+comparison:
+  elevation_split_m: 600             # lowland below, upland (park, edifice flanks) at or above

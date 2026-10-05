@@ -1,9 +1,9 @@
 """S16: figures for the joint Vp-Vs calibration with 3D relocation (S13, S14) -> docs/joint_calibration/.
 
 Reads configs/vs_calibration.yaml (S12), configs/velocity_calibration_v1.yaml (first S13 run, depth factors),
-configs/velocity_calibration.yaml (S13 v2: geology multipliers + static bias of the regional model), the S14
-relocations in outputs/relocation/<name>/ (all with slow air above the DEM + 1 cell), and the model snapshots
-in data/processed/ named in MODELS.
+configs/velocity_calibration.yaml (S13 with the critical zone: geology multipliers + static bias of the
+regional model), the S14 relocations in outputs/relocation/<name>/ (all with slow air above the DEM + 1 cell),
+and the model snapshots in data/processed/ named in MODELS.
 
 Usage: pixi run python scripts/16_relocation_figures.py
 """
@@ -29,7 +29,7 @@ MODELS = {
     "fused_nocal": ("3D, uncalibrated", "data/processed/model_nocal.zarr"),
     "fused_vscal": ("3D, Vs only (S12)", "data/processed/model_vscal_20260924.zarr"),
     "fused_v1": ("3D, depth factors (S13 v1)", "data/processed/model_joint_s13.zarr"),
-    "fused_joint": ("3D, geology + bias (S13 v2)", "data/processed/model.zarr"),
+    "fused_joint": ("3D, geology + bias + critical zone (S13)", "data/processed/model.zarr"),
 }
 COLORS = {
     "pnsn1d": "#7a7a7a",
@@ -77,7 +77,7 @@ def fig_factors():
     kf = np.array(sd["free_knots_m"]) / 1e3
     for v, c, lab in (("vp", "#c2412d", "Vp"), ("vs", COLORS["fused_joint"], "Vs")):
         f = np.array(v2[v]["factor"])
-        ax[0].plot(f, k, "o-", color=c, label=f"{lab}, S13 v2 static bias of the regional model")
+        ax[0].plot(f, k, "o-", color=c, label=f"{lab}, S13 static bias of the regional model")
         fk = f[np.isin(k, kf)]
         e = np.array(sd[v])
         ax[0].fill_betweenx(kf, fk * np.exp(-e), fk * np.exp(e), color=c, alpha=0.15, lw=0)

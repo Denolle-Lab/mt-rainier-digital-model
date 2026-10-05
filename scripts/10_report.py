@@ -15,24 +15,23 @@ import xarray as xr
 import yaml
 
 from rainier3d.config.domain import REPO, load_domain
+from rainier3d.config.platform import local_input
 from rainier3d.report import figures as F
 from rainier3d.sensors.inventory import das_channels
 from rainier3d.validate.pnsn import pnsn_1d
 
 DOCS = REPO / "docs" / "paper"
 FIG = DOCS / "figures"
-DAS = "~/Downloads/Paradise2NisquallyEntrace_Channels.csv"
 
 
 def figures(dom):
-    from pathlib import Path
 
     FIG.mkdir(parents=True, exist_ok=True)
     tree = F.open_tree(dom.path("processed") / "model.zarr")
     atlas = REPO / "web" / "atlas" / "data"
     sites = json.loads((atlas / "sites.geojson").read_text())
     events = json.loads((atlas / "events.geojson").read_text())
-    das = das_channels(Path(DAS).expanduser())
+    das = das_channels(local_input("das_channels", dom.path("raw")))
     sx, sy = dom.summit_xy
     x0, y0, x1, y1 = dom.bounds
     a = ((x0, sy), (x1, sy))
@@ -56,6 +55,10 @@ def figures(dom):
         F.fig_glaciers(out / "glacier_thickness_check.csv", FIG / "fig2_glaciers.png"),
         F.fig_surface_layers(tree, dom, FIG / "fig8_surface_layers.png"),
     ]
+    if "depth_to_bedrock" in tree["surface"]:
+        made.append(F.fig_depth_to_rock(tree, dom, FIG / "fig23_depth_to_rock.png"))
+    if "cz" in tree:
+        made.append(F.fig_cz_section(tree, dom, FIG / "fig24_cz_section.png", sy))
     canopy = dom.path("processed") / "surface_canopy.zarr"
     if canopy.exists():
         made.append(

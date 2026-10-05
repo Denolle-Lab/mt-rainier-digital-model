@@ -1,0 +1,60 @@
+# Soil and regolith layers for the critical zone (S2 -> surface_layers.zarr and soil_profile.zarr; /surface and
+# /soil of model.zarr in S5). Every number here is a source's convention or a choice to review.
+
+# Provenance of each section (keys in configs/sources.yaml). m1_placeholder marks author choices.
+source_keys:
+  solus: [solus100]
+  polaris: [polaris]
+  depth_to_bedrock: [soilgrids_bdticm]
+  vs30: [usgs_vs30_hybrid]
+  summary: [m1_placeholder]          # depth range and averaging of the 2D summaries are choices
+
+# SOLUS100 (Nauman et al. 2024): <property>_<depth>_cm_p.tif, point predictions at these depths (cm). Stored value
+# = physical value x scalar (Final_Layer_Table_20231215.csv of the SOLUS bucket).
+solus:
+  depths_cm: [0, 5, 15, 30, 60, 100, 150]
+  properties:            # SOLUS name: [variable, units, scalar, long name]
+    claytotal: [clay, "%", 1, clay content (mass fraction of the fine earth)]
+    sandtotal: [sand, "%", 1, sand content (mass fraction of the fine earth)]
+    silttotal: [silt, "%", 1, silt content (mass fraction of the fine earth)]
+    dbovendry: [bulk_density, g cm-3, 100, oven-dry bulk density]
+    fragvol: [rock_fragments, "%", 1, rock fragments > 2 mm (volume fraction)]
+    soc: [organic_carbon, "%", 1000, soil organic carbon (mass fraction)]
+  restriction: resdept_all_cm_p.tif   # depth to any restrictive layer (cm)
+
+# POLARIS (Chaney et al. 2019): <var>_mean_<top>_<bottom>.vrt, 30 m, layer means over these intervals (cm).
+# ksat in log10(cm/hr), alpha in log10(kPa-1) (Readme of the POLARIS v1.0 properties).
+polaris:
+  url: /vsicurl/http://hydrology.cee.duke.edu/POLARIS/PROPERTIES/v1.0/vrt/{var}_mean_{top}_{bottom}.vrt
+  layers_cm: [[0, 5], [5, 15], [15, 30], [30, 60], [60, 100], [100, 200]]
+  variables:             # POLARIS name: [variable, units, long name]
+    ksat: [log10_ksat, log10(m s-1), saturated hydraulic conductivity]
+    theta_s: [theta_s, m3 m-3, saturated volumetric water content]
+    theta_r: [theta_r, m3 m-3, residual volumetric water content]
+    alpha: [log10_vg_alpha, log10(m-1), van Genuchten scale parameter]
+    n: [vg_n, "1", van Genuchten shape parameter]
+
+# Depth to bedrock (Shangguan et al. 2017; SoilGrids250m 2017), cm, absolute depth to the R horizon.
+depth_to_bedrock:
+  url: /vsicurl/https://files.isric.org/soilgrids/former/2017-03-10/data/BDTICM_M_250m_ll.tif
+  cache: soilgrids/BDTICM_M_250m_box.tif    # under data/raw/; the global file is 8.5 GB, read by window once
+  margin_deg: 0.02
+
+# USGS global hybrid Vs30 (Heath et al. 2020), 30 arcsec, m/s; the file history names a Washington-Oregon insert.
+vs30:
+  url: https://apps.usgs.gov/shakemap_geodata/vs30/global_vs30.grd
+  cache: vs30/global_vs30_box.tif
+  margin_deg: 0.02
+
+# 2D summaries on /surface: depth-weighted means over this range (cm), trapezoidal in depth for SOLUS points and
+# thickness-weighted for POLARIS layers; ksat is the harmonic mean (vertical flow through layers in series).
+summary_cm: [0, 100]
+
+# Glaciers: the soil and regolith layers are left empty where S1's IceBoost ice thickness is > 0 (SOLUS, POLARIS and
+# the depth to bedrock all return values on the ice). Author choice (m1_placeholder).
+mask_glaciers: true
+
+# Cross-checks logged by S2 (outputs/soil_layers_summary.json): grain density for porosity = 1 - rho_b / rho_s
+# (author choice, m1_placeholder), and the margin by which a restrictive layer counts as above the lithic contact.
+grain_density_gcm3: 2.65
+restriction_margin_m: 0.10
