@@ -42,3 +42,8 @@ def test_a_short_catalog_is_refused_before_anything_is_written(tmp_path):
     with pytest.raises(ValueError, match="only 3 events"):
         quakes.build_quakes(tmp_path, tmp_path / "cache", lambda x, z: 1.5, get=lambda url, path: CSV.encode(), min_events=1000)
     assert not (tmp_path / "quakes.bin").exists() and not (tmp_path / "quakes.json").exists()
+
+
+def test_catalog_url_is_frozen_at_the_as_of_date():
+    assert "endtime=2026-09-23T23%3A59%3A59" in quakes.catalog_url(as_of="2026-09-23")
+    assert "endtime" not in quakes.catalog_url()

@@ -1,4 +1,5 @@
 import { KIND_BY_KEY } from "../data/kinds.js";
+import { fmtMonths } from "../data/format.js";
 import Glyph from "./Glyph.jsx";
 import { usePointPick } from "./usePointPick.js";
 import "./ui.css";
@@ -14,7 +15,7 @@ export default function SensorTip({ scene, points }) {
       <div className="t-name">{s.name}</div>
       <div className="t-sub">{s.temporary ? "Temporary" : "Permanent"} · {s.source} · {when}</div>
       <div className="t-list">
-        {s.kinds.map(k => <div key={k} className="t-item"><Glyph glyph={KIND_BY_KEY[k]?.glyph ?? "circle"} color={KIND_BY_KEY[k]?.color ?? "#888"} /><span>{KIND_BY_KEY[k]?.label ?? k}</span></div>)}
+        {s.kinds.map(k => <div key={k} className="t-item"><Glyph glyph={KIND_BY_KEY[k]?.glyph ?? "circle"} color={KIND_BY_KEY[k]?.color ?? "#888"} /><span>{KIND_BY_KEY[k]?.label ?? k}</span>{s.retiredKinds?.[k] && <span className="t-when">{fmtMonths(s.retiredKinds[k])}</span>}</div>)}
       </div>
       {s.instruments.length > 0 && <div className="t-more">{s.instruments.join(" · ")}</div>}
       {s.notes && <div className="t-more">{s.notes}</div>}

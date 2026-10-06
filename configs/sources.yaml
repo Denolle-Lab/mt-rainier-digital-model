@@ -151,14 +151,14 @@ blakely_2024:
   url: https://www.sciencebase.gov/catalog/item/656e3da9d34e7ca10833fc94
   license: public domain (USGS)
   verified: web-2026-10-01 (DataCite; grid, flight lines, metadata and data dictionary downloaded; registration checked against topography)
-  role: 2022 total-field anomaly grid and drape surface for the merged apparent magnetisation (S31)
+  role: 2022 total-field anomaly grid and drape surface for the merged apparent magnetisation (S36)
 
 igrf13:
   title: Alken et al. 2021, International Geomagnetic Reference Field, the thirteenth generation, Earth, Planets and Space 73
   doi: 10.1186/s40623-020-01288-x
   url: https://www.ngdc.noaa.gov/IAGA/vmod/coeffs/igrf13coeffs.txt
   verified: web-2026-10-01 (Crossref); field direction from the IAGA coefficients, which reproduce the survey's IGRF channel to 1.3 nT when IGRF-12 is used as the contractor did
-  role: inclination and declination of the field over the 2022 survey, for its reduction to the pole (S31)
+  role: inclination and declination of the field over the 2022 survey, for its reduction to the pole (S36)
 
 john_2008:
   title: John, Sisson, Breit, Rye & Vallance 2008, JVGR, hydrothermal alteration at Mount Rainier
@@ -201,11 +201,13 @@ synoptic_catalog:
   note: elevations are in feet; converted to m
   role: meteorology and hydrology sites
 
-nodes_2025:
-  title: 2025 Rainier node deployment sheet (UW; serial, lat/lon, deployers, date, notes)
-  url: file://~/Downloads/Rainier Deployment Final.xlsx
-  verified: local file read 2026-09-23 (240 nodes; 191 inside the model domain)
-  role: geophone node sites
+fdsn_z5_2025:
+  title: Schmandt 2025, Rainier NP wide-aperture node array 2025, FDSN network Z5 (2025)
+  doi: 10.7914/mcd3-ph92
+  url: https://www.fdsn.org/networks/detail/Z5_2025/
+  license: "provider terms, to verify (see url); waveforms restricted, station metadata open"
+  verified: web-2026-09-28 (DataCite; EarthScope station service, 240 stations 001-240, 248 epochs, 191 inside the model domain)
+  role: geophone node sites (replaces the 2025 deployment spreadsheet, which duplicated these stations)
 
 das_paradise_nisqually:
   title: Paradise-Nisqually Entrance DAS channel table (per-channel lat/lon/elevation, lithology, notices)
@@ -264,14 +266,92 @@ glathida:
   role: check of modeled thickness (7 Rainier glaciers, mean and max)
 
 solus100:
-  title: Nauman et al. 2024, SOLUS100 soil landscapes of the United States at 100 m, depth to any lithic contact (anylithicdpt_cm_p)
+  title: Nauman et al. 2024, SOLUS100 soil landscapes of the United States at 100 m (depth to any lithic contact, depth to restriction, and clay, sand, silt, bulk density, rock fragments and organic carbon at 0-150 cm)
   doi: 10.15482/USDA.ADC/25033856
   article_doi: 10.1002/saj2.20769
   url: https://storage.googleapis.com/solus100pub/anylithicdpt_cm_p.tif
   license: CC-BY-4.0
-  verified: web-2026-09-24 (COG read, DataCite and Crossref)
-  note: uint8 cm, nodata 255; WKT named "unknown" with EPSG:5070 parameters; max over the domain is exactly 201 cm, read as ">= 2 m" (cap not documented)
-  role: soil thickness (surface layer soil_thickness)
+  verified: web-2026-09-24 (COG read, DataCite and Crossref); web-2026-10-02 (bucket listing, Final_Layer_Table_20231215.csv scalars)
+  note: uint8 cm, nodata 255; WKT named "unknown" with EPSG:5070 parameters; max over the domain is exactly 201 cm, read as ">= 2 m" (cap not documented). Properties are <property>_<depth>_cm_p.tif (stored value = value x scalar of the layer table); the bucket has no texture-class raster
+  role: soil thickness (soil_thickness), depth to restriction, soil profiles on /soil and their 0-100 cm means on /surface (configs/soil.yaml)
+
+polaris:
+  title: Chaney et al. 2019, POLARIS soil properties, 30 m probabilistic maps of the contiguous United States, v1.0 (ksat, theta_s, theta_r, van Genuchten alpha and n; layer means 0-200 cm)
+  article_doi: 10.1029/2018WR022797
+  url: http://hydrology.cee.duke.edu/POLARIS/PROPERTIES/v1.0/
+  license: CC-BY-4.0 (POLARIS/license.txt)
+  verified: web-2026-10-02 (Readme units, per-variable VRT windowed read, DOI resolved)
+  note: ksat in log10(cm/hr) and alpha in log10(kPa-1), converted to log10(m s-1) and log10(m-1); 1x1 degree tiles glued by one VRT per variable, layer and statistic
+  role: soil hydraulic profiles on /soil and 0-100 cm ksat and porosity on /surface (configs/soil.yaml)
+
+soilgrids_bdticm:
+  title: Shangguan et al. 2017, absolute depth to bedrock (BDTICM, cm), SoilGrids250m 2017-03-10 release, ISRIC
+  article_doi: 10.1002/2016MS000686
+  url: https://files.isric.org/soilgrids/former/2017-03-10/data/BDTICM_M_250m_ll.tif
+  license: "provider terms, to verify (no licence file in the 2017 release folder)"
+  verified: web-2026-10-02 (windowed read of the global GeoTIFF, DOI resolved)
+  note: global 8.5 GB GeoTIFF in single-row strips; S2 caches a window over the box (data/raw/soilgrids/)
+  role: depth to bedrock (surface layer depth_to_bedrock)
+  redistribute_derived: false   # until the terms of the 2017 release are confirmed
+
+ecology_well_reports:
+  title: Washington State Department of Ecology, well reports (Well Construction Map Service, layer 16 "Well Reports")
+  url: https://gis.ecology.wa.gov/serverext/rest/services/WR/Well_Construction_Map_Service/MapServer/16
+  bib_author: "{Washington State Department of Ecology}"   # live service: year accessed
+  bib_year: 2026
+  license: "provider terms, to verify"
+  verified: web-2026-10-02 (16,122 reports in lon -122.30 to -121.40, lat 46.50 to 47.15, 3,192 with a static water level; 19,742 in the lon/lat envelope of the UTM model box that S31 queries; requests need a user agent)
+  note: StaticWaterLvl and CompletedDepth are text fields in feet; locations are often section or quarter-quarter centroids. S31 requests hydrogeological fields only (no owner names, addresses or parcels)
+  role: well water levels (S31)
+
+usgs_nwis_gw:
+  title: U.S. Geological Survey, National Water Information System, groundwater field measurements (parameter 72019) and monitoring locations, Water Data OGC API
+  url: https://api.waterdata.usgs.gov/ogcapi/v0/collections/field-measurements
+  bib_author: "{U.S. Geological Survey}"   # live service: year accessed
+  bib_year: 2026
+  license: public domain (USGS)
+  verified: web-2026-10-02 (1,685 groundwater sites with water levels in the box; OGC API bbox and datetime filters checked)
+  role: well water levels and well depths (S31)
+
+wgs_subsurface_db:
+  title: Washington Geological Survey, subsurface geology database (boreholes, layers, depth to water, depth to bedrock), geologic portal download
+  url: https://fortress.wa.gov/dnr/geologydata/publications/data_download/ger_portal_subsurface_database.zip
+  bib_author: "{Washington Geological Survey}"   # live service: year accessed
+  bib_year: 2026
+  license: "provider terms, to verify"
+  verified: web-2026-10-02 (file geodatabase, June 2026 release; layers borehole_information, hydrologic, bedrock, layer_data, in_situ_test_data)
+  note: the download is the current release, not a versioned file; the cached zip is pinned by its SHA-256 in docs/data_manifest.csv
+  role: borehole depth to water and to bedrock (S31)
+
+dvorkin_nur_1996:
+  title: Dvorkin and Nur 1996, Elasticity of high-porosity sandstones, theory for two North Sea data sets, Geophysics 61(5)
+  doi: 10.1190/1.1444059
+  license: article (cited for the soft-sand model)
+  verified: web-2026-10-02 (DOI resolved at doi.org, title and authors checked)
+  role: granular frame of the critical zone (rainier3d.cz.rockphysics)
+
+lu_godt_wu_2010:
+  title: Lu, Godt and Wu 2010, A closed-form equation for effective stress in unsaturated soil, Water Resources Research 46
+  doi: 10.1029/2009WR008646
+  license: article (cited for the suction stress)
+  verified: web-2026-10-02 (DOI resolved at doi.org, title and authors checked)
+  role: effective stress above the water table (rainier3d.cz.rockphysics, rainier3d.cz.medium)
+
+ingebritsen_manning_1999:
+  title: Ingebritsen and Manning 1999, Geological implications of a permeability-depth curve for the continental crust, Geology 27(12)
+  doi: "10.1130/0091-7613(1999)027<1107:GIOAPD>2.3.CO;2"
+  license: article (cited for the permeability-depth curve)
+  verified: web-2026-10-02 (DOI resolved at doi.org, title and authors checked)
+  role: permeability of fresh rock below the critical zone (configs/cz.yaml medium.rock_hydraulics)
+
+usgs_vs30_hybrid:
+  title: USGS global hybrid Vs30 map, 30 arcsec (Heath et al. 2020), global_vs30.grd of the ShakeMap geodata
+  article_doi: 10.1177/8755293020911137
+  url: https://apps.usgs.gov/shakemap_geodata/vs30/global_vs30.grd
+  license: public domain (USGS)
+  verified: web-2026-10-02 (HTTP range read of the HDF5 grid, DOI resolved)
+  note: slope-based global default with regional inserts; the file history reads "grdconvert global_vs30_ca_waor_ut_jp_tw.grd", i.e. a Washington-Oregon insert (Ahdi et al. 2017, 10.1785/0120160335, to confirm against Heath et al. 2020)
+  role: Vs30 (surface layer vs30)
 
 ma2026_wtd:
   title: Ma, Condon, Koch, Bennett, Defnet, Tijerina-Kreuzer, Melchior & Maxwell 2026, High resolution US water table depth estimates reveal quantity of accessible groundwater, Commun. Earth Environ. 7, 45
@@ -765,3 +845,159 @@ caine_1980:
   license: n/a (article)
   verified: web-2026-09-26 (doi.org)
   role: rainfall thresholds for debris flows (paper Sect. events)
+
+# Critical-zone physics and its literature (paper Sect. The critical zone in the model; docs/critical_zone.md)
+
+mindlin_1949:
+  title: Mindlin 1949, Compliance of elastic bodies in contact, Journal of Applied Mechanics 16
+  doi: 10.1115/1.4009973
+  license: article (cited)
+  verified: web-2026-10-03 (DOI resolved at doi.org, title and authors checked)
+  role: tangential contact stiffness of the granular frame
+
+walton_1987:
+  title: Walton 1987, The effective elastic moduli of a random packing of spheres, J. Mech. Phys. Solids 35
+  doi: 10.1016/0022-5096(87)90036-6
+  license: article (cited)
+  verified: web-2026-10-03 (DOI resolved at doi.org, title and authors checked)
+  role: sphere-pack moduli, slip fraction
+
+makse_1999:
+  title: Makse, Gland, Johnson and Schwartz 1999, Why effective medium theory fails in granular materials, Phys. Rev. Lett. 83
+  doi: 10.1103/PhysRevLett.83.5070
+  license: article (cited)
+  verified: web-2026-10-03 (DOI resolved at doi.org, title and authors checked)
+  role: reduced shear stiffness of granular packs (slip fraction)
+
+brie_1995:
+  title: Brie, Pampuri, Marsala and Meazza 1995, Shear sonic interpretation in gas-bearing sands, SPE ATCE
+  doi: 10.2118/30595-MS
+  license: article (cited)
+  verified: web-2026-10-03 (DOI resolved at doi.org, title and authors checked)
+  role: patchy fluid modulus of partly saturated pores
+
+van_genuchten_1980:
+  title: van Genuchten 1980, A closed-form equation for predicting the hydraulic conductivity of unsaturated soils, SSSAJ 44
+  doi: 10.2136/sssaj1980.03615995004400050002x
+  license: article (cited)
+  verified: web-2026-10-03 (DOI resolved at doi.org, title and authors checked)
+  role: retention and conductivity curves of the critical-zone columns
+
+lu_likos_2006:
+  title: Lu and Likos 2006, Suction stress characteristic curve for unsaturated soil, J. Geotech. Geoenviron. Eng. 132
+  doi: 10.1061/(ASCE)1090-0241(2006)132:2(131)
+  license: article (cited)
+  verified: web-2026-10-03 (DOI resolved at doi.org, title and authors checked)
+  role: suction stress concept
+
+mavko_2020:
+  title: Mavko, Mukerji and Dvorkin 2020, The Rock Physics Handbook, 3rd ed., Cambridge University Press
+  doi: 10.1017/9781108333016
+  license: article (cited)
+  verified: web-2026-10-03 (DOI resolved at doi.org, title and authors checked)
+  role: Gassmann substitution, Hertz-Mindlin and Hill average formulas
+
+hill_1952:
+  title: Hill 1952, The elastic behaviour of a crystalline aggregate, Proc. Phys. Soc. A 65
+  doi: 10.1088/0370-1298/65/5/307
+  license: article (cited)
+  verified: web-2026-10-03 (DOI resolved at doi.org, title and authors checked)
+  role: Hill average of the granular and rock moduli
+
+biot_1956:
+  title: Biot 1956, Theory of propagation of elastic waves in a fluid-saturated porous solid I, JASA 28
+  doi: 10.1121/1.1908239
+  license: article (cited)
+  verified: web-2026-10-03 (DOI resolved at doi.org, title and authors checked)
+  role: low-frequency limit (Gassmann) at seismic frequencies
+
+solazzi_2021:
+  title: Solazzi, Bodet, Holliger and Jougnot 2021, Surface-wave dispersion in partially saturated soils, the role of capillary forces, JGR Solid Earth 126
+  doi: 10.1029/2021JB022074
+  license: article (cited)
+  verified: web-2026-10-03 (DOI resolved at doi.org, title and authors checked)
+  role: Hertz-Mindlin, suction stress and Gassmann chain for partly saturated soil
+
+shi_2026:
+  title: Shi et al. 2026, Agroseismology and the impact of farming practices on soil hydrodynamics, Science
+  doi: 10.1126/science.aec0970
+  license: article (cited)
+  verified: web-2026-10-03 (DOI resolved at doi.org, title and authors checked)
+  role: the same rock-physics chain applied to DAS dv/v
+
+shen_2024:
+  title: Shen et al. 2024, Fiber-optic seismic sensing of vadose zone soil moisture dynamics, Nature Communications 15
+  doi: 10.1038/s41467-024-50690-6
+  license: article (cited)
+  verified: web-2026-10-03 (DOI resolved at doi.org, title and authors checked)
+  role: depth sensitivity of DAS dv/v to soil moisture
+
+clements_denolle_2023:
+  title: Clements and Denolle 2023, The seismic signature of California's earthquakes, droughts, and floods, JGR Solid Earth 128
+  doi: 10.1029/2022JB025553
+  license: article (cited)
+  verified: web-2026-10-03 (DOI resolved at doi.org, title and authors checked)
+  role: poroelastic dv/v model of permanent stations
+
+flinchum_2018:
+  title: Flinchum et al. 2018, Estimating the water holding capacity of the critical zone using near-surface geophysics, Hydrological Processes 32
+  doi: 10.1002/hyp.13260
+  license: article (cited)
+  verified: web-2026-10-03 (DOI resolved at doi.org, title and authors checked)
+  role: weathered and fractured layers from seismic refraction and rock physics
+
+holbrook_2014:
+  title: Holbrook et al. 2014, Geophysical constraints on deep weathering and water storage potential in the Southern Sierra Critical Zone Observatory, ESPL 39
+  doi: 10.1002/esp.3502
+  license: article (cited)
+  verified: web-2026-10-03 (DOI resolved at doi.org, title and authors checked)
+  role: weathered-zone thickness and porosity
+
+st_clair_2015:
+  title: St. Clair et al. 2015, Geophysical imaging reveals topographic stress control of bedrock weathering, Science 350
+  doi: 10.1126/science.aab2210
+  license: article (cited)
+  verified: web-2026-10-03 (DOI resolved at doi.org, title and authors checked)
+  role: topographic control of the weathering front
+
+riebe_2017:
+  title: Riebe, Hahm and Brantley 2017, Controls on deep critical zone architecture, ESPL 42
+  doi: 10.1002/esp.4052
+  license: article (cited)
+  verified: web-2026-10-03 (DOI resolved at doi.org, title and authors checked)
+  role: hypotheses for deep critical-zone structure
+
+pasquet_2015:
+  title: Pasquet et al. 2015, Detecting different water table levels in a shallow aquifer with combined P-, surface and SH-wave surveys, J. Appl. Geophys. 113
+  doi: 10.1016/j.jappgeo.2014.12.005
+  license: article (cited)
+  verified: web-2026-10-03 (DOI resolved at doi.org, title and authors checked)
+  role: Vp/Vs of saturated unconsolidated sediment (invariant bound)
+
+karlstrom_2025:
+  title: Karlstrom et al. 2025, State shifts in the deep Critical Zone drive landscape evolution in volcanic terrains, PNAS 122
+  doi: 10.1073/pnas.2415155122
+  license: article (cited)
+  verified: web-2026-10-03 (DOI resolved at doi.org, title and authors checked)
+  role: critical-zone depth in Cascade volcanic terrain
+
+wang_2020_cz:
+  title: Wang et al. 2020, Seismic evidence of glacial deposits inhibiting weathering of local bedrock, EPSL 545
+  doi: 10.1016/j.epsl.2020.116517
+  license: article (cited)
+  verified: web-2026-10-03 (DOI resolved at doi.org, title and authors checked)
+  role: glacial reset of the weathering profile
+
+celia_1990:
+  title: Celia, Bouloutas and Zarba 1990, A general mass-conservative numerical solution for the unsaturated flow equation, WRR 26
+  doi: 10.1029/WR026i007p01483
+  license: article (cited)
+  verified: web-2026-10-03 (DOI resolved at doi.org, title and authors checked)
+  role: mixed-form Richards solver (S34)
+
+flinchum_2025:
+  title: Flinchum et al. 2025, Using seismic refraction data to estimate a relationship between landscape curvature and deep critical zone structure in the South Carolina Piedmont, JGR Earth Surface
+  doi: 10.1029/2025JF008346
+  license: article (cited)
+  verified: web-2026-10-03 (DOI resolved at doi.org, title and authors checked)
+  role: curvature regression of weathering depth (S35 estimator)

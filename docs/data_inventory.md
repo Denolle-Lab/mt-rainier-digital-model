@@ -38,7 +38,7 @@ in.
 | SWCC, WRSZ (MT + geology) | Stanley et al. 1996, BSSA, 10.1785/BSSA08601A0001 | V | SWCC body (M3) |
 | Helicopter EM and magnetics, alteration | Finn, Sisson & Deszcz-Pan 2001, Nature, 10.1038/35054533 | V | alteration field (M2) |
 | Survey data grids | Rystrom et al. 2000, OFR 2000-27, 10.3133/ofr200027 | V | alteration field (M2) |
-| Packwood fixed-wing aeromagnetic survey (2022) | Blakely et al. 2024, USGS data release, 10.5066/P9UJHQU1 | V | apparent magnetisation around the edifice (S31) |
+| Packwood fixed-wing aeromagnetic survey (2022) | Blakely et al. 2024, USGS data release, 10.5066/P9UJHQU1 | V | apparent magnetisation around the edifice (S36) |
 | Alteration mineralogy and geometry | John et al. 2008, JVGR, 10.1016/j.jvolgeores.2008.04.004 | V | alteration classes |
 | AVIRIS surface alteration | Crowley & Zimbelman 1997, Geology | V | surface alteration (M2) |
 | Slope stability with altered volumes | Reid, Sisson & Brien 2001, Geology | V | alteration geometry |

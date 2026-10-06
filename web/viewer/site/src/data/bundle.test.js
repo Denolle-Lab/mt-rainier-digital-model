@@ -54,6 +54,8 @@ describe("loadBundle", () => {
       expect(k.glyph).toBeTruthy();
       const [r, g, b] = [1, 3, 5].map(i => parseInt(k.color.slice(i, i + 2), 16));
       if (Math.max(r, g, b) - Math.min(r, g, b) < 12) continue;   // neutral grey has no hue
+      // the one exception: GNSS is a steel blue, because the green slot read as the geophone green (kinds.js)
+      if (k.key === "gnss") { expect(k.color).toBe("#157db3"); continue; }
       const h = hue(k.color);
       expect(h > 195 && h < 235, `${k.key} ${k.color} hue ${h.toFixed(0)}° is earthquake blue`).toBe(false);
     }

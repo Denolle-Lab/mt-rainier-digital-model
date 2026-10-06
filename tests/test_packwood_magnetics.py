@@ -1,4 +1,4 @@
-"""S31 operators (rainier3d.alteration.packwood) on synthetic grids, and the viewer export (no network, no
+"""S36 operators (rainier3d.alteration.packwood) on synthetic grids, and the viewer export (no network, no
 survey data)."""
 
 from __future__ import annotations
@@ -158,5 +158,5 @@ def test_append_magnetization_layers(tmp_path):
     one = list(MAGNETIZATION_LAYERS)[1]
     assert append_magnetization_layers(tmp_path, dom, ds[[one]], legend) == [one]
     assert len(json.loads((tmp_path / "model" / "layers.json").read_text())["layers"]) == 3
-    with pytest.raises(KeyError, match="window_sigma_m"):  # S31 writes the windows; no silent 0 m
+    with pytest.raises(KeyError, match="window_sigma_m"):  # S36 writes the windows; no silent 0 m
         append_magnetization_layers(tmp_path, dom, ds.drop_attrs(), legend)

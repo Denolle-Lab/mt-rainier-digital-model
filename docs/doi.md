@@ -8,7 +8,7 @@ DOI per release. Papers cite the version DOI of exactly what they used.
 | Record | Zenodo type | Licence | What a version contains | When a version is made |
 |---|---|---|---|---|
 | rainier3d software | software | BSD-3-Clause (code), MIT (`web/viewer/`) | source archive of a `vX.Y.Z` tag | a software release |
-| rainier3d derived products | dataset | CC-BY 4.0 | the assets of a `products-vX.Y.Z` GitHub release, `SHA256SUMS`, `docs/products.md` | a products release |
+| rainier3d derived products | dataset | CC-BY 4.0 | the assets of a `products-vX.Y.Z` GitHub release (only what rainier3d computes, `configs/products.yaml`), `SHA256SUMS`, `REBUILD.md`, `inputs.csv`, `docs/products.md` | a products release |
 
 **The data record depends on the software record.**
 - Each data version records the software version that made it (`isCompiledBy`) and the DOIs of its inputs
@@ -76,6 +76,6 @@ Later versions repeat steps 2–5, with `--concept <record id>` so the new versi
 
 - **WGS landslide inventory.** Settled: the Washington Geological Survey's citation guidelines allow any use,
   including derivatives, with citation (`docs/data_policy.md`); the `mass_movements` product cites it.
-- **ORCID iDs.** Five of the six authors have their ORCID in `CITATION.cff` (the deposit script reads authors from it); Sangwoo Han's is still needed.
+- **ORCID iDs.** All six authors have their ORCID in `CITATION.cff`; the deposit script reads authors from it.
 - **Grant.** Give the Paros Geohazard Center gift as the funding reference (Zenodo `grants` does not list
   private gifts; state it in `notes`).

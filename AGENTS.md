@@ -12,6 +12,10 @@ Conventions for anyone (human or agent) changing this repo.
   for review.
 - **Data stays out of git:** `data/` and `outputs/` are ignored. Raw downloads are cached under
   `data/raw/<source>/`. Commit code, configs and small tables.
+- **Deterministic platform:** the viewer bundle and atlas data are rebuilt from scratch with `pixi run platform`
+  (`scripts/32_platform.py`), never patched in place. Live queries stop at `as_of` in `configs/platform.yaml`; caches
+  are named by every variable of their query; machine-local inputs are staged into `data/raw/` and checksummed. The
+  model products (`model.zarr` and the other processed stores) are read, not rebuilt.
 - **Storage:** zarr v3, `consolidated=False`, xarray DataTree with one node per level
   (`rainier3d.io.store`).
 - **Before a PR:** run `pixi run all` and `pixi run test`. Invariants in `tests/test_invariants.py`

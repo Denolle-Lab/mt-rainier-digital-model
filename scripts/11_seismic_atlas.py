@@ -14,7 +14,7 @@ that store exists; their keys can also be given to --layers. The mass movements 
 (outputs/mass_movements/) are appended the same way: the flow deposits as layer "mass_flows", the event points
 as model/mass_events.json. The terrain-geometry layers of S30 (data/processed/terrain_geometry.zarr) are
 appended as group "Terrain geometry"; their keys can also be given to --layers. The apparent-magnetisation
-layers of S31 (data/processed/packwood_magnetics.zarr) are appended to group "Geology" the same way.
+layers of S36 (data/processed/packwood_magnetics.zarr) are appended to group "Geology" the same way.
 The strain fields of S25 (data/processed/strain_3d.zarr) are added to the volume, with their orientation
 bars, when that store exists.
 """
@@ -108,7 +108,7 @@ def main():
         logging.info("terrain layers appended: %s", ", ".join(added))
     elif want:
         raise SystemExit(f"{terrain_store} is missing; run S30 first")
-    # S31 apparent magnetisation of the 1996 and 2022 surveys: its own store, appended when S31 has run
+    # S36 apparent magnetisation of the 1996 and 2022 surveys: its own store, appended when S36 has run
     mag_store = dom.path("processed") / "packwood_magnetics.zarr"
     want = None if not a.layers else [k for k in keys if k in MAGNETIZATION_LAYERS]
     if mag_store.exists() and (want is None or want):
@@ -117,7 +117,7 @@ def main():
         added = append_magnetization_layers(atlas, dom, ds[want or list(MAGNETIZATION_LAYERS)], legend)
         logging.info("magnetisation layers appended: %s", ", ".join(added))
     elif want:
-        raise SystemExit(f"{mag_store} is missing; run S31 first")
+        raise SystemExit(f"{mag_store} is missing; run S36 first")
     meta = json.loads((atlas / "model" / "layers.json").read_text())
     vol = export_volume(tree, dom, atlas)
     g = vol["grid"]

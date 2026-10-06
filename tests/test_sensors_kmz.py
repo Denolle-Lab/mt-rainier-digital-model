@@ -6,7 +6,7 @@ import pandas as pd
 from PIL import Image
 
 from rainier3d.io import kmz
-from rainier3d.sensors.inventory import classify, families
+from rainier3d.sensors.inventory import classify, families, is_node_2025
 
 
 def _tile(color):
@@ -64,3 +64,9 @@ def test_fdsn_channel_classification():
         "LQN": "mt",
     }
     assert not np.isin(["VM1", "LOG"], out.Channel).any()  # state of health, synthetic network
+
+
+def test_nodes_2025_are_the_fdsn_node_array():
+    cfg = families()
+    assert is_node_2025("Z5.001", cfg) and is_node_2025("Z5.240", cfg)
+    assert not is_node_2025("UW.RCM", cfg) and not is_node_2025("2N.1", cfg)

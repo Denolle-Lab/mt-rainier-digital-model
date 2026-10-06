@@ -65,7 +65,7 @@ export default function LayerPanel({ layers, scene, onStations, parts = ["quakes
           </div>
         )}
       </>}
-      {has("stations") && <Toggle label="Stations" sub="network stations and their labels" k="T" on={stations} onChange={showStations} />}
+      {has("stations") && <Toggle label="Stations" sub="all sensors and their labels; off for a clear map" k="T" on={stations} onChange={showStations} />}
     </div>
   );
 }

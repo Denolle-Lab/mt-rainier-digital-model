@@ -182,6 +182,127 @@ CONTINUOUS = {
         False,
         "Sentinel-2 late-summer 2025 median; above 0.4 marks ice and perennial snow",
     ),
+    "clay_0_100cm": (
+        "clay_0_100cm",
+        "Clay content, 0-1 m",
+        "Soil",
+        "%",
+        0,
+        25,
+        "cmc.bilbao",
+        False,
+        "SOLUS100, depth-weighted mean over the soil column within 0-1 m; empty on glaciers",
+    ),
+    "sand_0_100cm": (
+        "sand_0_100cm",
+        "Sand content, 0-1 m",
+        "Soil",
+        "%",
+        20,
+        80,
+        "cmc.lajolla",
+        False,
+        "SOLUS100, depth-weighted mean over the soil column within 0-1 m; empty on glaciers",
+    ),
+    "silt_0_100cm": (
+        "silt_0_100cm",
+        "Silt content, 0-1 m",
+        "Soil",
+        "%",
+        15,
+        60,
+        "cmc.davos_r",
+        False,
+        "SOLUS100, depth-weighted mean over the soil column within 0-1 m; empty on glaciers",
+    ),
+    "bulk_density_0_100cm": (
+        "bulk_density_0_100cm",
+        "Soil bulk density, 0-1 m",
+        "Soil",
+        "g/cm3",
+        0.6,
+        1.6,
+        "cmc.batlow",
+        False,
+        "SOLUS100 oven-dry bulk density, soil column within 0-1 m; empty on glaciers",
+    ),
+    "rock_fragments_0_100cm": (
+        "rock_fragments_0_100cm",
+        "Rock fragments > 2 mm, 0-1 m",
+        "Soil",
+        "% volume",
+        0,
+        50,
+        "cmc.grayC_r",
+        False,
+        "SOLUS100, soil column within 0-1 m; empty on glaciers",
+    ),
+    "organic_carbon_0_100cm": (
+        "organic_carbon_0_100cm",
+        "Soil organic carbon, 0-1 m",
+        "Soil",
+        "%",
+        0,
+        5,
+        "cmc.bamako_r",
+        False,
+        "SOLUS100, soil column within 0-1 m; empty on glaciers",
+    ),
+    "depth_to_restriction": (
+        "depth_to_restriction",
+        "Depth to a restrictive layer",
+        "Soil",
+        "m",
+        0,
+        2.01,
+        "cmc.lajolla",
+        False,
+        "SOLUS100 depth to any restriction; empty on glaciers",
+    ),
+    "depth_to_bedrock": (
+        "depth_to_bedrock",
+        "Depth to bedrock",
+        "Soil",
+        "m",
+        0,
+        40,
+        "cmc.lajolla",
+        False,
+        "SoilGrids250m 2017 (Shangguan et al. 2017), global machine-learning map at 250 m; empty on glaciers",
+    ),
+    "log10_ksat_0_100cm": (
+        "log10_ksat_0_100cm",
+        "Saturated hydraulic conductivity, 0-1 m",
+        "Water",
+        "log10 m/s",
+        -6,
+        -3.5,
+        "cmc.devon",
+        False,
+        "POLARIS, harmonic mean of the layer means over 0-1 m (vertical flow); empty on glaciers",
+    ),
+    "theta_s_0_100cm": (
+        "theta_s_0_100cm",
+        "Porosity (saturated water content), 0-1 m",
+        "Water",
+        "m3/m3",
+        0.3,
+        0.8,
+        "cmc.oslo",
+        False,
+        "POLARIS saturated water content, mean over 0-1 m; empty on glaciers",
+    ),
+    "vs30": (
+        "vs30",
+        "Vs30",
+        "Seismic model",
+        "m/s",
+        150,
+        800,
+        "cmc.roma",
+        False,
+        "USGS global hybrid map, ~900 m; over half the box carries one class value (686 m/s)",
+    ),
 }
 
 
@@ -411,6 +532,24 @@ def export_layers(tree: xr.DataTree, dom, manifest: dict, out: Path, flowlines=N
             True,
             {"classes": classes},
             keys=list(filter(None, s["land_cover"].attrs.get("gaia:source_keys", "").split(","))),
+        )
+
+    if "soil_texture_class" in s:
+        from rainier3d.surface.soil import TEXTURE
+
+        tc = s["soil_texture_class"].values.astype("float32")
+        tc[tc == 0] = np.nan
+        present = sorted({int(u) for u in np.unique(tc[np.isfinite(tc)])})
+        classes = [{"value": v, "label": lab, "color": col} for v, lab, col in TEXTURE if v in present]
+        emit(
+            "soil_texture_class",
+            "Soil texture class, 0-1 m",
+            "Soil",
+            tc,
+            True,
+            {"classes": classes},
+            note="USDA texture class of the SOLUS100 0-1 m clay, sand and silt; empty on glaciers",
+            keys=list(filter(None, s["soil_texture_class"].attrs.get("gaia:source_keys", "").split(","))),
         )
 
     if imagery:
@@ -846,12 +985,9 @@ def export_strain(strain: xr.Dataset, dom, atlas: Path, spacing_cells=(10, 4), l
 # Temporary networks follow the FDSN convention (codes starting with a digit or X, Y, Z are temporary);
 # TA is a permanent code for a moving deployment. Non-FDSN sources are classed by what they are.
 TEMP_CODES = {"TA"}
-TEMP_SOURCES = ("2025 Rainier node deployment",)
 
 
 def is_temporary(site_id: str, source: str) -> bool:
-    if source.startswith(TEMP_SOURCES):
-        return True
     if source.startswith("FDSN"):
         net = site_id.split(".")[0]
         return net[:1].isdigit() or net[:1] in "XYZ" or net in TEMP_CODES
@@ -881,6 +1017,24 @@ def viewer_kind(kind: str, family: str) -> str:
         "gnss": "gnss",
         "infrasound": "infrasound",
     }.get(family, "other")
+
+
+def retired_kinds(sensors: list[dict], family: str) -> dict:
+    """Viewer kinds whose sensors have all ended at a site where another still runs: kind -> [start, end].
+    The viewer keeps them in the site's ring and card, with dates, but not in the kind filter or counts."""
+    if not any(s.get("status") == "operating" for s in sensors):
+        return {}
+    by = {}
+    for s in sensors:
+        by.setdefault(viewer_kind(s.get("kind", ""), s.get("family", family)), []).append(s)
+    return {
+        k: [
+            min((s["start"] for s in ss if s.get("start")), default=None),
+            max((s["end"] for s in ss if s.get("end")), default=None),
+        ]
+        for k, ss in sorted(by.items())
+        if all(s.get("status") != "operating" for s in ss)
+    }
 
 
 def export_sensors(atlas: Path, web_data: Path) -> dict:
@@ -915,6 +1069,7 @@ def export_sensors(atlas: Path, web_data: Path) -> dict:
                 "start": min(starts) if starts else None,
                 "end": None if p["status"] == "operating" else (max(ends) if ends else None),
                 "instruments": sorted({s.get("kind", "") for s in sensors} - {""}),
+                "retiredKinds": retired_kinds(sensors, p["family"]),
                 "notes": p.get("notes") or "",
                 "url": p.get("url") or "",
             }
@@ -957,10 +1112,26 @@ def export_sensors(atlas: Path, web_data: Path) -> dict:
             "channels": ch,
         },
         "counts": counts,
-        "source": "rainier3d S8 sensor inventory (EarthScope FDSN, UW 2025 nodes, "
+        "source": "rainier3d S8 sensor inventory (EarthScope FDSN incl. the 2025 Z5 node array, "
         "EarthScope GNSS, Synoptic), exported by S11",
     }
+    apply_surveys(meta)
     (atlas / "model" / "sensors.json").write_text(json.dumps(meta, separators=(",", ":")))
+    return meta
+
+
+def apply_surveys(meta: dict) -> dict:
+    """configs/sensor_surveys.yaml -> meta["surveys"] and the "survey" of each site and of the DAS fiber."""
+    import yaml
+
+    from rainier3d.config.domain import REPO
+
+    cfg = yaml.safe_load((REPO / "configs" / "sensor_surveys.yaml").read_text()) or {}
+    meta["surveys"] = [{"key": k, "label": v["label"], "period": v["period"]} for k, v in cfg.items()]
+    nets = {v["network"]: k for k, v in cfg.items() if v.get("network")}
+    for s in meta["sites"]:
+        s["survey"] = nets.get(s["id"].split(".")[0]) if "." in s["id"] else None
+    meta["das"]["survey"] = next((k for k, v in cfg.items() if v.get("das")), None)
     return meta
 
 
@@ -1238,7 +1409,7 @@ def append_terrain_layers(atlas: Path, dom, ds: xr.Dataset) -> list[str]:
     return [n["key"] for n in new]
 
 
-# ---- apparent magnetisation of the 1996 and 2022 surveys, merged (S31) ----
+# ---- apparent magnetisation of the 1996 and 2022 surveys, merged (S36) ----
 # key: (label, how glacier ice enters the magnetised terrain; empty where the label says it)
 MAGNETIZATION_LAYERS = {
     "apparent_magnetization_merged": ("Apparent magnetisation (merged)", "; ice counted as rock"),
@@ -1251,7 +1422,7 @@ MAGNETIZATION_NOTE = (
 
 
 def append_magnetization_layers(atlas: Path, dom, ds: xr.Dataset, legend: dict) -> list[str]:
-    """Add the S31 layers (rainier3d.alteration.packwood) to <atlas>/model/layers.json under the group
+    """Add the S36 layers (rainier3d.alteration.packwood) to <atlas>/model/layers.json under the group
     "Geology", replacing same-key entries. ``ds`` is data/processed/packwood_magnetics.zarr on the model
     surface grid; ``legend`` is the viewer block of configs/magnetics.yaml (vmin, vmax, cmap)."""
     out = atlas / "model"
@@ -1259,7 +1430,7 @@ def append_magnetization_layers(atlas: Path, dom, ds: xr.Dataset, legend: dict) 
     meta = json.loads((out / "layers.json").read_text())
     reg = _sources()
     vmin, vmax, cm = float(legend["vmin"]), float(legend["vmax"]), _cmap(legend["cmap"])
-    win = [float(ds.attrs[f"window_sigma_m_{k}"]) for k in ("1996", "2022")]  # written by S31
+    win = [float(ds.attrs[f"window_sigma_m_{k}"]) for k in ("1996", "2022")]  # written by S36
     w96, w22 = (f"{w / 1000:g} km" if w >= 1000 else f"{w:g} m" for w in win)
     new = []
     for key, (label, ice) in MAGNETIZATION_LAYERS.items():
@@ -1359,6 +1530,14 @@ def export_relocated(atlas: Path, catalog_csv: Path, dom, summary: dict | None =
     }
     (atlas / "quakes_relocated.json").write_text(json.dumps(meta, indent=1))
     return meta
+
+
+def tag_sensor_surveys(atlas: Path) -> list:
+    """Write configs/sensor_surveys.yaml into an existing bundle's model/sensors.json ("surveys")."""
+    p = atlas / "model" / "sensors.json"
+    meta = apply_surveys(json.loads(p.read_text()))
+    p.write_text(json.dumps(meta, separators=(",", ":")))
+    return meta["surveys"]
 
 
 def tag_virtual_sensors(atlas: Path) -> dict:

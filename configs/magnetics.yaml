@@ -1,5 +1,5 @@
 # Terrain-correlated apparent magnetisation of the 2022 Packwood aeromagnetic survey, merged with the 1996
-# helicopter survey of the edifice (S31, scripts/31_packwood_magnetics.py, rainier3d.alteration.packwood).
+# helicopter survey of the edifice (S36, scripts/36_packwood_magnetics.py, rainier3d.alteration.packwood).
 # The grid CRS and extent come from the domain; the 1996 field is computed as in S22 (finn2001 defaults).
 
 survey:

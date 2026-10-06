@@ -8,13 +8,13 @@ bibliography: references.bib
 
 # Apparent magnetisation of the 1996 and 2022 aeromagnetic surveys
 
-**Script:** S31 (`scripts/31_packwood_magnetics.py`, `pixi run s31`). The code is in `src/rainier3d/alteration/packwood.py`, and the parameters are in `configs/magnetics.yaml`.
+**Script:** S36 (`scripts/36_packwood_magnetics.py`, `pixi run s36`). The code is in `src/rainier3d/alteration/packwood.py`, and the parameters are in `configs/magnetics.yaml`.
 **Products:** `data/processed/packwood_magnetics.zarr` (fields on the model surface grid) and two layers of the 3D viewer.
 **Status of the numbers:** they come from `outputs/magnetics/summary.json`, run on 1 October 2026 on the published model (products-v1.0.0), and from the one-off checks on that run described here (the 500 m and 2 km windows, the 15 km reach, the gap fill and the amplitude ratio in the overlap).
 
 ## Summary
 
-The 1996 helicopter survey of the edifice [@rystrom_2000] gives the terrain-correlated apparent magnetisation of S22 (`docs/alteration.md`). The 2022 Packwood fixed-wing survey [@blakely_2024] covers 69% of the model domain around the edifice but not the edifice itself. S31 computes the same quantity for the 2022 survey and merges the two fields into one map. The two surveys overlap in a ring up to 3 km wide around the edifice, where they correlate at 0.645.
+The 1996 helicopter survey of the edifice [@rystrom_2000] gives the terrain-correlated apparent magnetisation of S22 (`docs/alteration.md`). The 2022 Packwood fixed-wing survey [@blakely_2024] covers 69% of the model domain around the edifice but not the edifice itself. S36 computes the same quantity for the 2022 survey and merges the two fields into one map. The two surveys overlap in a ring up to 3 km wide around the edifice, where they correlate at 0.645.
 
 Two maps are produced: one with glacier ice counted as rock, as in S22, and one with the ice left out of the magnetised terrain.
 
@@ -62,12 +62,12 @@ Leaving out the ice changes the map only on the glaciated upper cone. Where the 
 
 ## 5. Products and access
 
-In the 3D viewer, the surface layers "Apparent magnetisation (merged)" and "Apparent magnetisation (ice excluded)" (group "Geology") show the two maps, next to the S22 layer "Apparent magnetisation (terrain-correlated)". S31 adds them to an existing viewer bundle, and S11 adds them again when it rebuilds the bundle. The store `packwood_magnetics.zarr` also holds the 2022 anomaly, its reduction to the pole, the drape surface, each survey's field and the 1996 weight.
+In the 3D viewer, the surface layers "Apparent magnetisation (merged)" and "Apparent magnetisation (ice excluded)" (group "Geology") show the two maps, next to the S22 layer "Apparent magnetisation (terrain-correlated)". S36 adds them to an existing viewer bundle, and S11 adds them again when it rebuilds the bundle. The store `packwood_magnetics.zarr` also holds the 2022 anomaly, its reduction to the pole, the drape surface, each survey's field and the 1996 weight.
 
 Reproduce with:
 
 ```bash
-pixi run s31            # or: pixi run s31 -- --model <published model.zarr>
+pixi run s36            # or: pixi run s36 -- --model <published model.zarr>
 ```
 
 ## References

@@ -181,21 +181,32 @@ test("(o) strain properties draw their orientation bars on the depth slice", asy
   await expect.poll(shown).toEqual([]);
 });
 
-test("(m) the sensor legend filters: geophones show the 2025 nodes, Past adds earlier deployments", async ({ page }) => {
+test("(m) the sensor legend filters: a survey that is on always shows, one that is off follows Current / Past", async ({ page }) => {
   await page.waitForFunction(() => !!window.__rainier.sensors, null, { timeout: 30_000 });
   const on = () => page.evaluate(() => Array.from(window.__rainier.sensors.onAttr.array).filter(v => v > 0).length);
-  // the 2025 UW nodes that sit on the terrain box (the rest lie west of it and are not drawn)
+  const fiber = () => page.evaluate(() => window.__rainier.sensors.fiber.visible);
+  const fadedNodes = () => page.evaluate(() => { const s = window.__rainier.sensors, p = s.pastAttr.array;
+    return s.sites.filter((x, i) => x.survey === "nodes_2025" && p[i] > 0.5).length; });
+  // the 2025 node array (FDSN Z5, ended August 2025) on the terrain box (the rest lie outside it and are not drawn)
   const nodes2025 = await page.evaluate(() => window.__rainier.sensors.sites.filter(s =>
-    s.kinds.includes("geophone") && s.status === "operating" && s.source.startsWith("2025")).length);
+    s.kinds.includes("geophone") && s.survey === "nodes_2025").length);
   expect(nodes2025).toBeGreaterThan(150);
+  expect(await fiber()).toBe(true);                               // surveys are on by default
+  expect(await fadedNodes()).toBe(0);                             // and drawn opaque, though retired
   await dock(page, "Sensors");
+  await page.getByRole("button", { name: /^MORA DAS/ }).click();
+  expect(await fiber()).toBe(true);                               // survey off: the operating fiber is Current
+  await page.getByRole("button", { name: "Current", exact: true }).click();
+  expect(await fiber()).toBe(false);
+  await page.getByRole("button", { name: "Current", exact: true }).click();
   await page.locator(".sf-kind", { hasText: "Geophone" }).click();
-  expect(await on()).toBe(nodes2025);                             // operating geophones = the 2025 nodes
+  expect(await on()).toBe(nodes2025);                             // no geophone operates now: the survey alone
+  await page.getByRole("button", { name: /^Nodal array/ }).click();
+  expect(await on()).toBe(0);                                     // survey off: retired, so under Past (off)
+  await expect(page.locator(".sf-kind", { hasText: "Geophone" })).toBeVisible();   // a kind at 0 stays pickable
   await page.getByRole("button", { name: "Past", exact: true }).click();
-  expect(await on()).toBeGreaterThan(nodes2025 + 300);            // + retired nodal deployments (2N, XD, Z5, ...)
-  await page.getByRole("button", { name: "Temporary", exact: true }).click();
-  expect(await on()).toBe(0);                                     // all nodes are temporary
-  expect(await page.evaluate(() => window.__rainier.sensors.fiber.visible)).toBe(false);
+  expect(await on()).toBeGreaterThan(nodes2025 + 300);            // Z5 + earlier nodal deployments (2N, XD, ...)
+  expect(await fadedNodes()).toBe(nodes2025);                     // now faded, as past
 });
 
 test("(n) mass movements: events sit on the ground, the legend filters them, Flow deposits drapes the flows", async ({ page }) => {
@@ -300,4 +311,15 @@ test("(v) the scale bar follows the zoom", async ({ page }) => {
   await expect.poll(label).toMatch(/km$/);
   await page.getByRole("button", { name: "Summit crater" }).click();
   await expect.poll(label, { timeout: 15_000 }).toMatch(/ m$/);
+});
+
+test("(w) Stations off leaves the map clear: no station marker, sensor point or DAS fiber", async ({ page }) => {
+  await page.waitForFunction(() => !!window.__rainier.sensors, null, { timeout: 30_000 });
+  const state = () => page.evaluate(() => ({
+    points: window.__rainier.sensors.points.visible, fiber: window.__rainier.sensors.fiber.visible,
+    markers: [...document.querySelectorAll(".station")].filter(d => +getComputedStyle(d).opacity > 0).length }));
+  expect(await state()).toMatchObject({ points: true, fiber: true });
+  await dock(page, "Sensors");
+  await page.getByRole("switch", { name: /Stations/ }).click();
+  await expect.poll(state).toEqual({ points: false, fiber: false, markers: 0 });
 });

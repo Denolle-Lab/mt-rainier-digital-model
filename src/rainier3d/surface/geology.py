@@ -64,18 +64,30 @@ def fetch_map_units(dom: Domain) -> gpd.GeoDataFrame:
     return gdf
 
 
-def fetch_dmu_names() -> dict[str, str]:
+def fetch_dmu(dom: Domain) -> list[dict]:
+    """Description of Map Units (compiled quadrangle), cached once so reruns read the same text."""
+    cache = dom.path("raw") / "geology" / "dnr_gems_100k_dmu.json"
+    if cache.exists():
+        return json.loads(cache.read_text())
     rows = _query(
         DMU,
         {
             "where": "DMU_100K_QUAD_NAME='Compiled'",
-            "outFields": "DMU_100K_MAP_UNIT,DMU_100K_FULL_NAME,DMU_100K_AGE",
+            "outFields": "DMU_100K_MAP_UNIT,DMU_100K_FULL_NAME,DMU_100K_AGE,DMU_100K_DESCRIPTION",
+            "orderByFields": "DMU_100K_MAP_UNIT",
         },
         page=2000,
     )
+    rows = sorted((f["properties"] for f in rows), key=lambda a: (a["DMU_100K_MAP_UNIT"] or "", str(a)))
+    cache.parent.mkdir(parents=True, exist_ok=True)
+    cache.write_text(json.dumps(rows, indent=0, sort_keys=True))
+    log.info("cached %d DMU rows -> %s", len(rows), cache)
+    return rows
+
+
+def fetch_dmu_names(dom: Domain) -> dict[str, str]:
     out = {}
-    for f in rows:
-        a = f["properties"]
+    for a in fetch_dmu(dom):
         out[a["DMU_100K_MAP_UNIT"]] = " | ".join(
             str(a[k]) for k in ("DMU_100K_AGE", "DMU_100K_FULL_NAME") if a.get(k)
         )
@@ -122,6 +134,32 @@ def rasterize_units(dom: Domain, gdf: gpd.GeoDataFrame, cw: dict) -> xr.DataArra
         "flag_meanings": json.dumps({int(k): v["name"] for k, v in units_config()["units"].items()}),
     }
     return provenance(da, ["dnr_gems_100k"], "lithology", r)
+
+
+def rasterize_thickness(dom: Domain, gdf: gpd.GeoDataFrame, cw: dict, units_cfg: dict) -> xr.DataArray:
+    """Thickness of the surface deposit (m) per cell: the map symbol's value in symbol_thickness_m of
+    configs/units.yaml when its DMU states one, else the unit default (geometry.unconsolidated_thickness_m);
+    0 under other units."""
+    geo = units_cfg["geometry"]
+    default = {int(k): float(v) for k, v in geo["unconsolidated_thickness_m"].items()}
+    per_sym = {s: float(v["thickness_m"]) for s, v in (geo.get("symbol_thickness_m") or {}).items()}
+    val = {s: per_sym.get(s, default.get(cw[s]["unit_id"], 0.0)) for s in set(gdf["MAP_UNIT_100K"])}
+    r = dom.surface_res_m
+    x0, y0, x1, y1 = dom.bounds
+    from affine import Affine
+
+    tr = Affine(r, 0, x0, 0, -r, y1)
+    shapes = ((g, val[s]) for g, s in zip(gdf.geometry, gdf["MAP_UNIT_100K"], strict=True))
+    arr = rasterize(
+        shapes, out_shape=(int((y1 - y0) / r), int((x1 - x0) / r)), transform=tr, fill=0, dtype="float32"
+    )[::-1]
+    da = xr.DataArray(arr, coords={"y": dom.y, "x": dom.x}, dims=("y", "x"), name="unconsolidated_thickness")
+    da.attrs = {
+        "units": "m",
+        "long_name": "thickness of the surface deposit: DMU value of the map symbol, else the unit default",
+    }
+    keys = ["dnr_gems_100k", "m1_placeholder"]
+    return provenance(da, keys, "unconsolidated_thickness", r)
 
 
 def fill_nearest(unit: np.ndarray, keep: np.ndarray) -> np.ndarray:

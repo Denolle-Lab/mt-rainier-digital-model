@@ -1,11 +1,12 @@
 import * as THREE from "three";
 import { KIND_BY_KEY } from "../data/kinds.js";
-import { passes } from "../data/sensors.js";
+import { faded, fiberOn, passes } from "../data/sensors.js";
 import { occluded } from "./occlusion.js";
 
 // Every inventory site that is not a station marker, as one GPU point each: colour by instrument kind, filled
-// for permanent networks, a ring for temporary ones, faded for past deployments. Plus the DAS fiber as a line on
-// the ground. Both follow the 2D flattening and the terrain cut; hover picking is done in screen space.
+// for permanent networks, a ring for temporary ones, faded for past deployments unless their survey is on (then
+// opaque). Plus the DAS fiber as a line on the ground. Both follow the 2D flattening and the terrain cut; hover
+// picking is done in screen space.
 const PT_VERT = `
   attribute vec3 color; attribute float temp; attribute float past; attribute float on;
   uniform float uSize, uFlat, uClipOn; uniform vec4 uClip;
@@ -61,7 +62,7 @@ export class SensorPoints {
     g.setAttribute("position", new THREE.BufferAttribute(pos, 3));
     g.setAttribute("color", new THREE.BufferAttribute(col, 3));
     g.setAttribute("temp", new THREE.BufferAttribute(temp, 1));
-    g.setAttribute("past", new THREE.BufferAttribute(past, 1));
+    g.setAttribute("past", (this.pastAttr = new THREE.BufferAttribute(past, 1)));
     g.setAttribute("on", (this.onAttr = new THREE.BufferAttribute(on, 1)));
     const U = { uSize: { value: 12 * Math.min(devicePixelRatio, 2) }, uFlat: rs.U.flat, uClipOn: rs.U.clipOn, uClip: rs.U.clip };
     this.points = new THREE.Points(g, new THREE.ShaderMaterial({ uniforms: U, vertexShader: PT_VERT, fragmentShader: PT_FRAG, transparent: true }));
@@ -82,15 +83,22 @@ export class SensorPoints {
   }
 
   setFilter(f) {
-    const on = this.onAttr.array;
-    this.sites.forEach((s, i) => { on[i] = passes(s, f) ? 1 : 0; });
-    this.onAttr.needsUpdate = true;
-    this.fiber.visible = !!this.das && f.temporary && (!f.kinds || f.kinds.has("das"));
+    const on = this.onAttr.array, past = this.pastAttr.array;
+    this.sites.forEach((s, i) => { on[i] = passes(s, f) ? 1 : 0; past[i] = faded(s, f) ? 1 : 0; });
+    this.onAttr.needsUpdate = this.pastAttr.needsUpdate = true;
+    this.fiber.visible = !this.hidden && fiberOn(this.das, f) && (!f.kinds || f.kinds.has("das"));
     this.filter = f;
+  }
+
+  // the legend's Stations switch: off hides every sensor (points and fiber) to leave the map clear
+  setVisible(on) {
+    this.hidden = !on; this.points.visible = on;
+    if (this.filter) this.setFilter(this.filter);
   }
 
   // nearest visible, unoccluded point within `px` of a screen position
   pick(cx, cy, px = 10) {
+    if (this.hidden) return null;
     const rs = this.rs, flat = rs.U.flat.value, on = this.onAttr.array, cam = rs.camera.position.toArray();
     const c = rs.U.clip.value, clipOn = rs.U.clipOn.value > 0.5;
     let best = null, bd = px * px;

@@ -89,6 +89,9 @@ def fuse_level(g, p, reg: dict, lev, fc: dict, q: dict, name: str, full: bool = 
     qp, qs = q_from_vs(out["vs"].values / 1e3, q["qs_per_vs"], q["qp_over_qs"])
     out["qp"] = (("z", "y", "x"), qp.astype(np.float32))
     out["qs"] = (("z", "y", "x"), qs.astype(np.float32))
+    for v in ("porosity", "log10_permeability", "weathering_index"):  # the critical zone of S4, unfused
+        if v in p:
+            out[v] = p[v]
     out["vs_unc_regional"] = (
         ("z", "y", "x"),
         np.where(mask, reg["vs_unc"], np.nan).astype(np.float32),

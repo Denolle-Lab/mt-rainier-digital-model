@@ -1,4 +1,4 @@
-"""S31: terrain-correlated apparent magnetisation of the 2022 Packwood aeromagnetic survey (Blakely et al.
+"""S36: terrain-correlated apparent magnetisation of the 2022 Packwood aeromagnetic survey (Blakely et al.
 2024) merged with that of the 1996 helicopter survey of the edifice (S22), with glacier ice counted as rock
 (as S22) and with it left out.
 
@@ -19,8 +19,8 @@ Writes:
 Parameters: configs/magnetics.yaml. Method: rainier3d.alteration.packwood (2022, merge) and
 rainier3d.alteration.finn2001 (1996).
 
-Usage: pixi run s31
-       pixi run s31 -- --model ~/.cache/rainier3d/model/extracted/model.zarr
+Usage: pixi run s36
+       pixi run s36 -- --model ~/.cache/rainier3d/model/extracted/model.zarr
 """
 
 from __future__ import annotations
