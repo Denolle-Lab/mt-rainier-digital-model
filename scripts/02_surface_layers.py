@@ -7,6 +7,17 @@
   canopy_height             ETH global canopy height 2020, Lang et al. 2023 (m), from 10 m
   land_cover                NLCD 2021 class, modal in cell
   ndvi, ndsi                Sentinel-2 L2A late-summer 2025 median composite, from 20 m
+  clay/sand/silt/bulk_density/rock_fragments/organic_carbon_0_100cm
+                            SOLUS100 depth-weighted means over 0-1 m (configs/soil.yaml)
+  soil_texture_class        USDA texture class of those clay, sand and silt means
+  depth_to_restriction      SOLUS100 depth to any restrictive layer (m)
+  log10_ksat_0_100cm, theta_s_0_100cm
+                            POLARIS harmonic-mean ksat and mean porosity over 0-1 m
+  depth_to_bedrock          Shangguan et al. 2017 (SoilGrids250m 2017), m
+  vs30                      USGS global hybrid Vs30 (m/s)
+
+The depth profiles (SOLUS at 0-1.5 m, POLARIS layers to 2 m) go to data/processed/soil_profile.zarr (/soil in
+S5).
 
 Sources are clipped once to data/raw/<source>/ by the fetchers in rainier3d.surface.layers; a source that
 cannot be reached is skipped with a warning, never filled.
@@ -21,9 +32,10 @@ import numpy as np
 import xarray as xr
 
 from rainier3d.config.domain import load_domain
-from rainier3d.io.store import write
+from rainier3d.io.store import read, write
 from rainier3d.surface import imagery
 from rainier3d.surface import layers as L
+from rainier3d.surface import soil as SL
 
 log = logging.getLogger("s2")
 
@@ -76,6 +88,47 @@ def main():
             )
     except Exception as e:
         log.warning("Sentinel-2 indices skipped: %s", e)
+
+    cfg = SL.config()
+    surf = dom.path("processed") / "surface.zarr"  # S1: ice thickness for the glacier mask
+    ice = (read(surf)["ice_thickness"].values > 0) if (cfg["mask_glaciers"] and surf.exists()) else None
+    ice = None if ice is None else xr.DataArray(ice, dims=("y", "x"), coords={"y": dom.y, "x": dom.x})
+    n0 = len(out)
+    profiles = []
+    for name, prof_fn, summ_fn in (
+        ("SOLUS100", SL.solus_profile, SL.solus_summaries),
+        ("POLARIS", SL.polaris_profile, SL.polaris_summaries),
+    ):
+        try:
+            prof = prof_fn(dom, cfg)
+            out.update(summ_fn(dom, prof, cfg))
+            profiles.append(prof)
+        except Exception as e:  # a source outage skips the layer; it is never filled
+            log.warning("%s profile skipped: %s", name, e)
+    for fn in (SL.depth_to_restriction, SL.depth_to_bedrock, SL.vs30):
+        try:
+            da = fn(dom, cfg)
+            out[da.name] = da
+        except Exception as e:
+            log.warning("%s skipped: %s", fn.__name__, e)
+    if ice is not None:  # soil and regolith layers added above; vs30 is kept on the ice
+        for k in list(out)[n0:]:
+            if k != "vs30":
+                out[k] = SL.mask_ice(out[k], ice)
+        profiles = [p.map(lambda v: SL.mask_ice(v, ice), keep_attrs=True) for p in profiles]
+    if profiles:
+        sp = xr.merge(profiles, combine_attrs="drop_conflicts")
+        sp.attrs = {"crs": dom.crs, "vertical_datum": dom.vertical_datum, "domain": dom.name}
+        log.info("wrote %s", write(sp, dom.path("processed") / "soil_profile.zarr"))
+
+    if {"soil_texture_class", "vs30", "depth_to_bedrock", "theta_s_0_100cm"} <= set(out):
+        import json
+
+        summ = SL.summary(out, cfg, None if ice is None else ice.values)
+        p_sum = dom.path("outputs") / "soil_layers_summary.json"
+        p_sum.parent.mkdir(parents=True, exist_ok=True)
+        p_sum.write_text(json.dumps(summ, indent=1))
+        log.info("soil checks %s -> %s", summ["checks"], p_sum)
 
     ds = xr.Dataset(out)
     ds.attrs = {"crs": dom.crs, "vertical_datum": dom.vertical_datum, "domain": dom.name}

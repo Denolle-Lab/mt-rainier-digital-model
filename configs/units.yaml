@@ -41,7 +41,21 @@ crosswalk_rules:        # [regex, unit id]
 # Units with max_thickness_m sit on the nearest mapped unit without one.
 # M1 geometry rules. Every number here is an m1_placeholder unless a source key is given.
 geometry:
-  unconsolidated_thickness_m: {2: 5, 3: 15, 4: 10, 5: 15}   # per surface unit id
+  unconsolidated_thickness_m: {2: 5, 3: 15, 4: 10, 5: 15}   # per surface unit id: default where the DMU is silent
+  # Per map symbol, where the DNR GeMS Description of Map Units (dnr_gems_100k, compiled quadrangle, cached by S1
+  # in data/raw/geology/dnr_gems_100k_dmu.json) states a thickness. thickness_m is the midpoint of the stated range,
+  # from 0 when only a maximum is given (rule: m1_placeholder); feet converted at 0.3048 m. S1 rasterises these
+  # into surface.zarr unconsolidated_thickness. Not used: Qap(w) (one locality, 11 ft of till at Wingate Hill) and
+  # Qf (a value near Bellingham, outside the box).
+  symbol_thickness_m:
+    Qao(e):  {thickness_m: 5.5,  range_m: [3, 8],    dmu: "generally 3 to 8 m thick"}               # Evans Creek outwash
+    Qap(h):  {thickness_m: 22.5, range_m: [15, 30],  dmu: "15 to 30 m thick"}                       # Hayden Creek Drift
+    Qapo(h): {thickness_m: 4.0,  range_m: [3, 5],    dmu: "generally 3 to 5 m thick"}               # Hayden Creek outwash
+    Qgos:    {thickness_m: 26.0, range_m: [2, 50],   dmu: "commonly ranges from 2 to 50 m"}         # Vashon outwash sand
+    Qp:      {thickness_m: 3.5,  range_m: [0, 7.0],  dmu: "less than 1 ft to as much as 23 ft"}     # peat
+    Qvl(e):  {thickness_m: 4.0,  range_m: [0, 7.9],  dmu: "a few millimeters to at least 26 ft"}    # Electron Mudflow
+    Qvl(lc): {thickness_m: 41.6, range_m: [0, 83.2], dmu: "maximum known thickness is 273 ft"}      # Lily Creek mudflows
+    Qvl(o):  {thickness_m: 11.4, range_m: [0, 22.9], dmu: "as much as 75 ft"}                       # Osceola Mudflow
   cap_thickness_m: 300            # young_volcanics, and rainier_andesite outside the edifice footprint
   supracrustal_base_z: -4000      # m NAVD88; base of mapped basement units
   pluton_base_z: -10000           # m NAVD88; base of the Miocene plutons

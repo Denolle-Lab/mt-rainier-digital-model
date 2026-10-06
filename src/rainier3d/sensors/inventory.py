@@ -18,7 +18,6 @@ from __future__ import annotations
 import io
 import json
 import re
-from datetime import UTC, datetime
 from pathlib import Path
 
 import numpy as np
@@ -27,12 +26,13 @@ import requests
 import yaml
 
 from rainier3d.config.domain import REPO, Domain
+from rainier3d.config.platform import as_of, as_of_datetime, local_input
 
 FAMILIES = REPO / "configs" / "sensor_families.yaml"
 FDSN = "https://service.earthscope.org/fdsnws/station/1/query"
 GNSS = "https://web-services.unavco.org/gps/metadata/sites/v1"
-SMART = Path.home() / "GitHub/mt-rainier-smart-sensing/data"
-NOW = datetime.now(UTC).replace(tzinfo=None)
+# The data freeze of configs/platform.yaml: a sensor is operating if its last epoch ends after it.
+NOW = as_of_datetime()
 
 
 def families() -> dict:
@@ -73,15 +73,17 @@ def _fdsn_text(cache: Path, **params) -> Path:
 def fdsn_channels(dom: Domain, cfg: dict) -> pd.DataFrame:
     w, s, e, n = dom.bbox_4326
     box = _fdsn_text(
-        dom.path("raw") / "sensors" / "fdsn_channels.txt",
+        # the file name carries every variable of the query, so a changed query cannot reuse an old cache
+        dom.path("raw") / "sensors" / f"fdsn_channels_{dom.name}_{as_of()}.txt",
         minlatitude=s,
         maxlatitude=n,
         minlongitude=w,
         maxlongitude=e,
+        endtime=f"{as_of()}T23:59:59",
     )
     nd = cfg["nodes_2025"]
     nodes = _fdsn_text(
-        dom.path("raw") / "sensors" / f"fdsn_channels_{nd['network']}_{nd['start'][:4]}.txt",
+        dom.path("raw") / "sensors" / f"fdsn_channels_{nd['network']}_{nd['start']}_{nd['end']}.txt",
         network=nd["network"],
         starttime=nd["start"],
         endtime=nd["end"],
@@ -167,7 +169,7 @@ def gnss_sites(dom: Domain) -> list[dict]:
         stop = pd.to_datetime(g.session_stop_time, errors="coerce")
         end = None if stop.isna().any() else stop.max()
         # the service reports the latest data epoch as the stop time: recent = still recording
-        if end is not None and (NOW - end.tz_localize(None) if end.tzinfo else NOW - end).days < 30:
+        if end is not None and (NOW - (end.tz_localize(None) if end.tzinfo else end)).days < 30:
             end = None
         r = g.iloc[-1]
         out.append(
@@ -203,7 +205,8 @@ def synoptic_sites(dom: Domain) -> list[dict]:
         ("snotel_stations.geojson", "meteorology", "SNOTEL snow"),
         ("streamflow-stations.geojson", "hydrology", "stream gauge"),
     ):
-        for f in json.loads((SMART / "stations" / fname).read_text())["features"]:
+        stations = local_input("smart_sensing_stations", dom.path("raw"))
+        for f in json.loads((stations / fname).read_text())["features"]:
             p = f["properties"]
             lon, lat = (float(v) for v in f["geometry"]["coordinates"][:2])
             if not _in(dom, lon, lat):

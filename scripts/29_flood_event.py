@@ -45,6 +45,7 @@ def main():
     ap.add_argument("--event", default="dec2025_ar")
     ap.add_argument("--model", default=None, help="model.zarr for elevation and ice (default: processed)")
     ap.add_argument("--atlas", default=str(REPO / "web" / "viewer" / "site" / "public" / "atlas"))
+    ap.add_argument("--no-figure", action="store_true", help="do not redraw the committed paper figure")
     a = ap.parse_args()
     dom, ev = load_domain(), E.load_event(a.event)
     raw = dom.path("raw")
@@ -89,7 +90,7 @@ def main():
         logging.info("no model at %s: summary without the elevation and glacier numbers", mp)
     summ = E.summary(rain, gauges, files["ar_windows"], surface)
     (out / "summary.json").write_text(json.dumps(summ, indent=1))
-    if surface is not None:
+    if surface is not None and not a.no_figure:
         from rainier3d.report.figures import fig_flood_event
 
         fig_flood_event(surface, rain, gauges, virtual, files["ar_windows"], summ, FIG)

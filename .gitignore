@@ -22,3 +22,5 @@ cache/
 
 # 3D viewer map data: built by `pixi run viewer-data` + `pixi run s11`, published as a release asset
 web/viewer/site/public/atlas/
+# MapLibre atlas data written by S8 (rebuilt by `pixi run platform`)
+web/atlas/data/
