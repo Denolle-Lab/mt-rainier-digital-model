@@ -27,8 +27,9 @@ from rasterio.warp import Resampling, reproject
 
 from rainier3d.report.figures import UNIT_COLORS
 
-TEX_WIDTH = 2040
-VAL_WIDTH = 1020
+# drape and value-grid widths: whole numbers of square-degree pixels on the 0.76 x 0.54 deg overview box
+TEX_WIDTH = 1938
+VAL_WIDTH = 988
 
 UNIT_LABELS = {
     1: "Glacier ice",
@@ -321,6 +322,18 @@ def overview_grid(manifest: dict, width: int) -> tuple[Affine, int, int]:
     return Affine(deg, 0, b["west"], 0, -deg, b["north"]), width, height
 
 
+def check_overview(manifest: dict, dom) -> None:
+    """Stop unless the overview box lies inside the model grid, where every drape and rain frame has data."""
+    from pyproj import Transformer
+
+    b = manifest["extent"]["overview"]
+    lon, lat = np.meshgrid(np.linspace(b["west"], b["east"], 50), np.linspace(b["south"], b["north"], 50))
+    x, y = Transformer.from_crs(4326, dom.crs, always_xy=True).transform(lon, lat)
+    x0, y0, x1, y1 = dom.bounds
+    if not ((x >= x0) & (x <= x1) & (y >= y0) & (y <= y1)).all():
+        raise ValueError(f"overview box {b} is not inside the model grid {dom.bounds} ({dom.crs})")
+
+
 def to_lonlat(
     a: np.ndarray, dom, manifest: dict, width: int, categorical: bool, src_transform: Affine | None = None
 ) -> np.ndarray:
@@ -403,13 +416,14 @@ def surface_derived(tree: xr.DataTree) -> dict[str, np.ndarray]:
             continue
         v = np.where(top, l1[var].values, 0.0).sum(0) / np.maximum(n, 1)
         v = np.where(n > 0, v, np.nan)
-        # L1 is coarser than the surface grid: repeat cells onto it
-        fy, fx = s.sizes["y"] // v.shape[0], s.sizes["x"] // v.shape[1]
-        out[key] = np.repeat(np.repeat(v, fy, 0), fx, 1)
+        # L1 is coarser than the surface grid, and not by a whole factor (250 m vs 100 m): each surface cell
+        # takes the L1 cell around its centre
+        v = xr.DataArray(v, coords={"y": l1.y.values, "x": l1.x.values}, dims=("y", "x"))
+        out[key] = v.sel(y=s.y.values, x=s.x.values, method="nearest").values
     return out
 
 
-def imagery_texture(src: str, manifest: dict, width: int = 4080) -> np.ndarray:
+def imagery_texture(src: str, manifest: dict, width: int = 2 * TEX_WIDTH) -> np.ndarray:
     """Sentinel-2 true colour (seis-hydro-2-sed stretch) warped from its 20 m UTM grid to the overview box."""
     import rasterio
 
@@ -591,7 +605,7 @@ def export_layers(tree: xr.DataTree, dom, manifest: dict, out: Path, flowlines=N
     return meta
 
 
-def _streams_png(flowlines, manifest: dict, path: Path, width: int = 4080) -> dict:
+def _streams_png(flowlines, manifest: dict, path: Path, width: int = 2 * TEX_WIDTH) -> dict:
     """Draw flowlines at 2x the drape width; line width and opacity grow with Strahler order."""
     t, w, h = overview_grid(manifest, width)
     img = Image.new("RGBA", (w, h), (0, 0, 0, 0))
@@ -1147,7 +1161,7 @@ CANOPY_STYLE = {
 }
 
 
-def rgb_texture(src: str, manifest: dict, width: int = 4080) -> np.ndarray:
+def rgb_texture(src: str, manifest: dict, width: int = 2 * TEX_WIDTH) -> np.ndarray:
     """A 3-band image (any CRS) warped to the overview box; alpha 0 where all bands are 0 or 255 (masked).
     Nearest-neighbour, so a rendered map keeps its exact legend colours and its mask."""
     import rasterio
@@ -1401,6 +1415,69 @@ def append_terrain_layers(atlas: Path, dom, ds: xr.Dataset) -> list[str]:
                 },
                 "legend": {"min": vmin, "max": vmax, "log": False, "ramp": _ramp(cm), "saturates": True},
                 "sources": [{"key": k, "title": reg[k]["title"], "link": _link(reg[k])} for k in keys],
+            }
+        )
+    done = {n["key"] for n in new}
+    meta["layers"] = [x for x in meta["layers"] if x["key"] not in done] + new
+    (out / "layers.json").write_text(json.dumps(meta, indent=1))
+    return [n["key"] for n in new]
+
+
+# ---- apparent magnetisation of the 1996 and 2022 surveys, merged (S36) ----
+# key: (label, how glacier ice enters the magnetised terrain; empty where the label says it)
+MAGNETIZATION_LAYERS = {
+    "apparent_magnetization_merged": ("Apparent magnetisation (merged)", "; ice counted as rock"),
+    "apparent_magnetization_merged_icefree": ("Apparent magnetisation (ice excluded)", ""),
+}
+MAGNETIZATION_NOTE = (
+    "Terrain-correlated, 1996 (sensor ~80 m above ground, {w96} window) and 2022 (~700 m, {w22} window) "
+    "surveys blended across their overlap{ice}"
+)
+
+
+def append_magnetization_layers(atlas: Path, dom, ds: xr.Dataset, legend: dict) -> list[str]:
+    """Add the S36 layers (rainier3d.alteration.packwood) to <atlas>/model/layers.json under the group
+    "Geology", replacing same-key entries. ``ds`` is data/processed/packwood_magnetics.zarr on the model
+    surface grid; ``legend`` is the viewer block of configs/magnetics.yaml (vmin, vmax, cmap)."""
+    out = atlas / "model"
+    manifest = json.loads((atlas / "manifest.json").read_text())
+    meta = json.loads((out / "layers.json").read_text())
+    reg = _sources()
+    vmin, vmax, cm = float(legend["vmin"]), float(legend["vmax"]), _cmap(legend["cmap"])
+    win = [float(ds.attrs[f"window_sigma_m_{k}"]) for k in ("1996", "2022")]  # written by S36
+    w96, w22 = (f"{w / 1000:g} km" if w >= 1000 else f"{w:g} m" for w in win)
+    new = []
+    for key, (label, ice) in MAGNETIZATION_LAYERS.items():
+        if key not in ds:
+            continue
+        a = ds[key].values.astype("float32")
+        tex = to_lonlat(a, dom, manifest, TEX_WIDTH, False)
+        val = to_lonlat(a, dom, manifest, VAL_WIDTH, False)
+        rgba = (cm(np.nan_to_num(_norm(tex, vmin, vmax, False))) * 255).astype("uint8")
+        rgba[..., 3] = np.where(np.isfinite(tex), 255, 0)
+        tname = _save_texture(rgba, out / key, False)
+        q, scale, offset = _values_u16(val, False, vmin, vmax)
+        q.tofile(out / f"{key}.u16.bin")
+        keys = [k for k in ds[key].attrs.get("gaia:source_keys", "").split(",") if k]
+        new.append(
+            {
+                "key": key,
+                "label": label,
+                "group": "Geology",
+                "kind": "continuous",
+                "units": "A/m",
+                "note": MAGNETIZATION_NOTE.format(w96=w96, w22=w22, ice=ice),
+                "texture": tname,
+                "values": {
+                    "file": f"{key}.u16.bin",
+                    "width": q.shape[1],
+                    "height": q.shape[0],
+                    "scale": scale,
+                    "offset": offset,
+                    "nodata": 65535,
+                },
+                "legend": {"min": vmin, "max": vmax, "log": False, "ramp": _ramp(cm), "saturates": True},
+                "sources": [_src(reg, k) for k in keys],
             }
         )
     done = {n["key"] for n in new}

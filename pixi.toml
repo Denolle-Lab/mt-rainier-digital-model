@@ -90,6 +90,7 @@ platform = "python scripts/32_platform.py"
 s24 = "python scripts/24_mass_movements.py"
 s29 = "python scripts/29_flood_event.py"
 s30 = "python scripts/30_terrain_geometry.py"
+s36 = "python scripts/36_packwood_magnetics.py"
 
 # Slim environment for the weekly GNSS refresh on GitHub Actions (.github/workflows/gnss-weekly.yml): only what
 # S17, S18 (--no-load) and S20 (--only gnss) import. The package runs from src/ without installing it.

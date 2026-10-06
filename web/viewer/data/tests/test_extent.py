@@ -12,8 +12,8 @@ def test_projection_origin_and_scale():
 
 
 def test_overview_request_has_square_degree_pixels():
-    w, h = E.square_size(E.OVERVIEW, 1800)
-    assert (w, h) == (1800, 1215)
+    w, h = E.square_size(E.OVERVIEW, 1710)
+    assert (w, h) == (1710, 1215)
     assert (E.OVERVIEW.east - E.OVERVIEW.west) / w == pytest.approx((E.OVERVIEW.north - E.OVERVIEW.south) / h, rel=1e-9)
 
 

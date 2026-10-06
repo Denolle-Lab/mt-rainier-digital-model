@@ -46,17 +46,16 @@ describe("sensors", () => {
       ["UW.RCM", { kinds: ["gnss"], names: ["MUIR Camp Muir"], retired: {} }]]);
     expect(kindCounts([node, old, gnss], DEFAULT_FILTER)).toEqual({ geophone: 1, gnss: 1 });
   });
-  it("joins a GNSS site to a station marker within 200 m, and only a GNSS site", () => {
+  it("leaves a GNSS site that the inventory did not merge as its own point, whatever its distance", () => {
     const para = { id: "CC.PARA", codes: ["CC.PARA"], kinds: ["seismometer"], lat: 46.786, lon: -121.7424 };
     const mrsd = { id: "gnss-MRSD", name: "MRSD Mount Rainier Ski Dorm Bldg", kinds: ["gnss"], status: "operating",
       lat: 46.7853, lon: -121.7420 };                                                     // 127 m from CC.PARA
-    const snrs = { ...mrsd, id: "gnss-SNRS", name: "SNRS Sunrise Ski Dorm", lat: 46.8190 };   // 3.7 km
-    const kchw1 = { ...mrsd, id: "syn-KCHW1", name: "KCHW1", kinds: ["hydromet"] };          // weather: not by distance
-    expect(extraSites({ sites: [mrsd, snrs, kchw1] }, { sites: [para] }).map(s => s.id)).toEqual(["gnss-SNRS", "syn-KCHW1"]);
-    expect(mergedKinds({ sites: [mrsd] }, { sites: [para] }).get("CC.PARA"))
-      .toEqual({ kinds: ["gnss"], names: ["MRSD Mount Rainier Ski Dorm Bldg"], retired: {} });
-    const star = { ...mrsd, status: "retired", start: "2008-09-11", end: "2011-09-11" };   // an ended GNSS site
-    expect(mergedKinds({ sites: [star] }, { sites: [para] }).get("CC.PARA").retired).toEqual({ gnss: ["2008-09-11", "2011-09-11"] });
+    expect(extraSites({ sites: [mrsd] }, { sites: [para] }).map(s => s.id)).toEqual(["gnss-MRSD"]);
+    expect(mergedKinds({ sites: [mrsd] }, { sites: [para] }).size).toBe(0);
+    // an ended site merged by code (CC.LONE with CC.LONR) joins as ended kinds, with its dates
+    const lonr = { id: "CC.LONR", codes: ["CC.LONR"], kinds: ["seismometer"] };
+    const lone = { id: "CC.LONE", name: "CC.LONE + CC.LONR", kinds: ["infrasound"], status: "retired", start: "2008-09-11", end: "2011-09-11" };
+    expect(mergedKinds({ sites: [lone] }, { sites: [lonr] }).get("CC.LONR").retired).toEqual({ infrasound: ["2008-09-11", "2011-09-11"] });
   });
   it("keeps an ended instrument in the site's kinds but not in the filter and counts", () => {
     const pr01 = { id: "CC.PR01", name: "CC.PR01", kinds: ["infrasound", "seismometer"], temporary: false, status: "operating",

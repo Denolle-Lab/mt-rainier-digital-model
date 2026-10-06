@@ -5,7 +5,7 @@ Deletes every derived file of the platform, then runs, in order, with the data f
   stage        copy the machine-local inputs into data/raw/ once (DAS table, KMZ overlays, Synoptic stations)
   viewer-data  terrain, summit, stations and earthquakes (web/viewer/data, cache in data/raw/viewer_cache)
   s8           sensor inventory, DAS, events and overlays (web/atlas/data)
-  s11          model layers, sensors, canopy, terrain geometry, mass movements, volume (from model.zarr etc.)
+  s11          model layers, sensors, canopy, terrain geometry, magnetisation, mass movements, volume
   s26          relocated earthquakes, from outputs/catalog (the relocation itself is not rerun)
   s29          storm events, from their raw caches (no paper figure)
   check        no 2025 node under its old spreadsheet id; stations and manifest dated as_of
@@ -100,6 +100,7 @@ def main():
         "terrain geometry": dom.path("processed") / "terrain_geometry.zarr",
         "mass movements": dom.path("outputs") / "mass_movements",
         "3D strain": dom.path("processed") / "strain_3d.zarr",
+        "apparent magnetisation (S36)": dom.path("processed") / "packwood_magnetics.zarr",
     }
     missing = [k for k, p in {**need, **optional}.items() if not p.exists()]
     if [k for k in missing if k in need] or (missing and not a.allow_missing):

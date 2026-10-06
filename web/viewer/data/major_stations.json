@@ -3,7 +3,7 @@
   "UW.RCM": "Camp Muir, broadband + GNSS",
   "UW.RCS": "Camp Schurman",
   "CC.MILD": "Mildred Point, broadband + infrasound",
-  "CC.PARA": "Paradise, broadband + infrasound + GNSS",
+  "CC.PARA": "Paradise, broadband + infrasound",
   "UW.RER": "Emerald Ridge, broadband + infrasound",
   "UW.FMW": "Mount Fremont, broadband",
   "UW.LON": "Longmire, broadband + accelerometer + tiltmeters",

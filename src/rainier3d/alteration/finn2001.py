@@ -86,9 +86,17 @@ def alteration_3d(fields: dict, d_rock: np.ndarray, allowed: np.ndarray) -> np.n
 
 
 def apparent_magnetization(
-    raw: Path, elevation: xr.DataArray, x: np.ndarray, y: np.ndarray, crs: str, sigma_m: float = 500.0
+    raw: Path,
+    elevation: xr.DataArray,
+    x: np.ndarray,
+    y: np.ndarray,
+    crs: str,
+    sigma_m: float = 500.0,
+    top: xr.DataArray | None = None,
 ) -> tuple[np.ndarray, dict]:
-    """Terrain-correlated apparent magnetisation (A/m) on (y, x); prisms from ``elevation`` padded by 3 km."""
+    """Terrain-correlated apparent magnetisation (A/m) on (y, x); prisms from ``elevation`` padded by 3 km.
+    ``top`` replaces ``elevation`` as the top of the prisms (e.g. the bedrock, to leave glacier ice out); the
+    sensor stays at least 20 m above ``elevation``."""
     import harmonica as hm
     from pyproj import Transformer
     from scipy.interpolate import griddata
@@ -98,7 +106,7 @@ def apparent_magnetization(
     pad = 3000.0
     xp = np.arange(x[0] - pad, x[-1] + pad + 1, dx)
     yp = np.arange(y[0] - pad, y[-1] + pad + 1, dx)
-    top = elevation.interp(x=xp, y=yp).values
+    top = (elevation if top is None else top).interp(x=xp, y=yp).values
     rp = A.to_model_grid(A.read_grid(raw, "rp"), x, y, crs).values
     fm = A.flight_mag(raw)
     fx, fy = Transformer.from_crs(A.NAD27_UTM10, crs, always_xy=True).transform(fm.x.values, fm.y.values)
