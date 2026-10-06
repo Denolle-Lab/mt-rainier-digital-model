@@ -36,11 +36,15 @@ def test_physical_ranges(tree, lev):
     u = ds["unit"].values
     rock = (u != AIR) & (u != ICE) & (u != MAGMA)
     r = (ds["vp"] / ds["vs"]).values
-    # consolidated rock stays below 3; saturated unconsolidated cover of the critical zone reaches Vp/Vs 4
-    # to 4.5 (Pasquet et al. 2015, saturated loess), bounded here at 5
+    # The rock law keeps Vp/Vs below 3. Cells that contain critical zone (weathering index W > 0, or an
+    # unconsolidated unit) average a saturated granular layer, whose Vp/Vs reaches 4 to 4.5 (Pasquet et al.
+    # 2015, saturated loess): bounded at 5. The bound tests each law, not the thickness of a placeholder layer
+    # (decision of 2026-10-05, paper Sect. "One effective stress for the whole model").
+    w = np.nan_to_num(ds["weathering_index"].values) if "weathering_index" in ds else np.zeros_like(r)
     loose = np.isin(u, [k for k, v in kinds(units_config()).items() if v == "unconsolidated"])
-    assert np.nanmin(r[rock]) >= 1.5 and np.nanmax(r[rock & ~loose]) <= 3.0
-    assert np.nanmax(r[rock & loose], initial=0) <= 5.0
+    cz = rock & (loose | (w > 0))
+    assert np.nanmin(r[rock]) >= 1.5 and np.nanmax(r[rock & ~cz], initial=0) <= 3.0
+    assert np.nanmax(r[cz], initial=0) <= 5.0
     # fused Vp/Vs lies between the geology and regional ratios (CVM v1.7 itself reaches 2.22 at >1 km)
     rg = (ds["vp_geology"] / ds["vs_geology"]).values
     rr = (ds["vp_regional"] / ds["vs_regional"]).values
