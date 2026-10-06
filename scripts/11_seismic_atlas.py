@@ -13,7 +13,8 @@ The canopy-storage layers of S19 (data/processed/surface_canopy.zarr) and the so
 that store exists; their keys can also be given to --layers. The mass movements of S24
 (outputs/mass_movements/) are appended the same way: the flow deposits as layer "mass_flows", the event points
 as model/mass_events.json. The terrain-geometry layers of S30 (data/processed/terrain_geometry.zarr) are
-appended as group "Terrain geometry"; their keys can also be given to --layers.
+appended as group "Terrain geometry"; their keys can also be given to --layers. The apparent-magnetisation
+layers of S36 (data/processed/packwood_magnetics.zarr) are appended to group "Geology" the same way.
 The strain fields of S25 (data/processed/strain_3d.zarr) are added to the volume, with their orientation
 bars, when that store exists.
 """
@@ -30,7 +31,9 @@ import yaml
 
 from rainier3d.config.domain import REPO, load_domain
 from rainier3d.export.atlas import (
+    MAGNETIZATION_LAYERS,
     append_canopy_layers,
+    append_magnetization_layers,
     append_mass_movements,
     append_terrain_layers,
     export_layers,
@@ -65,7 +68,8 @@ def main():
     }
     if a.layers:
         keys = [k.strip() for k in a.layers.split(",") if k.strip()]
-        model_keys = [k for k in keys if k not in canopy_keys | set(TERRAIN_KEYS) and k != "mass_flows"]
+        own = canopy_keys | set(TERRAIN_KEYS) | set(MAGNETIZATION_LAYERS)
+        model_keys = [k for k in keys if k not in own and k != "mass_flows"]
         meta = merge_layers(tree, dom, manifest, atlas / "model", fl, model_keys) if model_keys else None
     else:
         meta = export_layers(tree, dom, manifest, atlas / "model", fl, imagery=fetch_s2_composite(dom))
@@ -104,6 +108,16 @@ def main():
         logging.info("terrain layers appended: %s", ", ".join(added))
     elif want:
         raise SystemExit(f"{terrain_store} is missing; run S30 first")
+    # S36 apparent magnetisation of the 1996 and 2022 surveys: its own store, appended when S36 has run
+    mag_store = dom.path("processed") / "packwood_magnetics.zarr"
+    want = None if not a.layers else [k for k in keys if k in MAGNETIZATION_LAYERS]
+    if mag_store.exists() and (want is None or want):
+        legend = yaml.safe_load((REPO / "configs" / "magnetics.yaml").read_text())["viewer"]
+        ds = xr.open_zarr(mag_store, consolidated=False)
+        added = append_magnetization_layers(atlas, dom, ds[want or list(MAGNETIZATION_LAYERS)], legend)
+        logging.info("magnetisation layers appended: %s", ", ".join(added))
+    elif want:
+        raise SystemExit(f"{mag_store} is missing; run S36 first")
     meta = json.loads((atlas / "model" / "layers.json").read_text())
     vol = export_volume(tree, dom, atlas)
     g = vol["grid"]

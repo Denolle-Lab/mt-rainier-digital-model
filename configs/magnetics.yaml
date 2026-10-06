@@ -1,0 +1,46 @@
+# Terrain-correlated apparent magnetisation of the 2022 Packwood aeromagnetic survey, merged with the 1996
+# helicopter survey of the edifice (S36, scripts/36_packwood_magnetics.py, rainier3d.alteration.packwood).
+# The grid CRS and extent come from the domain; the 1996 field is computed as in S22 (finn2001 defaults).
+
+survey:
+  source: blakely_2024
+  sciencebase_item: 656e3da9d34e7ca10833fc94
+  files: [Packwood_grid_MAIN.gxf, Packwood_data_MAIN.csv, Packwood_metadata.xml, Packwood_data_dictionary.pdf]
+
+field:
+  source: igrf13
+  # IGRF-13 at the centre of the grid (46.722 N, 121.833 W), 1805 m, 2022-10-03: the height and date of the
+  # survey's IGRF channel (data dictionary), from the IAGA IGRF-13 coefficients (url in sources.yaml); they
+  # can be checked with any IGRF-13 calculator. Induced magnetisation along the field is assumed.
+  inclination_deg: 68.37
+  declination_deg: 15.05
+
+rtp:
+  source: m1_placeholder
+  pad_fraction: 0.33         # reflect padding on each side before the FFT
+
+drape:
+  source: blakely_2024       # channel DRAPE of Packwood_data_MAIN.csv
+  csv_step: 5                # every 5th flight-line sample (~35 m along the lines) is gridded
+
+apparent_magnetization:
+  source: m1_placeholder
+  # Gaussian sigma of the regression for 2022 (1996: 500 m, S22). The 2022 sensor is ~700 m above the ground
+  # (1996: ~80 m) and does not resolve features smaller than ~1-2 km. 1st-99th percentile of the 2022 field:
+  # -4.3 to 5.4 A/m with 500 m (noisy where the terrain signal is weak), -3.4 to 4.1 A/m with 1000 m, -3.1 to
+  # 2.6 A/m with 2000 m (steady but washed out); 1000 m keeps most of the contrast with fewer extremes.
+  window_sigma_m: 1000
+  reach_m: 5000              # prisms more than this beyond a 5 km tile of sensors are left out
+  sensor_floor_m: 20         # the sensor is kept this far above the ground, as in S22
+
+registration:
+  source: m1_placeholder
+  # Correlation of the high-passed RTP with the high-passed topography: the run stops below this, or if the
+  # grid flipped north-south correlates better (2022 grid: 0.30 as read, 0.03 flipped).
+  min_corr: 0.15
+
+viewer:
+  source: m1_placeholder
+  vmin: -1                   # the legend of the S22 layer "Apparent magnetisation (terrain-correlated)"
+  vmax: 5
+  cmap: cmc.vik

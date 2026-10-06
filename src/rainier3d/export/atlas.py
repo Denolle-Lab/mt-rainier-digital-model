@@ -1409,6 +1409,69 @@ def append_terrain_layers(atlas: Path, dom, ds: xr.Dataset) -> list[str]:
     return [n["key"] for n in new]
 
 
+# ---- apparent magnetisation of the 1996 and 2022 surveys, merged (S36) ----
+# key: (label, how glacier ice enters the magnetised terrain; empty where the label says it)
+MAGNETIZATION_LAYERS = {
+    "apparent_magnetization_merged": ("Apparent magnetisation (merged)", "; ice counted as rock"),
+    "apparent_magnetization_merged_icefree": ("Apparent magnetisation (ice excluded)", ""),
+}
+MAGNETIZATION_NOTE = (
+    "Terrain-correlated, 1996 (sensor ~80 m above ground, {w96} window) and 2022 (~700 m, {w22} window) "
+    "surveys blended across their overlap{ice}"
+)
+
+
+def append_magnetization_layers(atlas: Path, dom, ds: xr.Dataset, legend: dict) -> list[str]:
+    """Add the S36 layers (rainier3d.alteration.packwood) to <atlas>/model/layers.json under the group
+    "Geology", replacing same-key entries. ``ds`` is data/processed/packwood_magnetics.zarr on the model
+    surface grid; ``legend`` is the viewer block of configs/magnetics.yaml (vmin, vmax, cmap)."""
+    out = atlas / "model"
+    manifest = json.loads((atlas / "manifest.json").read_text())
+    meta = json.loads((out / "layers.json").read_text())
+    reg = _sources()
+    vmin, vmax, cm = float(legend["vmin"]), float(legend["vmax"]), _cmap(legend["cmap"])
+    win = [float(ds.attrs[f"window_sigma_m_{k}"]) for k in ("1996", "2022")]  # written by S36
+    w96, w22 = (f"{w / 1000:g} km" if w >= 1000 else f"{w:g} m" for w in win)
+    new = []
+    for key, (label, ice) in MAGNETIZATION_LAYERS.items():
+        if key not in ds:
+            continue
+        a = ds[key].values.astype("float32")
+        tex = to_lonlat(a, dom, manifest, TEX_WIDTH, False)
+        val = to_lonlat(a, dom, manifest, VAL_WIDTH, False)
+        rgba = (cm(np.nan_to_num(_norm(tex, vmin, vmax, False))) * 255).astype("uint8")
+        rgba[..., 3] = np.where(np.isfinite(tex), 255, 0)
+        tname = _save_texture(rgba, out / key, False)
+        q, scale, offset = _values_u16(val, False, vmin, vmax)
+        q.tofile(out / f"{key}.u16.bin")
+        keys = [k for k in ds[key].attrs.get("gaia:source_keys", "").split(",") if k]
+        new.append(
+            {
+                "key": key,
+                "label": label,
+                "group": "Geology",
+                "kind": "continuous",
+                "units": "A/m",
+                "note": MAGNETIZATION_NOTE.format(w96=w96, w22=w22, ice=ice),
+                "texture": tname,
+                "values": {
+                    "file": f"{key}.u16.bin",
+                    "width": q.shape[1],
+                    "height": q.shape[0],
+                    "scale": scale,
+                    "offset": offset,
+                    "nodata": 65535,
+                },
+                "legend": {"min": vmin, "max": vmax, "log": False, "ramp": _ramp(cm), "saturates": True},
+                "sources": [_src(reg, k) for k in keys],
+            }
+        )
+    done = {n["key"] for n in new}
+    meta["layers"] = [x for x in meta["layers"] if x["key"] not in done] + new
+    (out / "layers.json").write_text(json.dumps(meta, indent=1))
+    return [n["key"] for n in new]
+
+
 # ---- relocated catalogue (S26) for the viewer's before/after earthquake layer ----
 RELOCATED_FIELDS = (
     "x_cc",

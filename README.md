@@ -165,6 +165,7 @@ of the layers you use; the Zenodo DOI plan is in `docs/doi.md`.
 | S33 critical-zone synthetics | `scripts/33_cz_synthetics.py` | `cz_synthetics.zarr`: SYNTHETIC dispersion, depth sensitivity, resonance and water-table dv/v at the station, node and DAS locations, from the model's columns |
 | S34 storm synthetics | `scripts/34_cz_storm.py` | `cz_storm_<event>.zarr`: SYNTHETIC dv/v through an observed rain event (1D Richards in the model's columns) |
 | S35 weathering depth | `scripts/35_cz_weathering_depth.py` | `outputs/cz/weathering_depth.json`: depth-to-bedrock estimators scored on the borehole picks |
+| S36 magnetics | `scripts/36_packwood_magnetics.py` | `data/processed/packwood_magnetics.zarr`: apparent magnetisation of the 2022 Packwood aeromagnetic survey merged with the 1996 survey of S22, with glacier ice as rock and with it excluded (`configs/magnetics.yaml`, `docs/packwood_magnetics.md`); viewer layers (group "Geology") |
 
 `docs/eikonal_benchmark.md` compares the eikonal solvers (`scripts/bench_eikonal.py`).
 
