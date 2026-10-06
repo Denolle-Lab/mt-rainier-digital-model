@@ -195,13 +195,11 @@ of S31 fit Ma better (median misfit 7.1 m against 12.3 m). A water table fitted 
 height above the nearest drainage) would be licence-free and local; it is the most influential state variable of the
 critical zone.
 
-**Invariant.** `test_physical_ranges[L1]` is split by unit kind (decision of 2026-10-03): unconsolidated cells
-may reach Vp/Vs 5, since saturated sediment reaches 4 to 4.5 (Pasquet et al. 2015); consolidated rock keeps the
-bound of 3. After the consolidated weathering factor of 0.5, 2,544 unconsolidated cells exceed 3 (maximum 4.70,
-within the new bound) and 6,403 consolidated cells still do (0.39%, maximum 3.97). All are the top L1 cell of their
-column, where a saturated weathered layer a few metres thick dominates the travel-time average of Vs. The test
-fails on these cells and is left failing: lowering the placeholder further only to pass it would tune the model to
-the test. The next decision is whether the bound of 3 should apply to cell averages that include the critical zone.
+**Invariant.** `test_physical_ranges` bounds each law, not each cell (decision of 2026-10-05). Cells with no
+critical zone (weathering index 0, consolidated unit) keep the rock bound Vp/Vs ≤ 3; their maximum is 2.07 in L1.
+Cells that contain critical zone (W > 0 or an unconsolidated unit; 85,665 in L1, 3 in L2) may reach 5, because
+a saturated granular layer reaches 4 to 4.5 (Pasquet et al. 2015); their maximum is 4.70, in the top L1 cell,
+where a saturated weathered layer a few metres thick dominates the travel-time average of Vs.
 
 ## Build plan and status
 
