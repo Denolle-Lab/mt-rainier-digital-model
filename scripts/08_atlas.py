@@ -19,6 +19,7 @@ import yaml
 from PIL import Image
 
 from rainier3d.config.domain import REPO, load_domain
+from rainier3d.config.platform import as_of, local_input
 from rainier3d.io import kmz
 from rainier3d.sensors import inventory as inv
 
@@ -127,26 +128,32 @@ def das_features(das_csv):
 
 
 def events(dom, start="2015-01-01", minmag=0.5):
-    w, s, e, n = dom.bbox_4326
-    r = requests.get(
-        "https://earthquake.usgs.gov/fdsnws/event/1/query",
-        params=dict(
-            format="geojson",
-            catalog="uw",
-            starttime=start,
-            minmagnitude=minmag,
-            minlatitude=s,
-            maxlatitude=n,
-            minlongitude=w,
-            maxlongitude=e,
-            orderby="time-asc",
-            limit=20000,
-        ),
-        timeout=180,
-    )
-    r.raise_for_status()
+    """PNSN events since ``start`` up to the data freeze, cached once under data/raw/pnsn/."""
+    cache = dom.path("raw") / "pnsn" / f"comcat_uw_m{minmag:g}_{start}_{as_of()}.geojson"
+    if not cache.exists():
+        w, s, e, n = dom.bbox_4326
+        r = requests.get(
+            "https://earthquake.usgs.gov/fdsnws/event/1/query",
+            params=dict(
+                format="geojson",
+                catalog="uw",
+                starttime=start,
+                endtime=f"{as_of()}T23:59:59",
+                minmagnitude=minmag,
+                minlatitude=s,
+                maxlatitude=n,
+                minlongitude=w,
+                maxlongitude=e,
+                orderby="time-asc",
+                limit=20000,
+            ),
+            timeout=180,
+        )
+        r.raise_for_status()
+        cache.parent.mkdir(parents=True, exist_ok=True)
+        cache.write_text(r.text)
     out = []
-    for f in r.json()["features"]:
+    for f in json.loads(cache.read_text())["features"]:
         lon, lat, dep = f["geometry"]["coordinates"]
         p = f["properties"]
         out.append(
@@ -162,8 +169,8 @@ def overlays(dom, cfg):
     meta = {}
     outdir = dom.path("processed") / "overlays"
     for key, c in cfg.items():
-        if "kmz" in c:
-            img, b = kmz.mosaic(Path(c["kmz"]).expanduser())
+        if "local_input" in c:
+            img, b = kmz.mosaic(local_input(c["local_input"], dom.path("raw")))
             if c.get("crop"):
                 left, t, r, btm = c["crop"]
                 h, w = img.shape[:2]
@@ -211,7 +218,7 @@ def model_geology_png(dom, stem):
 def main():
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
     ap = argparse.ArgumentParser()
-    ap.add_argument("--das", default=str(Path.home() / "Downloads/Paradise2NisquallyEntrace_Channels.csv"))
+    ap.add_argument("--das", default="", help="DAS channel table (default: staged local input das_channels)")
     a = ap.parse_args()
     dom = load_domain()
     cfg = inv.families()
@@ -219,7 +226,7 @@ def main():
 
     sites = inv.inventory(dom)
     write("sites.geojson", {"type": "FeatureCollection", "features": site_features(sites, fam)})
-    segs, pts, nch = das_features(Path(a.das))
+    segs, pts, nch = das_features(Path(a.das) if a.das else local_input("das_channels", dom.path("raw")))
     write("das.geojson", {"type": "FeatureCollection", "features": segs})
     write("das_channels.geojson", {"type": "FeatureCollection", "features": pts})
     ev = events(dom)

@@ -1,0 +1,94 @@
+# What the derived products contain, and how to remake each one (S20 -> outputs/products/REBUILD.md, inputs.csv).
+#
+# Rule: a product holds only what rainier3d computes. A third-party field that is only resampled onto the model grid
+# (block-averaged, interpolated, rasterised or copied) is not packaged; its stage rebuilds it from the original
+# archive. The ground surface (elevation) is kept as the geometry the levels are defined on.
+# tests/test_products.py fails if a variable of model.zarr is not classified here.
+
+model:
+  nodes: [surface, cz, L1, L2, L3]      # /cz: the S4 critical-zone columns; /soil holds resampled SOLUS100 and
+                                        # POLARIS profiles (S2): not packaged
+  surface:
+    geometry: [elevation]
+    computed:
+      - surface_unit                    # DNR map symbols through configs/units.yaml (crosswalk)
+      - bedrock_unit
+      - bedrock_unit_under
+      - edifice_base
+      - footprint
+      - unconsolidated_thickness        # DMU thicknesses and unit defaults (S1)
+      - ice_thickness                   # IceBoost v2 rescaled to each glacier's volume (S1)
+      - alt_a_surface                   # alteration from the 1996 EM survey (S22)
+      - alt_a_33k
+      - alt_a_4737
+      - alt_a_4341
+      - alt_a_837
+      - alt_doi_33k
+      - alt_doi_4737
+      - alt_doi_4341
+      - alt_doi_837
+      - alt_log10_rho_33k
+      - alt_log10_rho_4737
+      - alt_log10_rho_4341
+      - alt_log10_rho_837
+      - alt_coverage
+      - apparent_magnetization
+      - ndvi                            # from the S2 Sentinel-2 composite
+      - ndsi
+      - clay_0_100cm                    # depth integrals of SOLUS100 (S2, configs/soil.yaml)
+      - sand_0_100cm
+      - silt_0_100cm
+      - bulk_density_0_100cm
+      - rock_fragments_0_100cm
+      - organic_carbon_0_100cm
+      - soil_texture_class
+      - log10_ksat_0_100cm              # harmonic mean of POLARIS layers (S2)
+      - theta_s_0_100cm
+    resampled:
+      - soil_thickness                  # SOLUS100
+      - depth_to_restriction            # SOLUS100
+      - depth_to_bedrock                # SoilGrids 2017
+      - vs30                            # USGS hybrid map
+      - water_table_depth               # Ma et al. 2026 (also restricted)
+      - water_table_depth_fan           # Fan et al. 2017
+      - canopy_height                   # ETH 2020
+      - land_cover                      # NLCD 2021
+      - stream_order                    # NHDPlus HR, rasterised
+      - ice_thickness_error             # IceBoost v2
+  levels:
+    resampled: [vs_unc_regional]        # CRESCENT Gen0 uncertainty, interpolated
+
+mass_movements:
+  exclude_files: [faults.gpkg, lahar_zones.gpkg]   # DNR faults and the 1998 lahar zones: copies of their sources
+
+# How to remake each product from a clean clone. stages run in order with `pixi run <stage>`; raw lists the
+# folders of data/raw/ the stages read (their files and checksums go to inputs.csv); manual lists the inputs that
+# no script can download (configs/sources.yaml says how to obtain each).
+rebuild:
+  model:
+    stages: [s1, s2, s22, s3, s4, s5]
+    raw: [dem, geology, glaciers, ecology, hydrology, imagery, rainier_aerogeophysics, regional, soilgrids, vs30]
+    manual: [cvm17, crescent_gen0]
+    note: >-
+      S5 applies the calibration of configs/velocity_calibration.yaml; `pixi run s13` recomputes it from the PNSN
+      picks in data/raw/pnsn (about 26 min on a 10-core laptop).
+  grids:
+    stages: [s9]
+    needs: [model]
+  strain_3d:
+    stages: [s17, s18, s25]
+    raw: [gnss]
+    needs: [model]
+  edifice_load:
+    stages: [s18]
+    needs: [model]
+  alteration:
+    stages: [s22]
+    raw: [rainier_aerogeophysics]
+    needs: [model]
+  mass_movements:
+    stages: [s24]
+    raw: [wgs_landslides, allstadt2017, usgs_rainier_hazards, dem_3dep_1m, geology]
+  gnss:
+    stages: [s17, s18]
+    raw: [gnss]

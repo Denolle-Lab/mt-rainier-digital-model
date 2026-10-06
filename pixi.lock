@@ -920,6 +920,7 @@ environments:
       - pypi: ./
       - pypi: https://files.pythonhosted.org/packages/1a/f3/2b9dab616e9a22bc1c9ab08608165a93b96f8f5be211552f1c645a91b95b/fteikpy-2.4.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/29/dd/a8bebc78975a7466932077a0973cbab4361a32368b1d28d40683ec19333c/nest_asyncio2-1.7.3-py3-none-any.whl
+      - pypi: https://files.pythonhosted.org/packages/66/cd/493c94249b86e92389acec94078d782607cc5e0f81d060ea3b7b66305ccd/disba-0.7.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/90/94/3b2969fc1f64a5faafad03c421ed200e717fc99c556985da0a17822f868d/scikit_fmm-2025.6.23.tar.gz
       - pypi: https://files.pythonhosted.org/packages/a1/6d/8623ac983eaf192bf5c0acd2d908d6376617922b8bf7b34500d76448cb6a/pykonal-0.4.1.tar.gz
       osx-arm64:
@@ -1302,6 +1303,7 @@ environments:
       - pypi: ./
       - pypi: https://files.pythonhosted.org/packages/1a/f3/2b9dab616e9a22bc1c9ab08608165a93b96f8f5be211552f1c645a91b95b/fteikpy-2.4.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/29/dd/a8bebc78975a7466932077a0973cbab4361a32368b1d28d40683ec19333c/nest_asyncio2-1.7.3-py3-none-any.whl
+      - pypi: https://files.pythonhosted.org/packages/66/cd/493c94249b86e92389acec94078d782607cc5e0f81d060ea3b7b66305ccd/disba-0.7.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/90/94/3b2969fc1f64a5faafad03c421ed200e717fc99c556985da0a17822f868d/scikit_fmm-2025.6.23.tar.gz
       - pypi: https://files.pythonhosted.org/packages/a1/6d/8623ac983eaf192bf5c0acd2d908d6376617922b8bf7b34500d76448cb6a/pykonal-0.4.1.tar.gz
   gnss:
@@ -14260,6 +14262,16 @@ packages:
   version: 1.7.3
   sha256: 2bc87bdca654e719425145f5e84eaeb0080b013fdd47d65729a7d66243f4987c
   requires_python: '>=3.5'
+- pypi: https://files.pythonhosted.org/packages/66/cd/493c94249b86e92389acec94078d782607cc5e0f81d060ea3b7b66305ccd/disba-0.7.0-py3-none-any.whl
+  name: disba
+  version: 0.7.0
+  sha256: 17d09ab4ad5eabf55a5d55ee6feb15b74cffa238a29bb0ee1346f7605863f91d
+  requires_dist:
+  - importlib-metadata
+  - matplotlib
+  - numpy
+  - numba
+  requires_python: '>=3.6'
 - pypi: https://files.pythonhosted.org/packages/90/94/3b2969fc1f64a5faafad03c421ed200e717fc99c556985da0a17822f868d/scikit_fmm-2025.6.23.tar.gz
   name: scikit-fmm
   version: 2025.6.23

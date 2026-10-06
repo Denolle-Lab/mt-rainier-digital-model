@@ -49,3 +49,8 @@ def test_events_off_the_map_are_dropped(tmp_path):
     wider = CSV + "2022-05-01T00:00:00.000Z,46.7,-121.38,5,1.5,md,,,,,uw,uw6,,x,earthquake,,,,,reviewed,uw,uw\n"
     meta = quakes.build_quakes(tmp_path, tmp_path / "cache", lambda x, z: 1.5, get=lambda url, path: wider.encode(), min_events=0)
     assert meta["count"] == 3
+
+
+def test_catalog_url_is_frozen_at_the_as_of_date():
+    assert "endtime=2026-09-23T23%3A59%3A59" in quakes.catalog_url(as_of="2026-09-23")
+    assert "endtime" not in quakes.catalog_url()

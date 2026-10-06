@@ -28,13 +28,14 @@ def main():
     elev = sdem.dem_on_grid(dom, sdem.fetch_3dep(dom))
 
     gdf = geology.fetch_map_units(dom)
-    cw = geology.build_crosswalk(list(gdf["MAP_UNIT_100K"]), geology.fetch_dmu_names())
+    cw = geology.build_crosswalk(list(gdf["MAP_UNIT_100K"]), geology.fetch_dmu_names(dom))
     geology.write_crosswalk(cw)
     unit = geology.rasterize_units(dom, gdf, cw)
 
     g = units_config()["geometry"]["ice"]
     gdir = dom.path("raw") / "glaciers"
     layers = {"elevation": elev, "surface_unit": unit}
+    layers["unconsolidated_thickness"] = geology.rasterize_thickness(dom, gdf, cw, units_config())
     if g["source"] == "iceboost_v2":
         ice, err = glaciers.iceboost_thickness(dom, gdir / "iceboost_v2", gdir / "rgi62_domain.csv")
         layers["ice_thickness_error"] = err

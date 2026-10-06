@@ -17,9 +17,11 @@ START = "1980-01-01"
 MIN_EVENTS = 1000
 
 
-def catalog_url(box: E.Box = E.OVERVIEW) -> str:
+def catalog_url(box: E.Box = E.OVERVIEW, as_of: str | None = None) -> str:
     q = {"format": "csv", "minlatitude": box.south, "maxlatitude": box.north, "minlongitude": box.west, "maxlongitude": box.east,
          "starttime": START, "minmagnitude": -2, "orderby": "time-asc"}
+    if as_of:   # a frozen catalogue: events up to the end of the as-of day
+        q["endtime"] = f"{as_of}T23:59:59"
     return f"{COMCAT}?{urllib.parse.urlencode(q)}"
 
 
@@ -35,9 +37,10 @@ def check_quakes(meta: dict) -> list[str]:
     return [f"earthquakes: only {meta['count']} events (expected at least {MIN_EVENTS})"] if meta["count"] < MIN_EVENTS else []
 
 
-def build_quakes(out_dir, cache_dir, ground, get=fetch.get, min_events: int = MIN_EVENTS) -> dict:
-    path = Path(cache_dir) / "quakes" / "comcat.csv"
-    body = get(catalog_url(), path, validate=lambda b: b.count(b"\n") > min_events) if get is fetch.get else get(catalog_url(), path)
+def build_quakes(out_dir, cache_dir, ground, get=fetch.get, min_events: int = MIN_EVENTS, as_of: str | None = None) -> dict:
+    path = Path(cache_dir) / "quakes" / (f"comcat_{as_of}.csv" if as_of else "comcat.csv")
+    url = catalog_url(as_of=as_of)
+    body = get(url, path, validate=lambda b: b.count(b"\n") > min_events) if get is fetch.get else get(url, path)
     b = E.OVERVIEW   # a catalog cached for an earlier, larger box keeps only the events on this map
     rows = [r for r in parse_catalog(body.decode()) if b.west <= r[0] <= b.east and b.south <= r[1] <= b.north]
     if len(rows) < min_events:   # refuse before anything is written, so a bad refresh can't replace the bundle
