@@ -258,7 +258,7 @@ test("(r) the phone profile (?lite=1) loads a quarter of the terrain and stops t
   await page.goto("./?lite=1"); await ready(page);
   const verts = () => page.evaluate(() => window.__rainier.scene.children.find(o => o.isMesh && o.geometry.attributes.position.count > 1e5)
     ?.geometry.attributes.position.count);
-  expect(await verts()).toBeLessThan(600_000);                     // 1800 x 1215 at stride 2: 900 x 608
+  expect(await verts()).toBeLessThan(600_000);                     // 1710 x 1215 at stride 2: 855 x 608
   await page.getByRole("button", { name: "Summit crater" }).click();
   await page.waitForFunction(() => window.__rainier.frame.finest === 2, null, { timeout: 30_000 });
   await page.waitForTimeout(3000);

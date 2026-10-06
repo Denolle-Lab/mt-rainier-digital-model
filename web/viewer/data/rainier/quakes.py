@@ -18,7 +18,7 @@ MIN_EVENTS = 1000
 
 
 def catalog_url(box: E.Box = E.OVERVIEW, as_of: str | None = None) -> str:
-    q = {"format": "csv", "minlatitude": 46.58, "maxlatitude": 47.12, "minlongitude": box.west, "maxlongitude": box.east,
+    q = {"format": "csv", "minlatitude": box.south, "maxlatitude": box.north, "minlongitude": box.west, "maxlongitude": box.east,
          "starttime": START, "minmagnitude": -2, "orderby": "time-asc"}
     if as_of:   # a frozen catalogue: events up to the end of the as-of day
         q["endtime"] = f"{as_of}T23:59:59"
@@ -41,7 +41,8 @@ def build_quakes(out_dir, cache_dir, ground, get=fetch.get, min_events: int = MI
     path = Path(cache_dir) / "quakes" / (f"comcat_{as_of}.csv" if as_of else "comcat.csv")
     url = catalog_url(as_of=as_of)
     body = get(url, path, validate=lambda b: b.count(b"\n") > min_events) if get is fetch.get else get(url, path)
-    rows = parse_catalog(body.decode())
+    b = E.OVERVIEW   # a catalog cached for an earlier, larger box keeps only the events on this map
+    rows = [r for r in parse_catalog(body.decode()) if b.west <= r[0] <= b.east and b.south <= r[1] <= b.north]
     if len(rows) < min_events:   # refuse before anything is written, so a bad refresh can't replace the bundle
         raise ValueError(f"earthquakes: only {len(rows)} events (expected at least {min_events})")
     rec = np.array([(E.to_x(lon), -d, E.to_z(lat), m) for lon, lat, d, m, _ in rows], "<f4").reshape(-1, 4)

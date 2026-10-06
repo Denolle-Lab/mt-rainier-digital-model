@@ -1,4 +1,4 @@
-"""Overview terrain: USGS 3DEP elevation and USGS National Map imagery for the 60 × 60 km map area."""
+"""Overview terrain: USGS 3DEP elevation and USGS National Map imagery for the 58 × 60 km map area."""
 from __future__ import annotations
 
 import json
@@ -41,7 +41,7 @@ def fill_nodata(a: np.ndarray) -> np.ndarray:
 def build_overview(out_dir, cache_dir, get=fetch.get) -> dict:
     out = Path(out_dir) / "terrain"
     out.mkdir(parents=True, exist_ok=True)
-    cache = Path(cache_dir) / "overview"
+    cache = Path(cache_dir) / "overview" / bbox(E.OVERVIEW)   # a new box must not reuse the rasters of the old one
     size = E.square_size(E.OVERVIEW, E.OVERVIEW_SIZE[0])
     dem = fill_nodata(read_tiff(get(dem_url(E.OVERVIEW, size), cache / "dem.tif")))
     np.round(dem).astype("<i2").tofile(out / "overview.bin")
