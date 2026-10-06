@@ -1,10 +1,11 @@
 """The atlas exporter puts model cells at the right lon/lat on the atlas overview box."""
 
 import numpy as np
+import xarray as xr
 from pyproj import Transformer
 
 from rainier3d.config.domain import load_domain
-from rainier3d.export.atlas import _values_u16, overview_grid, to_lonlat
+from rainier3d.export.atlas import _values_u16, overview_grid, surface_derived, to_lonlat
 
 MANIFEST = {"extent": {"overview": {"west": -122.16, "south": 46.58, "east": -121.36, "north": 47.12}}}
 
@@ -26,6 +27,28 @@ def test_to_lonlat_places_a_marked_cell():
     c, r = ~t * (lon, lat)
     assert out[int(r), int(c)] == 7
     assert np.isnan(out[:, -5:]).all()  # east of the model domain (-121.40) there is no data
+
+
+def test_surface_derived_keeps_l1_cells_in_place():
+    # 250 m L1 cells on the 100 m surface grid (not a whole factor): the map keeps the surface grid's shape
+    # and each surface cell holds the L1 cell around its centre (cells centred on an L1 edge take either side)
+    xs, x1 = np.arange(50.0, 1000, 100), np.arange(125.0, 1000, 250)
+    vs = np.add.outer(10 * np.arange(4), np.arange(4)).astype("float32")  # L1 cell (j, i) holds 10 j + i
+    cube = lambda a: (("z", "y", "x"), a[None])  # noqa: E731
+    l1 = xr.Dataset(
+        {
+            "depth": cube(np.full((4, 4), 50.0)),
+            "unit": cube(np.full((4, 4), 6)),
+            "vs": cube(vs),
+            "alteration": cube(np.zeros((4, 4))),
+        },
+        coords={"z": [0.0], "y": x1, "x": x1},
+    )
+    surface = xr.Dataset({"elev": (("y", "x"), np.zeros((10, 10)))}, coords={"y": xs, "x": xs})
+    out = surface_derived(xr.DataTree.from_dict({"/surface": surface, "/L1": l1}))["vs_top"]
+    assert out.shape == (10, 10)
+    k, inner = (xs // 250).astype(int), xs % 250 != 0
+    assert np.array_equal(out[np.ix_(inner, inner)], vs[np.ix_(k[inner], k[inner])])
 
 
 def test_values_roundtrip_within_quantum():
