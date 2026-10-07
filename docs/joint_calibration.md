@@ -9,6 +9,13 @@ bibliography: references.bib
 
 # Fitting the geology model of rainier3d to PNSN arrivals with 3D relocation
 
+> **Superseded calibration.** This record documents calibration v2 of 24 September 2026, made without the
+> critical zone and kept as `configs/velocity_calibration_v2.yaml`. The published model uses the calibration
+> refitted with the critical zone in every trial model (`configs/velocity_calibration.yaml`, diagnostics in
+> `outputs/joint_calibration_cz/`): V0 ×1.47, P* ×1.79, Vs ×0.961, and on the held-out half after the four
+> fitting-half iterations an RMS of 0.092 s (P) and 0.186 s (S). The paper reports those numbers; the method
+> below is unchanged.
+
 **Scripts:** S13 (`scripts/13_joint_calibration.py`), S14 (`scripts/14_relocate.py`) and S16 (`scripts/16_relocation_figures.py`). The location and inversion code is in `src/rainier3d/validate/locate.py`. The model assembly that S5 and S13 share is in `src/rainier3d/fusion/build.py`.
 **Result:** `configs/velocity_calibration.yaml`, version 2, dated 2026-09-24. S4 applies its `geology` block and S5 its `regional_bias` block. It supersedes the Vs-only calibration of S12 (`configs/vs_calibration.yaml`) and the first S13 run, which used depth factors (`configs/velocity_calibration_v1.yaml`).
 **Model:** `data/processed/model.zarr`, rebuilt by S4 and S5; the same model is snapshotted as `data/processed/model_v2.zarr`.
