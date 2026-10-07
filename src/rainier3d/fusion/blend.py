@@ -2,7 +2,7 @@
 
     ln V_fused = LP(ln V_regional) + [ln V_geology - LP(ln V_geology)]
 
-LP is a horizontal Gaussian low-pass with half-power at the cutoff wavelength lambda_c,
+LP is a horizontal Gaussian low-pass with half amplitude at the cutoff wavelength lambda_c,
 sigma = sqrt(2 ln 2) * lambda_c / (2 pi). lambda_c depends on depth below the ground: LP is
 computed for each tabulated lambda_c and interpolated cell by cell in depth. Air cells are handled
 by normalised convolution. Overshoot is then removed by alternating projections: clamp each cell

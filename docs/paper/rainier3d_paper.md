@@ -22,30 +22,20 @@ footer: "rainier3d · M. Denolle, D. Yao, M. Hemmett, M. Köpfli, S. Han and M. 
 link-citations: true
 numberSections: true
 abstract: |
-  rainier3d is an open digital model of Mount Rainier and the West Rainier Seismic Zone (WRSZ). It covers a 70 × 75 km box, from the ground surface to 20 km below sea level. Inputs are fetched by script from their original archives where the archive allows it, cached, and recorded with a checksum; four are read from local or delivered copies. Every parameter names its source in a registry, and the whole database can be rebuilt with one environment and a sequence of numbered scripts.
+  Seismic monitoring at Mount Rainier relies on one-dimensional velocity models, and the regional three-dimensional models of Cascadia do not resolve the edifice, its altered core, its glaciers or the near surface. rainier3d is an open digital model of Mount Rainier and the West Rainier Seismic Zone (WRSZ) that places subsurface, near-surface, surface, geodetic and hydrological layers on one set of grids, over a 70 × 75 km box from the ground to 20 km below sea level. Its inputs are fetched by script from public archives, cached with checksums and rebuilt by numbered scripts in one environment; four model inputs and four viewer files are read from local or delivered copies. Every parameter names its source or is marked as an author choice.
 
-  The subsurface model holds P- and S-wave speed, density and attenuation on three stacked grids whose spacing coarsens with depth, from 250 m × 50 m to 1 km. Mapped geology is extended to depth by explicit rules. Near-surface hydrothermal alteration is mapped from a helicopter electromagnetic survey. A pressure-dependent rock-physics law converts the units to seismic properties, and the result is merged with the USGS Cascadia velocity model v1.7 and CRESCENT Gen0 in the wavenumber domain.
+  The subsurface model gives P- and S-wave speed, density, attenuation, porosity and permeability on three grids, from 250 m × 50 m to 1 km. Mapped geology is extended to depth by rules, near-surface alteration comes from a helicopter electromagnetic survey, and a critical-zone model resolves soil, Quaternary cover and weathered rock in the top 150 m with the same water table and pore pressure as the rock below. The result is merged with the USGS Cascadia velocity model v1.7 and CRESCENT Gen0 in the wavenumber domain and calibrated on 1823 P and 1280 S analyst picks from 88 Pacific Northwest Seismic Network (PNSN) earthquakes, with every event relocated in every trial model. On 44 events withheld from the fit, the root-mean-square (RMS) residual falls from 0.120 to 0.092 s for P and from 0.316 to 0.186 s for S; the PNSN one-dimensional model gives 0.131 and 0.263 s. Relocated with NonLinLoc, the 371 PNSN earthquakes of magnitude 1 or larger from 2023 to 2025 fit better in rainier3d than in the one-dimensional model (median RMS 0.107 against 0.119 s for 340 well-located events).
 
-  The model is calibrated on 1823 P and 1280 S analyst picks from 88 Pacific Northwest Seismic Network (PNSN) earthquakes. Each event is relocated in 3D in every trial model, with topography honoured. Three rock-physics multipliers and a depth-dependent correction of the regional models are fitted by Gauss–Newton iterations on P, S and S−P residuals. On the 44 held-out events, relocated in the published model, the root-mean-square (RMS) residual is 0.092 s for P and 0.187 s for S, against 0.131 and 0.263 s in the PNSN 1D model and 0.120 and 0.316 s before calibration. An independent local-earthquake tomography confirms the Vs correction beneath Rainier.
+  The surface layers describe elevation, geology, glacier thickness, soil properties, depth to rock, water table, Vs30, land cover, vegetation structure, terrain geometry and satellite imagery. GNSS strain rates and the strain of the edifice load are given on a 500 m grid in the model volume, and a catalogue holds 1,649 landslide, avalanche and debris-flow events, 19 of them located seismically, with the outlines of 463 debris flows and three lahar deposits.
 
-  Relocated with NonLinLoc in the same way in both models, the 371 PNSN earthquakes of magnitude 1 or larger from 2023 to 2025 fit better in rainier3d than in the PNSN one-dimensional model (median RMS 0.107 against 0.119 s for the 340 well-located events), and one is placed above the ground, by 12 m, against four pinned at the topography in the one-dimensional model.
-
-  The same grids carry the following surface layers:
-  - elevation, geology and glacier thickness;
-  - soil thickness, two water-table estimates and streams;
-  - land cover, canopy height and cover, leaf and plant area, and biomass;
-  - satellite imagery.
-
-  The model also includes GNSS strain rates and the stress that the weight of the edifice exerts at depth. Both are carried into the model volume as strain on a 500 m grid: at 5 km below sea level the geodetic field loads the WRSZ in right-lateral shear at 10 nanostrain per year.
-
-  A catalogue of mass movements holds 1,650 landslide, avalanche and debris-flow events, 19 of them located seismically, with the outlines of 463 debris flows and three lahar deposits.
-
-  The derived products are distributed under CC-BY 4.0 with a command-line and Python client. The client writes them in the formats used by eikonal solvers, NonLinLoc, SPECFEM3D, PyLith and the EarthScope Earth Model Collaboration. A web viewer shows the surface layers, the subsurface model, the relocated catalogue and the storm in three dimensions.
+  The derived products are distributed under CC-BY 4.0 [TODO: Zenodo version DOI of the products and of the software]. A command-line and Python client writes them in the formats of eikonal solvers, NonLinLoc, SPECFEM3D, PyLith and the EarthScope Earth Model Collaboration, and a web viewer shows them in three dimensions.
 ---
 
 # Introduction {#sec:intro}
 
 Mount Rainier is the most hazardous volcano in the Cascade Range, for two reasons. Its hydrothermally weakened edifice is covered by glaciers, and its lahars reach populated valleys [@hoblitt_1998; @scott_1995]. Seismic monitoring at Rainier relies on one-dimensional velocity models, with station corrections absorbing the effects of topography and near-surface structure. The regional three-dimensional models of Cascadia resolve the crust at wavelengths of several kilometres or more [@cvm17_article; @crescent_gen0]. They do not resolve the volcanic edifice, its altered core, its glaciers or the shallow units exposed around it.
+
+Integrated models of a region exist elsewhere, but rarely for a volcano. Southern California has community velocity, fault and rheology models maintained by the Statewide California Earthquake Center (SCEC) and served through one software framework [@lee_2014_cvms426; @shaw_2015_cvmh; @plesch_2007_cfm; @hearn_2026_crm; @small_2017_ucvm], and Cascadia has the USGS velocity model and the CRESCENT community model [@stephenson_2017_cascadia; @cvm17_article; @crescent_gen0]. Instrumented volcanoes have three-dimensional velocity models from local tomography, at Yellowstone, Kīlauea and Mauna Loa, Mount St. Helens, Etna and Campi Flegrei [@huang_2015_yellowstone; @lin_2014_hawaii; @kiser_2016_msh; @ulberg_2020_article; @totaro_2024_etna; @calo_2018_campiflegrei]. Rainier itself has been imaged by local-earthquake tomography, receiver functions with surface waves, and magnetotellurics [@moran_1999; @obrebski2015; @flinders2017; @mcgary2014]. Earth System Science Data has published three-dimensional geological and crustal compilations [@ahlers_2026_germany3d; @michailos_2023_alpsmoho; @livani_2023_poplain]. Each of these describes one kind of property, or compiles models without a scripted path from the archives to the grid. rainier3d puts subsurface, near-surface, surface, geodetic and hydrological layers on one grid, and rebuilds and checks them from the archives by script, in the spirit of the FAIR principles [@wilkinson_2016_fair]. Digital twins of the Earth system assimilate observations as they arrive [@bauer_2021_digitalrevolution]; rainier3d is the static, reproducible state on which such a scheme for a volcano can start.
 
 rainier3d connects these scales in one model with three properties:
 - it is tied to the mapped geology at the surface: the 149 map symbols of the Washington 1:100,000 geologic map in the box [@dnr_gems_100k] are assigned to 14 surface model units by the rules of `configs/units.yaml` (S1) and extended to depth by explicit geometry rules (S3, [@sec:subsurface]), and an invariant test requires the top rock cell of the finest level (L1) to carry the mapped unit in at least 95% of bedrock columns;
@@ -97,7 +87,7 @@ The domain and its sensors are mapped in [@fig:map].
 
 ![Workflow. Inputs (left) are fetched from their original archives. The model chain (middle) builds the surface grid, the 3D geology, the rock physics and the fusion with the regional models. The calibration (blue) relocates every PNSN event in each trial model and updates the rock-physics multipliers (S4) and a static correction of the regional models (S5) from the P, S and S−P residuals. Checks and products read the finished model (right).](figures/fig0_workflow){#fig:workflow width=100%}
 
-![Model domain. The background shows the surface model units derived from the Washington 1:100,000 geologic map over a hillshade, with glacier outlines in blue. Symbols are operating sensors (FDSN and GNSS site metadata), and small circles the 2025 node array, which recorded in July and August 2025 (FDSN network Z5 [@fdsn_z5_2025]). The white line is the Paradise–Nisqually Entrance distributed acoustic sensing (DAS) fibre, and dots are PNSN earthquakes since 2015 (M ≥ 0.5), coloured by depth. The dashed lines mark sections A–A′ and B–B′.](figures/fig1_map.png){#fig:map width=100%}
+![Model domain. The background shows the surface model units derived from the Washington 1:100,000 geologic map over a hillshade, with glacier outlines in blue. Symbols are operating sensors (FDSN and GNSS site metadata), and small circles the 2025 node array, which recorded in July and August 2025 (FDSN network Z5 [@fdsn_z5_2025]; the legend counts all 240 nodes, of which 191 lie inside the box). The seismometer count of the legend is of operating broadband and short-period sites drawn on the map; the 46 permanent stations of [@sec:cz] also include strong-motion sites. The white line is the Paradise–Nisqually Entrance distributed acoustic sensing (DAS) fibre, and dots are PNSN earthquakes since 2015 (M ≥ 0.5), coloured by depth. The dashed lines mark sections A–A′ and B–B′.](figures/fig1_map.png){#fig:map width=100%}
 
 # A deterministic data compilation {#sec:data}
 
@@ -129,7 +119,7 @@ The database is compiled by code, not by hand, following five rules.
 | `vs30` | S2 | Window over the box plus 0.05° of the USGS global hybrid Vs30 grid (`global_vs30_box.tif`) [@usgs_vs30_hybrid_article] | 1 | 0.01 |
 | `wells` | S31 | Washington Department of Ecology well reports (hydrogeological fields only) [@ecology_well_reports]; USGS groundwater sites and water levels [@usgs_nwis_gw]; Washington Geological Survey subsurface database [@wgs_subsurface_db]; records up to 23 September 2026 | 4 | 71 |
 | `regional` | S5 | Cascadia velocity model v1.7, levels L01 and L2 (0–9.9 km below the ground), clipped to the box plus 2 km (`cvm17_domain.nc`) [@cvm17] | 1 | 60 |
-| `pnsn` | S6, S8, S13, S26 | ComCat phase-data QuakeML for 432 events (the 91 calibration events and the 2023–2025 events relocated by S26), the P and S picks extracted from them and station tables [@comcat_uw]; PNSN events of magnitude 0.5 or more from 2015 to the data freeze (S8) | 437 | 65 |
+| `pnsn` | S6, S8, S13, S26 | ComCat phase-data QuakeML for 432 events (the 91 events of `configs/validation_events.csv`, of which 88 pass the pick criteria of the calibration, and the 2023–2025 events relocated by S26), the P and S picks extracted from them and station tables [@comcat_uw]; PNSN events of magnitude 0.5 or more from 2015 to the data freeze (S8) | 437 | 65 |
 | `sensors` | S8 | FDSN station and channel metadata of all networks in the box [@earthscope_fdsn] and of the whole 2025 node array, network Z5 [@fdsn_z5_2025]; GNSS site metadata [@earthscope_gnss]; the box query is frozen at 23 September 2026 and named by domain and date, and two earlier unfrozen copies remain | 5 | 2 |
 | `das` | S8, S10 | Paradise–Nisqually Entrance DAS channel table, staged from a project machine | 1 | 0.4 |
 | `overlays` | S8 | KMZ overlays of the USGS I-432 geologic map and the park soil-map poster, staged from a project machine | 2 | 26 |
@@ -185,7 +175,8 @@ The platform is rebuilt, never patched. `pixi run platform` (S32, `configs/platf
 
 The pipeline is published in full. Derived products are published unless a source forbids it.
 - **Excluded products.** A variable whose provenance (its `gaia:source_keys` attribute) includes a source flagged `redistribute_derived: false` in `configs/sources.yaml` is left out of the downloadable archives by S20 (`scripts/20_publish_products.py`), and is listed in the catalogue's `excluded` field and in the archive's `excluded_variables` attribute.
-- **Flagged sources.** Three sources carry the flag (registry keys `ma2026_wtd`, `canopy_lidar_chm` and `soil_map_image`):
+- **Flagged sources.** Four sources carry the flag (registry keys `soilgrids_bdticm`, `ma2026_wtd`, `canopy_lidar_chm` and `soil_map_image`):
+    - the SoilGrids 2017 depth to bedrock [@soilgrids_bdticm_article], whose record states no licence;
     - the Ma et al. (2026) water table [@ma2026_wtd_article], whose licence (CC-BY-NC-ND 4.0) forbids derivatives; the 3D viewer shows it as a visualisation only, and `pixi run s2 -- --ma` rebuilds it from the open Zenodo record;
     - the lidar canopy height and vegetation cover [@canopy_lidar_chm], made from the 2022–2023 "Wali" tiles of the Washington Department of Natural Resources Lidar Portal, whose terms of reuse are not yet confirmed;
     - the soil-map image (an RGB rendering in EPSG:3857 at 7.8 m, masked to the park), whose source, legend and licence are not documented.
@@ -335,15 +326,15 @@ The layers, the ice thickness and the bedrock elevation are written to `data/pro
 
 ![Terrain geometry over 40 × 40 km centred on the summit (triangle), on the 30 m grid (S30): (a) surface slope, arctan |∇z| from central differences between adjacent cells (60 m baseline), the slope of the ice surface on glaciers; (b) bedrock slope, the same operator on the 3DEP elevation minus the IceBoost v2 thickness (bilinear from 100 m), identical to (a) off the ice; (c) local relief, maximum minus minimum elevation within a disk of radius 510 m; (d) valley depth, the grey-scale closing of the elevation with a disk of radius 990 m minus the elevation. Filters mirror-reflect at the grid edges. The blue line outlines ice thicker than 10 m. The 35–49 m effective resolution of the source smooths cliffs, the bedrock slope inherits the errors of the ice thickness, and the radii are adjustable.](figures/fig22_terrain_geometry.png){#fig:terrain width=100%}
 
-[@tbl:terrain-mass] samples the layers at the 1,650 event points of the mass-movement catalogue ([@sec:mass]), which are the crowns of mapped landslides and the locations of the other events, and in the cells covered by its flow polygons. The reference is every cell of the grid. Events sit on steeper ground than the box as a whole: their median slope is 27.9° against 18.5°, and 42% of them lie on slopes above 30° against 22% of the cells. Rock falls and rock and ice avalanches are the steepest class, with a median of 39.8° and 77% above 30°, and the highest local relief, 380 m. Local relief separates the events from the box less clearly than slope does (median 334 m against 297 m), and valley depth does not separate them at all (50 m against 54 m): crowns lie on ridges and valley walls as often as in incised channels. The flow polygons record runout rather than source. The mapped debris flows have a median slope of 12.6°, the lahar deposits 0.7–5.3°, and the deposits other than the Osceola and Electron mudflows fill valleys, with a median valley depth of 182 m. Only 0.8% of the events lie on ice thicker than 10 m, so the bedrock and surface slopes agree at almost every event. They differ at the two snow and ice avalanches (median 37.8° on the ice surface, 34.8° on the bed). The 19 seismically located events fall on 7 distinct points, 9 of them on one, so their percentiles repeat.
+[@tbl:terrain-mass] samples the layers at the 1,649 event points of the mass-movement catalogue ([@sec:mass]), which are the crowns of mapped landslides and the locations of the other events, and in the cells covered by its flow polygons. The reference is every cell of the grid. Events sit on steeper ground than the box as a whole: their median slope is 27.9° against 18.5°, and 42% of them lie on slopes above 30° against 22% of the cells. Rock falls and rock and ice avalanches are the steepest class, with a median of 39.8° and 77% above 30°, and the highest local relief, 380 m. Local relief separates the events from the box less clearly than slope does (median 334 m against 297 m), and valley depth does not separate them at all (50 m against 54 m): crowns lie on ridges and valley walls as often as in incised channels. The flow polygons record runout rather than source. The mapped debris flows have a median slope of 12.6°, the lahar deposits 0.7–5.3°, and the deposits other than the Osceola and Electron mudflows fill valleys, with a median valley depth of 182 m. Only 0.8% of the events lie on ice thicker than 10 m, so the bedrock and surface slopes agree at almost every event. They differ at the two snow and ice avalanches (median 37.8° on the ice surface, 34.8° on the bed). The 19 seismically located events fall on 7 distinct points, 9 of them on one, so their percentiles repeat.
 
 | Sites | Count | Surface slope (°) | > 30° | Local relief (m) | Valley depth (m) |
 |------------------|------|----------|----|----------|----------|
 | All cells of the grid | 5,832,500 cells | 18.5 (2.2–36.0) | 22% | 297 (78–505) | 54 (1–237) |
-| All events | 1,650 | 27.9 (15.0–40.0) | 42% | 334 (176–467) | 50 (0–204) |
-| Rock fall, rock and ice avalanche | 56 | 39.8 (23.2–51.0) | 77% | 380 (98–787) | 89 (4–276) |
-| Slide, debris slide | 324 | 29.3 (16.0–40.3) | 48% | 340 (144–464) | 40 (0–164) |
-| Complex or unknown type | 1,267 | 27.2 (14.7–39.0) | 39% | 331 (186–459) | 52 (0–208) |
+| All events | 1,649 | 27.9 (14.9–39.9) | 42% | 334 (176–467) | 50 (0–203) |
+| Rock fall, rock and ice avalanche | 56 | 38.8 (22.3–51.0) | 75% | 380 (98–787) | 89 (4–276) |
+| Slide, debris slide | 323 | 29.3 (16.1–40.2) | 48% | 340 (143–462) | 40 (0–161) |
+| Complex or unknown type | 1,267 | 27.2 (14.5–38.9) | 40% | 331 (185–459) | 52 (1–208) |
 | Seismically recorded | 19 | 48.2 (36.5–48.2) | 100% | 787 (646–787) | 64 (0–98) |
 | Debris flows (mapped) | 463 polygons, 12,292 cells | 12.6 (3.6–26.2) | 6% | 190 (124–329) | 52 (7–140) |
 | Osceola Mudflow | 88,559 cells | 2.1 (0.3–21.7) | 4% | 98 (8–288) | 44 (1–216) |
@@ -354,11 +345,11 @@ The layers, the ice thickness and the bedrock elevation are written to `data/pro
 
 # Subsurface model {#sec:subsurface}
 
-The subsurface model has three parts that share one effective stress, one water table and one set of rock laws. The petrophysical models ([@sec:petro]) map a unit, its depth, the effective stress and the saturation to Vp, Vs and density. The critical-zone model ([@sec:cz]) resolves the top 150 m below the ground or the glacier bed in fine columns. The crustal model ([@sec:crust]) gives the three-dimensional geology and alteration of the volcano and its basement, fused with the regional velocity models and calibrated on PNSN travel times.
+The subsurface model has three parts that share one water table, one pore pressure and one set of rock laws. The petrophysical models ([@sec:petro]) map a unit, its depth, the effective stress and the saturation to Vp, Vs and density. The critical-zone model ([@sec:cz]) resolves the top 150 m below the ground or the glacier bed in fine columns. The crustal model ([@sec:crust]) gives the three-dimensional geology and alteration of the volcano and its basement, fused with the regional velocity models and calibrated on PNSN travel times.
 
 ## Petrophysical models {#sec:petro}
 
-Two laws map a unit, its depth, the effective stress and the water content to Vp, Vs and density: crack closure for rock under confining pressure ([@sec:rockphysics]) and a granular frame for soil, Quaternary cover and weathered rock ([@sec:granular]). Both are evaluated at one effective stress, so they meet without a jump where weathering ends ([@sec:selfconsistent]).
+Two laws map a unit, its depth, the effective stress and the water content to Vp, Vs and density: crack closure for rock under confining pressure ([@sec:rockphysics]) and a granular frame for soil, Quaternary cover and weathered rock ([@sec:granular]). Both use one water table and one pore pressure, so they meet without a jump where weathering ends; their overburden is not yet the same ([@sec:selfconsistent]).
 
 ### Rock under confining pressure {#sec:rockphysics}
 
@@ -366,7 +357,7 @@ Each rock unit receives a P-wave speed that increases with effective pressure as
 $$V_P(P) = V_\infty - (V_\infty - V_0)\, e^{-P/P^{*}}, \qquad P = \rho_{b}\, g\, d - \rho_{w}\, g\, \max(d - z_w,\ 0),$$ {#eq:crack}
 with bulk density $\rho_b$ = 2500 kg m⁻³, water density $\rho_w$ = 1000 kg m⁻³, $d$ the depth below the local ground and $z_w$ the depth of the water table of [@sec:granular] (hydrostatic pore pressure below it, none above).
 - **Vp/Vs and density.** Ice, open water and the three unconsolidated deposits carry their own Vp/Vs and density in `configs/petrophysics.csv`, partly because the Brocher relations are not valid below Vp = 1.5 km s⁻¹. Where a unit has no ratio or density of its own, both follow @brocher_2005: Vs from his regression fit (his Eq. 6), $V_S = 0.7858 - 1.2344V_P + 0.7949V_P^2 - 0.1238V_P^3 + 0.0064V_P^4$, and density from the Nafe–Drake fit (his Eq. 1), $\rho = 1.6612V_P - 0.4721V_P^2 + 0.0671V_P^3 - 0.0043V_P^4 + 0.000106V_P^5$, with V in km s⁻¹ and ρ in g cm⁻³ (valid for 1.5 < Vp < 8.5 km s⁻¹; S4, `rainier3d.petro.relations`, `rainier3d.properties.assign`).
-- **Attenuation.** $Q_S = 0.05\,V_S$ (Vs in m s⁻¹) and $Q_P = 2\,Q_S$ (`q` block of `configs/perturbations.yaml`, `m1_placeholder`); S5 recomputes both from the fused Vs. Because $Q_P = 2\,Q_S$ implies a negative bulk quality factor where Vp/Vs < √(8/3) ≈ 1.63, the 11,738 of 2.24 million non-ice fused cells below that ratio carry an inconsistent Q. [TODO: literature source for the Q rule]
+- **Attenuation.** $Q_S = 0.05\,V_S$ (Vs in m s⁻¹) and $Q_P = 2\,Q_S$ (`q` block of `configs/perturbations.yaml`, `m1_placeholder`); S5 recomputes both from the fused Vs. Because $Q_P = 2\,Q_S$ implies a negative bulk quality factor where Vp/Vs < √(8/3) ≈ 1.63, the 11,738 of 2.24 million non-ice fused cells below that ratio carry an inconsistent Q. The rule has the form proposed by @olsen_2003_q for the Los Angeles basin.
 - **Parameters.** [@tbl:units] lists the unit parameters, chosen within published ranges. Every row of `configs/petrophysics.csv` has the source key `m1_placeholder` and a one-line basis (for example, granodiorite and quartz diorite for the plutons). The calibration of [@sec:calibration] scales them with three global multipliers that act on the eleven rock units, the magma body included, and leave ice and the unconsolidated deposits unchanged (block `geology` of `configs/velocity_calibration.yaml`). The contrasts between units therefore come from the table, and their overall level comes from the travel times. [TODO: the published range each table value was taken from, per unit]
 - **Magma body.** Inside it, the middle-crust parameters apply (V₀ = 6.0 km s⁻¹, V∞ = 6.5 km s⁻¹, P* = 50 MPa; row `magma_mush` of `configs/petrophysics.csv`), and Vp, Vs and density are then reduced by 10%, 15% and 3% (`magma_mush` block of `configs/perturbations.yaml`, `m1_placeholder`), which raises Vp/Vs by about 6%. In the geology model the body is 16% slower in Vs than the middle-crust cells at the same elevations (mean ln ratio −0.16 in L2 and L3).
 - **Alteration.** The alteration intensity $a$ (0 to 1, from S22 in [@sec:alteration]; zero in air and ice) scales Vp by $(1 - 0.30a)$, Vs by $(1 - 0.35a)$ and density by $(1 - 0.12a)$, within the ranges reported for altered volcanic rock [@heap2021]. Fully altered rock is thus 30% slower in Vp, 35% slower in Vs and 12% less dense, with Vp/Vs about 8% higher. S4 applies the factors after the crack-closure law and the magma factors (`alteration` block of `configs/perturbations.yaml`, `m1_placeholder`; the file notes the values are still to be sourced).
@@ -417,7 +408,7 @@ Hertz–Mindlin model overpredicts [@makse_1999]. Below $\phi_c$ the frame joins
 Hashin–Shtrikman lower bound [@dvorkin_nur_1996; @mavko_2020]. The grain moduli $K_s$, $\mu_s$ and Poisson's ratio
 $\nu_s$ are the Hill average [@hill_1952] of clay (21 and 7 GPa) and quartz–feldspar (40 and 25 GPa) for the SOLUS100
 clay fraction. The pore fluid has the patchy-mixing modulus of @brie_1995,
-$K_f = (K_w - K_a)S^{e} + K_a$ with $e$ = 3, and the saturated bulk modulus follows Gassmann's equation
+$K_f = (K_w - K_a)S_w^{b} + K_a$, with water saturation $S_w$ and $b$ = 3, and the saturated bulk modulus follows Gassmann's equation
 [@mavko_2020],
 $$K_g = K_d + \frac{(1 - K_d/K_s)^2}{\phi_g/K_f + (1-\phi_g)/K_s - K_d/K_s^2}, \qquad \mu_g = \mu_d,$$
 {#eq:gassmann}
@@ -434,13 +425,13 @@ and where $W$ = 0 the medium is exactly the rock law of [@sec:rockphysics]. Perm
 the conductivity of POLARIS and the cover and weathered classes to the crustal permeability–depth curve of
 @ingebritsen_manning_1999 in rock, capped at 10⁻¹² m².
 
-### One effective stress for the whole model {#sec:selfconsistent}
+### Shared inputs of the two laws {#sec:selfconsistent}
 
 The two laws are built to agree where they meet, and the parts of the model share their inputs:
-- **One effective stress.** Both laws are evaluated at the $\sigma'$ of [@eq:sigeff], from the same overburden (glacier ice included) and the same water table. The crack-closure pressure $P$ of [@eq:crack] in every L1–L3 cell and the rock end member of the columns therefore use one pore pressure.
+- **One pore pressure.** Both laws use the same water table, placed at the glacier bed under ice, so the crack-closure pressure $P$ of [@eq:crack] in every L1–L3 cell and the effective stress $\sigma'$ of [@eq:sigeff] in the columns share one pore pressure. The overburden is not yet shared: the columns integrate their own densities, ice at 917 kg m⁻³ included, while [@eq:crack] uses a constant $\rho_b$ = 2500 kg m⁻³ from the ground or ice surface, so ice is loaded as rock in the crustal cells.
 - **One rock law.** Where $W$ = 0 the medium is the rock law of [@sec:rockphysics], unchanged. The calibration multipliers of [@sec:calibration] act on that law, so they change the crustal cells and the rock end member of every column together.
 - **Continuity.** At the base of the columns (150 m), Vs is within a median 0.3% (90th percentile 0.8%) of the L1 cell below.
-- **What is not yet consistent.** The quality factors follow a rule of their own ([@sec:rockphysics]). Cell averages over a saturated weathered layer reach Vp/Vs above 3 in the top L1 cell ([@sec:cz]). The water table is that of @fan2017_wtd, not a solution of a groundwater model on these columns.
+- **What is not yet consistent.** The overburden of the crustal cells (above). The quality factors follow a rule of their own ([@sec:rockphysics]). Cell averages over a saturated weathered layer reach Vp/Vs above 3 in the top L1 cell ([@sec:cz]). The water table is that of @fan2017_wtd, not a solution of a groundwater model on these columns.
 
 ## The critical-zone model {#sec:cz}
 
@@ -492,8 +483,8 @@ Genuchten parameters, saturation, effective stress, porosity and permeability, t
 model and a data-assimilation scheme can later run. In the top 50 m of L1 the median Vs is 0.58 of the rock
 value without the critical zone, and at the base of the columns Vs is within 1% (median 0.3%, 90th percentile 0.8%) of the L1 cell below. Because
 the travel-time average is dominated by the slowest layers, the top L1 cell of a column whose weathered layer is
-saturated reaches Vp/Vs above 3: 2,544 cells in unconsolidated units (at most 4.70, within the 4 to 4.5 of
-saturated sediment, @pasquet_2015) and 6,403 cells (0.39% of the consolidated-rock cells, at most 3.97) in
+saturated reaches Vp/Vs above 3: 2,544 cells in unconsolidated units (at most 4.70, slightly above the 4 to 4.5 measured in
+saturated loess by @pasquet_2015) and 6,403 cells (0.39% of the consolidated-rock cells, at most 3.97) in
 consolidated units.
 
 ![The critical zone along A–A′ (west–east through the summit; the `/cz` node of `model.zarr`, S4). (a) Ground surface, with glacier ice and the ice-covered columns shaded. (b) Vs, (c) water saturation and (d) weathering index W against depth below the ground or the glacier bed, with the bases of the Quaternary cover, the weathered layer and the fractured zone, and the water table of @fan2017_wtd. Under ice the columns start in fractured rock saturated from the bed (W = 0). Depths below 80 m are not shown; Vs joins the L1 cells at 150 m.](figures/fig24_cz_section.png){#fig:czsection width=100%}
@@ -586,11 +577,11 @@ The concentration east of and around the summit agrees with the exposed east–w
 - **Down to 9.9 km below the ground:** the USGS Cascadia velocity model v1.7 [@cvm17_article], for Vp and Vs, from its levels L01 (0–100 m every 10 m, then every 100 m to 1.2 km) and L2 (1.5–9.9 km every 300 m) on a 200 m horizontal grid, with L2 interpolated onto the L01 grid; its level L3 (10.8–59.4 km) is not used (`rainier3d.fusion.regional.load_cvm`). Its depth axis is below the ground surface. For the shallow level this is confirmed by a median top-sample Vs of 194 m s⁻¹ over the model domain (`data/raw/regional/cvm17_domain.nc`; 206 m s⁻¹ over the larger area of `configs/sources.yaml`), and for the deeper level it is inferred from continuity: at the summit, Vs is 2841 m s⁻¹ at 1.2 km in L01 and 2870 m s⁻¹ at 1.5 km in L2 (`configs/sources.yaml`, key `cvm17`).
 - **Below 9.9 km:** CRESCENT Gen0 Vs [@crescent_gen0], with Vp from @brocher_2005 through his regression $V_P = 0.9409 + 2.0947V_S - 0.8206V_S^2 + 0.2683V_S^3 - 0.0251V_S^4$ (km s⁻¹). The CRESCENT depth axis (−4 to 100 km) is taken as kilometres below sea level; the model is resampled onto a 2 km UTM grid padded by 5 km around the box and interpolated linearly to the cells, and its Vs uncertainty is carried as `vs_unc_regional`. The switch from the Cascadia model is at 9.9 km below the ground, so it follows the topography (`rainier3d.fusion.regional`).
 
-Below 1 km, both are multiplied by a static, depth-dependent correction fitted to the PNSN arrivals ([@sec:calibration]). The corrected Vs is floored at Vp/1.6 [@christensen_1996].
+Below 1 km, both are multiplied by a static, depth-dependent correction fitted to the PNSN arrivals ([@sec:calibration]). The corrected regional Vs is capped at Vp/1.6, so that its Vp/Vs is at least 1.6 [@christensen_1996]; the geology side is not bounded this way.
 
 **Strategy.** Neither model is right at every wavelength. The regional models resolve the crust at wavelengths of several kilometres and are constrained by teleseismic, ambient-noise and local-earthquake data; they carry no information on the mapped units. The geology model carries the mapped units and their contrasts, but its absolute level rests on laboratory-style rules. The fusion keeps each where it is informative: the regional model supplies the long wavelengths and the geology model the short ones. The combination is done in the logarithm of velocity, so contrasts are relative:
 $$\ln V = \mathrm{LP}_{\lambda_c}\!\left(\ln V_{\mathrm{reg}}\right) + \left[\ln V_{\mathrm{geo}} - \mathrm{LP}_{\lambda_c}\!\left(\ln V_{\mathrm{geo}}\right)\right],$$ {#eq:fusion}
-where LP is a horizontal Gaussian low-pass filter with half power at the cutoff wavelength $\lambda_c$, that is $\sigma = \sqrt{2\ln 2}\,\lambda_c / 2\pi$.
+where LP is a horizontal Gaussian low-pass filter with half amplitude (a quarter of the power) at the cutoff wavelength $\lambda_c$, that is $\sigma = \sqrt{2\ln 2}\,\lambda_c / 2\pi$.
 
 **Implementation details.**
 
@@ -607,9 +598,9 @@ where LP is a horizontal Gaussian low-pass filter with half power at the cutoff 
 
 | Level | RMS of LP(ln V) − LP(ln V_reg), Vp | Same, Vs | Mean ln(V / V_reg), Vp | Same, Vs |
 |---|---|---|---|---|
-| L1 | 0.011 | 0.012 | +0.046 | +0.077 |
-| L2 | 0.002 | 0.002 | +0.000 | +0.001 |
-| L3 | 0.0006 | 0.0006 | 0.0002 | 0.0001 |
+| L1 | 0.011 | 0.013 | +0.068 | +0.095 |
+| L2 | 0.002 | 0.002 | +0.001 | +0.002 |
+| L3 | 0.0006 | 0.0005 | 0.0002 | 0.0000 |
 
 : Departure of the calibrated fused model from the corrected regional model at the regional wavelengths below 1 km depth, and mean offset over all cells (`outputs/fusion_report.csv`). The tolerance is 0.03. {#tbl:invariant}
 
@@ -704,7 +695,7 @@ The fit is resolved as follows ([@tbl:multipliers], [@tbl:bias], [@fig:calibrati
 
 ### Validation {#sec:validation}
 
-**Held-out events.** On the 44 events not used in the fit, relocated in each model, the RMS falls from 0.120 to 0.092 s for P and from 0.316 to 0.186 s for S during the calibration (S13, [@tbl:iterations]). The fitting half ends at 0.093 and 0.192 s, so the fit does not overfit. Relocating the same held-out events in the published model (critical zone and EM-based alteration, `data/processed/model.zarr`) with S14 gives 0.092 s for P (949 picks) and 0.187 s for S (655 picks), against 0.131 and 0.263 s in the PNSN 1D model on the same events (`outputs/relocation/heldout_published.json`; split as in S13, event identifiers in origin-time order, every second one held out).
+**Held-out events.** The 44 events of the held-out half are relocated in every iterate but enter no fit until the last two iterations ([@tbl:iterations]). After the four iterations on the fitting half, their RMS has fallen from 0.120 to 0.092 s for P and from 0.316 to 0.186 s for S, while the fitting half ends at 0.093 and 0.192 s; the held-out misfit is not larger than the fitted one. These are the independent scores of the calibration. The smoothing weight $\lambda_s$ is chosen on the same half (see Validation and choice of smoothing), so they are not fully blind to it. The two final iterations use all 88 events, and the published model (critical zone and EM-based alteration, `data/processed/model.zarr`) relocated with S14 gives 0.092 s for P (949 picks) and 0.187 s for S (655 picks) on the same 44 events, against 0.131 and 0.263 s in the PNSN 1D model; these events are no longer independent of that model. The split is in time, not in space: held-out and fitting events share source regions and ray paths (`outputs/relocation/heldout_published.json`; split as in S13, event identifiers in origin-time order, every second one held out).
 
 **All models scored the same way.** [@tbl:models] relocates all 88 events in each model with the same locator and topography. Relocation alone does not rescue the uncalibrated three-dimensional model: its S residuals stay larger than those of the 1D model. The S−P misfit therefore lies in the velocity model, not in the catalogue hypocentres. With the ground bound, no event is placed at the top of the grid, and two of the 88 events end more than 50 m above the ground in the published model, at the limit of the ground penalty (`outputs/relocation/fused_joint/stats.json`, `above_ground_gt_50m` = 2; three in the conduit-alteration run).
 
@@ -712,7 +703,7 @@ The fit is resolved as follows ([@tbl:multipliers], [@tbl:bias], [@fig:calibrati
 |------------------|----|----|------|------|
 | PNSN 1D | 0.132 | 0.268 | 1157 | +511 |
 | 3D, uncalibrated | 0.122 | 0.316 | 1285 | +257 |
-| 3D, Vs-only depth factor¹ | 0.102 | 0.190 | 847 | +306 |
+| 3D, Vs-only depth factor¹ | 0.102 | 0.189 | 847 | +306 |
 | 3D, depth factors on regional Vp and Vs¹ | 0.094 | 0.190 | 835 | +727 |
 | 3D, geology multipliers and regional correction, conduit-centred alteration¹ | 0.095 | 0.190 | 856 | +852 |
 | 3D, published model: recalibrated with the critical zone, EM-based alteration¹ | 0.093 | 0.189 | 810 | +895 |
@@ -724,7 +715,7 @@ The fit is resolved as follows ([@tbl:multipliers], [@tbl:bias], [@fig:calibrati
 **Independent tomography.** The iMUSH project imaged Vp and Vs around Mount St. Helens from local earthquakes and explosions recorded by a 70-station array [@ulberg_2020_article; @ulberg_2020].
 - **Coverage.** Its grid spans the whole model box. Its Vp is resolved over 82–90% of the box. Its Vs is resolved over 83–93% of the southern strip (south of 46.65° N) but only 11–19% of the northern half. Script S21 samples our models at its 51,300 resolved nodes below ground. The model is the EarthScope EMC file `iMUSH-localEQ-Ulberg-2020.r0.0-n4c.nc`, with 1.2 km nodes masked where checkerboard tests do not recover 20 km features; its depth axis is read as kilometres below sea level, as the EMC page states, although the netCDF long_name says below the surface. Coverage is counted over 0–14 km below sea level, and north of 46.75° N between 188 and 1354 Vs nodes fall in each depth bin.
 - **Beneath Rainier, north of 46.75° N ([@tbl:imush]).** The iMUSH model finds the Cascadia model's Vs 5–8% too slow at 1–8 km and 3–4% too fast at 11–20 km, the shape of [@tbl:bias]. With the correction, the difference in Vs is 2% or less below 2 km. Vp/Vs moves from 1.83–1.85 towards the iMUSH value of 1.75–1.77; at 4–8 km our Vp/Vs (1.70–1.71) is about 0.05 below it.
-- **South of 46.65° N, inside the iMUSH array.** The iMUSH Vs is within 1–2% of the Cascadia model at 1–6 km, and the correction makes our Vs 5–6% too fast. The correction is therefore local to Rainier.
+- **South of 46.65° N, inside the iMUSH array.** The iMUSH Vs is within 1–2% of the Cascadia model at 1–6 km, and the correction makes our Vs 5–6% too fast. This suggests that the correction is local to Rainier, which a laterally varying correction would test.
 - **Independence.** Both studies use PNSN arrivals from 2015–2016. The iMUSH-only stations and explosions make the comparison largely independent in the south, less so in the north.
 
 | Depth below ground (km) | 1–2 | 2–3 | 3–4 | 4–6 | 6–8 | 11–15 | 15–20 |
@@ -741,7 +732,7 @@ The fit is resolved as follows ([@tbl:multipliers], [@tbl:bias], [@fig:calibrati
 
 **Catalogue hypocentres.** At the ComCat hypocentres, which were located in a 1D model, the three-dimensional model predicts later arrivals than the 1D model at every station: by 0.30 s for P (mean over 50 stations of the station-mean difference) and 0.48 s for S (45 stations with at least five picks); per pick, the means are 0.25 and 0.43 s (`outputs/pnsn_residuals.csv`). With each event's mean residual removed, the RMS is 0.132 s (P) and 0.227 s (S) for the 3D model, against 0.159 and 0.287 s for the 1D model. The per-station 3D − 1D delay correlates with the mean 1D residual at 0.70 for P and 0.67 for S ([@fig:pnsn]). The 3D structure therefore explains part of what station corrections absorb.
 
-![At the ComCat hypocentres: (a) distribution of P residuals after removing each event's mean, for the PNSN 1D model and the fused model; (b) mean 3D − 1D predicted delay against mean 1D residual for each station with at least five picks.](figures/fig7_pnsn.png){#fig:pnsn width=100%}
+![At the ComCat hypocentres (S6: all 89 events of the box with picks, 1828 P picks, one more event than the calibration set): (a) distribution of P residuals after removing each event's mean, for the PNSN 1D model and the fused model; (b) mean 3D − 1D predicted delay against mean 1D residual for each station with at least five picks.](figures/fig7_pnsn.png){#fig:pnsn width=100%}
 
 ### The fused model {#sec:fused}
 
@@ -823,7 +814,7 @@ The weight of the edifice is a static load on the crust beneath it.
 
 : Stress from the edifice load beneath the summit (compression negative; S18, `edifice_load.zarr`). {#tbl:load}
 
-The load stress decays from tens of megapascals beneath the summit to a few megapascals at the depth of the magma body ([@tbl:load], [@fig:strain]b). At the tectonic stress rate implied by the geodetic strain rates (about 1 kPa yr⁻¹ for a shear modulus of 30 GPa and 3 × 10⁻⁸ yr⁻¹), the load stress beneath the summit (1.5–38.5 MPa, [@tbl:load]) corresponds to 10³–10⁴ years of tectonic loading. The load stress therefore sets the orientation of stresses in the upper crust beneath the edifice. The model is a homogeneous half-space with a flat reference plane, and its Poisson's ratio (0.25) and density (2500 kg m⁻³) are author choices.
+The load stress decays from tens of megapascals beneath the summit to a few megapascals at the depth of the magma body ([@tbl:load], [@fig:strain]b). At the tectonic stress rate implied by the geodetic strain rates (about 1 kPa yr⁻¹ for a shear modulus of 30 GPa and 3 × 10⁻⁸ yr⁻¹), the load stress beneath the summit (1.5–38.5 MPa, [@tbl:load]) corresponds to 10³–10⁴ years of tectonic loading. If the tectonic background stress is no larger than this accumulated loading, the load stress dominates the orientation of stresses in the upper crust beneath the edifice; the background stress is not known ([@sec:strainmethod]). The model is a homogeneous half-space with a flat reference plane, and its Poisson's ratio (0.25) and density (2500 kg m⁻³) are author choices.
 
 ![(a) Secular dilatation rate from the GNSS velocities, with the velocities of quality-controlled sites relative to the network median (arrows) and flagged sites (red crosses). The solid box is the model domain and the dashed polygon the WRSZ region. (b) Compressive mean stress from the edifice load along a west–east section through the summit, with contours of maximum shear (MPa).](figures/fig15_strain.png){#fig:strain width=100%}
 
@@ -852,7 +843,7 @@ At 5 km below sea level inside the WRSZ polygon:
 : Tectonic strain rate in the WRSZ (S25). {#tbl:wrsz}
 
 The planes of maximum shear strike N3.5°E and N93.5°E. The WRSZ lies 9° from the first, so the geodetic
-field loads it almost optimally for right-lateral slip ([@tbl:wrsz], [@fig:strainwrsz]).
+strain rate shears it in the right-lateral sense at close to the maximum shear rate ([@tbl:wrsz], [@fig:strainwrsz]). This is a statement on the strain rate at the surface, extended to depth by assumption; it says nothing on the stress state or the friction on the zone.
 
 ![Tectonic strain rate from GNSS, the same at every depth under the stated assumptions: (a) maximum horizontal shear strain rate with the axes of maximum shortening (bars, length scaled with the shear rate); (b) right-lateral shear strain rate on vertical planes parallel to the WRSZ. The dashed polygon is the WRSZ region, grey dots its epicentres, and the blue line the strike fitted to them.](figures/fig16_strain_wrsz.png){#fig:strainwrsz width=100%}
 
@@ -871,7 +862,7 @@ as the pressurisation of the hydrothermal system.
 
 | Elevation (m) | 2500 | 1500 | 1000 | 500 | 0 | −2000 | −5000 | −11,500 |
 |---|---|---|---|---|---|---|---|---|
-| Volumetric strain (microstrain) | −563 | −831 | −668 | −518 | −413 | −208 | −73 | −24 |
+| Volumetric strain (microstrain) | −562 | −829 | −668 | −521 | −418 | −209 | −71 | −24 |
 
 : Volumetric strain of the edifice load beneath the summit (S25). Above 1539 m the stress is the confined overburden. {#tbl:edificestrain}
 
@@ -1006,12 +997,12 @@ For the shallow seismic model the choice matters more than either value. A water
 Both grids place the water table deeper than the wells do, and both rank the wells poorly. The wells are a lowland sample: 97% lie below 600 m, so they test the grids where people drill, not on the volcano. The 23 bedrock picks of the borehole database, all in the lowland, have a median depth of 40.5 m, against 22.4 m for SoilGrids and the 2 m reach of SOLUS at the same cells.
 
 **How the layers can enter the seismic model.**
-- **Fluid substitution.** A water table would separate dry from saturated cells in Gassmann-type fluid substitution; at present the crack-closure law assumes hydrostatic pore pressure everywhere (water density 1000 kg m⁻³, [@sec:rockphysics]).
+- **Fluid substitution.** The critical-zone columns separate unsaturated from saturated material at the water table of @fan2017_wtd and apply Gassmann substitution with a patchy fluid ([@sec:granular]); the crack-closure law of the crustal cells takes hydrostatic pore pressure below the same water table ([@sec:rockphysics]).
 - **Valley fill.** Valley fill along the mapped streams would appear as slow, high-Vp/Vs bodies; at present the unconsolidated deposits take the thickness stated in the map unit description for eight map symbols and fixed defaults elsewhere (glacial drift and lahar deposits 15 m, alluvium and colluvium 10 m, [@sec:geology]).
 - **Hydrothermal core.** A fluid-saturated core would join the alteration field, which at present reaches only the top ~150 m sensed by the EM survey ([@sec:alteration]).
 - **Loading.** The annual strain signal (peak in late August) and the snow and water storage could be compared as a loading model; the model holds only end-of-season NDSI, not snow water equivalent.
 
-None of these couplings is applied in the model.
+Only the first coupling is applied, through the critical-zone columns ([@sec:cz]).
 
 # Mass movements: landslides, lahars, debris flows and avalanches {#sec:mass}
 
@@ -1024,8 +1015,8 @@ Mass movements are Rainier's most frequent hazard. Debris flows and outburst flo
 - snow and ice avalanches (class `snow_ice_avalanche`: types naming snow, or an ice avalanche without rock; the two such events in the box are seismic events of @allstadt_2017_esec).
 
 For each event, the catalogue records the following:
-- class (field `cls`, one of the five classes above) and date (`date`, ISO day, 377 of the 1,650 events), or the relative age of undated deposits (`age`, for example "Pre-historic (>150 years)", 273 events);
-- source area and runout on the model grid: flows as polygons clipped to the model box (466 in `flows.gpkg`), events as points in EPSG:32610 (`located`: crown 1,624, seismic location 19, mapped point 7), with `crown_dem` giving the 3DEP resolution under each crown;
+- class (field `cls`, one of the five classes above) and date (`date`, ISO day, 377 of the 1,649 events), or the relative age of undated deposits (`age`, for example "Pre-historic (>150 years)", 272 events);
+- source area and runout on the model grid: flows as polygons clipped to the model box (466 in `flows.gpkg`), events as points in EPSG:32610 (`located`: crown 1,623, seismic location 19, mapped point 7), with `crown_dem` giving the 3DEP resolution under each crown;
 - volume where published (`volume_m3`, converted from ft³ for the inventory: 260 events, 247 inventory deposits and 13 seismic events) and failure depth (`depth_m`, converted from ft, 247 events);
 - the triggering conditions where known [TODO: `events.csv` has no trigger field; the 351 landslides of the January 2009 storm are identifiable only by date; add a field or drop this item];
 - the source (`source`, a key of `configs/sources.yaml`, whose entry carries the licence; the Washington inventory states none) and a confidence (`confidence`: the inventory's confidence class, or the location uncertainty in km for seismic events).
@@ -1045,10 +1036,10 @@ The inventory records a failure depth for every lidar-protocol deposit (453 depo
 | Events | Rock fall, rock and ice avalanche | seismic 16; mapped 40 | 56 | |
 | | Snow or ice avalanche | seismic | 2 | |
 | | Debris flow, outburst flood | seismic | 1 | |
-| | Slide, debris slide | mapped 317; recent 7 | 324 | |
+| | Slide, debris slide | mapped 316; recent 7 | 323 | |
 | | Complex or unknown type | mapped | 1,267 | |
 
-: The mass-movement catalogue in the model box (S24, `outputs/mass_movements/summary.csv`, run of 2026-09-25). Seismic events are from @allstadt_2017_esec; mapped and recent events from @wgs_landslide_inventory. Of the 1,650 events, 377 are dated; 351 of these are landslides of the January 2009 storm in the compilation. {#tbl:mass-counts}
+: The mass-movement catalogue in the model box (S24, `outputs/mass_movements/summary.csv`, run of 2026-10-07). Seismic events are from @allstadt_2017_esec; mapped and recent events from @wgs_landslide_inventory. Of the 1,649 events, 377 are dated; 351 of these are landslides of the January 2009 storm in the compilation. {#tbl:mass-counts}
 
 ![Mass movements and faults. (a) Lahar deposits and mapped debris flows, the case 1 lahar inundation zone of 1998 (dashed), and faults of the 1:100,000 map (thin) and of the Quaternary fault layer (thick). (b) Events by class, drawn as downward chevrons as in the viewer: landslides at their crown (small) and seismically recorded events (large, white rim).](figures/fig16_mass_movements.png){#fig:mass width=100%}
 
@@ -1090,6 +1081,22 @@ The derived products are published as assets of the release `products-v1.0.0` of
 | `gnss` | 4 MB | station velocities (MIDAS [@blewitt_2016_midas]) with quality flags, strain-rate grid, daily regional strain series and the download manifest (S17, S18); refreshed every Monday at 09:00 UTC in the rolling release `gnss-latest`, with dated copies; `products-v1.0.0` holds the copy of 2026-09-01 |
 
 : Downloadable products [TODO: sizes and contents of products-v1.1.0, the first release under this rule]. {#tbl:products}
+
+[@tbl:uncertainty] states, product by product, what uncertainty a user receives and what is not quantified. Most gridded fields carry none per cell: their parameters are author choices within published ranges (`m1_placeholder`) or come from rule-based geometry, and the travel-time calibration constrains only three global multipliers and a depth profile. Two resampled third-party uncertainties are not in the release because the release holds only computed fields ([@sec:access]); S5 and S2 rebuild them in `model.zarr`.
+
+| Product | Uncertainty provided | Size | Not quantified |
+|---|---|---|---|
+| `model`: Vp, Vs, density | travel-time fit on held-out events; posterior s.d. of the calibration multipliers; Vs uncertainty of CRESCENT Gen0 (`vs_unc_regional`, rebuilt by S5, not in the release) | RMS 0.092 s (P), 0.186 s (S); ln V₀ 0.020, ln P* 0.21, ln Vs 0.010; CRESCENT Vs 5.3% (L1), 1.8% (L2), 1.5% (L3), medians | per-cell uncertainty; the unit parameters, geometry rules and alteration factors; the geology and corrected regional models differ by up to 5.5% between 0.3 and 4 km |
+| `model`: critical zone (`/cz`) | none | depth-to-rock priors differ by a factor of 13.9 at the median ([@sec:surface-soil]) | all granular rock-physics and hydraulic parameters (not calibrated) |
+| `model`: surface layers | ice thickness error of IceBoost v2 (`ice_thickness_error`, rebuilt by S2, not in the release); water tables against wells ([@tbl:wells]) | ice 32 m median (86% of the thickness); water table median misfit 7.1 m (Ma et al.), 12.3 m (Fan et al.) | soil and vegetation layers carry their source products' uncertainty, which is not propagated |
+| `alteration` | none | | intensity thresholds (`m1_placeholder`); depth beyond ~150 m |
+| `gnss` | standard deviation of the dilatation rate (`dilatation_sigma` in the strain grid) | 3.9 nanostrain yr⁻¹, median | shear rate and azimuth |
+| `strain_3d` | none | | the extension of the surface strain rate to depth is an assumption ([@sec:strainmethod]) |
+| `edifice_load` | none | | half-space approximation, density and Poisson's ratio (author choices) |
+| `mass_movements` | none | | completeness by class and date; three crowns on the 30 m DEM |
+| relocated catalogue | NonLinLoc formal uncertainty per event | 0.67 km in depth and 0.56 km horizontally, medians over grade A and B events | velocity-model error in the locations |
+
+: Uncertainty and fitness for use of each product. Numbers from `outputs/joint_calibration_cz/history.json`, `configs/velocity_calibration.yaml`, `model.zarr`, `data/processed/gnss/strain_grid.nc` and `outputs/catalog/catalog_relocated.csv`. {#tbl:uncertainty}
 
 A products release holds only what rainier3d computes; `configs/products.yaml` classifies every variable of the model as computed, geometry or resampled, and a test fails on an unclassified one. Each release also carries `REBUILD.md`, which gives, for every product, the commit that made it, the data freeze, the stages to run from a clean clone and the inputs that must be obtained by hand, and `inputs.csv`, which lists every cached file each product reads with its SHA-256. S20 refuses to publish from a working tree with uncommitted changes, so the commit named in `REBUILD.md` is the code that made the products.
 
@@ -1155,7 +1162,7 @@ Of the 15,660 PNSN earthquakes since 1980 in the box, 500 have ComCat hypocentre
 - **Grids.** Equal spacing in all directions (500 m here; 250 m is practical near the edifice). The time grids run from the summit rounded up to a whole cell (4.5 km above sea level) to 20 km below sea level. The 1D model is written on the same grid as the 3D model. The search volume is inset 1 km from each side of the box and starts one cell below the top of the time grids.
 - **Keep hypocentres in rock.** The search volume is masked below the ground with `LOCTOPO_SURFACE`, reading an ASCII GMT grid of the DEM in kilometres on the UTM frame. With `TRANS NONE`, NonLinLoc compares −z with that grid. The exported velocities are left unchanged, and air cells carry the rock velocity below them, so travel times are unbiased. Slow air above a rock skin is an alternative, but the skin must be at least two cells thick: with a one-cell 500 m skin, Grid2Time's finite-difference start box reaches the slow air around summit stations and delays P times at station OBSR by 0.41 s on average.
 - **Stations.** The 45 stations inside the box that carry picks, in the UTM kilometre frame, with depth = −elevation/1000 (`GTSRCE <sta> XYZ <x_km> <y_km> <−elev_km> 0.0`).
-- **Travel times and location.** Grid2Time with the Podvin–Lecomte finite-difference eikonal solver (`GT_PLFD 1.0e-3`, `GTMODE GRID3D ANGLES_NO`) [TODO: cite Podvin and Lecomte 1991; no key in sources.yaml or references.bib]; NLLoc with the equal-differential-time likelihood (`LOCMETH EDT_OT_WT`) and oct-tree search (`LOCSEARCH OCT 10 10 6 0.01 30000 10000`). Events need at least six picks, four of them P. Gaussian pick errors are 0.14 s for P and 0.23 s for S, as in the calibration; model errors are 0.1 s (`LOCGAU 0.1 0.0`) and grow with travel time as 2% of it, between 0.05 and 0.5 s (`LOCGAU2 0.02 0.05 0.5`).
+- **Travel times and location.** Grid2Time with the Podvin–Lecomte finite-difference eikonal solver (`GT_PLFD 1.0e-3`, `GTMODE GRID3D ANGLES_NO`) [@podvin_1991_fd]; NLLoc with the equal-differential-time likelihood (`LOCMETH EDT_OT_WT`) and oct-tree search (`LOCSEARCH OCT 10 10 6 0.01 30000 10000`). Events need at least six picks, four of them P. Gaussian pick errors are 0.14 s for P and 0.23 s for S, as in the calibration; model errors are 0.1 s (`LOCGAU 0.1 0.0`) and grow with travel time as 2% of it, between 0.05 and 0.5 s (`LOCGAU2 0.02 0.05 0.5`).
 - **Quality.** Graded from the rainier3d location. Grade A: gap < 180°, at least eight phases and depth standard deviation < 2 km. Grade B: gap < 250° and at least six phases. Grade C: the rest.
 
 **The 2023–2025 catalogue.** We applied S26 to the 371 PNSN earthquakes of magnitude 1 or larger in the box from 2023 to 2025. They carry 20,425 analyst picks (12,546 P and 7,879 S) at 45 stations inside the box, and 370 have at least six picks. NonLinLoc locates 347 events in the 1D model and 354 in rainier3d. The others are rejected because their most likely location lies on the edge of the search volume ([@tbl:relocation]):
@@ -1183,7 +1190,7 @@ Of the 15,660 PNSN earthquakes since 1980 in the box, 500 have ComCat hypocentre
 
 In this period ComCat places no event above the ground. The problem of the 500 above-ground events therefore lies in the older part of the catalogue, which S26 can relocate once its picks are cached ([@sec:limits]).
 
-![The 2023–2025 PNSN catalogue (magnitude ≥ 1; the 344 events graded A or B in rainier3d) as located by ComCat, by NonLinLoc in the PNSN 1D model and by NonLinLoc in rainier3d. Top: epicentres over elevation contours. Bottom: west–east sections within 5 km of the summit, with the ground profile, and the number of events above the ground.](figures/fig19_relocated_catalogs.png){#fig:relocated width=100%}
+![The 2023–2025 PNSN catalogue (magnitude ≥ 1; the 344 events graded A or B in rainier3d) as located by ComCat, by NonLinLoc in the PNSN 1D model and by NonLinLoc in rainier3d. Top: epicentres over elevation contours. Bottom: west–east sections within 5 km of the summit, with the ground profile, and the number of events of that band above the ground (the four 1D events pinned at the topography mask of [@tbl:relocation] include three outside the band).](figures/fig19_relocated_catalogs.png){#fig:relocated width=100%}
 
 ![(a) Depth change of each event between rainier3d and the 1D model (filled) and between rainier3d and ComCat (outline). (b) Epicentre shifts from the 1D to the 3D location.](figures/fig20_relocated_shifts.png){#fig:relshift width=100%}
 
@@ -1194,7 +1201,7 @@ The viewer runs in a web browser, including on phones. It is a React and three.j
 - the alteration field at the surface and the apparent magnetisation from the 1996 helicopter survey ([@sec:alteration]);
 - the 970 sensor sites of the S8 inventory (EarthScope FDSN, including the 2025 node array Z5 [@fdsn_z5_2025]; EarthScope GNSS; Synoptic), 123 permanent and 847 temporary: seismometers, accelerometers, geophone nodes (813), infrasound, GNSS, strain and tilt meters, weather, snow and streamflow stations, and the Paradise–Nisqually Entrance distributed acoustic sensing (DAS) fibre with 3,191 channels, drawn as permanent or temporary and filtered as current or past, with the 2025 node array and the DAS fibre as surveys on their own toggles;
 - the PNSN seismicity from ComCat [@comcat_uw]: 15,631 events from 1980 to 23 September 2026, magnitude −1.6 to 4.9, in the overview box (46.58–47.12° N, 122.16–121.40° W), drawn at their hypocentres; the 435 that ComCat places above the viewer terrain are counted but not drawn;
-- the mass movements of [@sec:mass]: the 466 flow deposits as a draped layer and the 1,650 events as points on the ground (crown or seismic location), filtered by class and date from the legend;
+- the mass movements of [@sec:mass]: the 466 flow deposits as a draped layer and the 1,649 events as points on the ground (crown or seismic location), filtered by class and date from the legend;
 - the December 2025 atmospheric-river storm, replayed over its 216 hourly frames: precipitation as falling drops and discharge as bars at the 7 USGS gauges and 3 virtual sensors inside the overview box.
 
 Below the ground it shows Vs, Vp, Vp/Vs, density, units, alteration and the strain fields of [@sec:strain3d], on a vertical section along the terrain cut and on a horizontal depth slice. For the strain fields, the depth slice also carries their orientation bars. A panel under the subsurface controls shows the relocated catalogue of [@sec:relocation], as located by ComCat, in the 1D model and in rainier3d, with optional lines from each 1D location to its 3D location. Its map data are built by scripts S8, S11, S24, S25 and S26 and published as a release asset named in `web/viewer/DATA_RELEASE`.
@@ -1209,14 +1216,14 @@ Below the ground it shows Vs, Vp, Vp/Vs, density, units, alteration and the stra
     - The magma body is a prescribed ellipsoid that the fusion largely removes.
     - The Southern Washington Cascades Conductor [@stanley1996] is not represented.
 - **Regional correction.** It is one depth profile for the whole box. The iMUSH comparison shows that it holds beneath Rainier but makes Vs 5–6% too fast in the south, so it should vary laterally.
-- **Top 300 m.** The calibrated rock is 21% faster in Vp and 30% faster in Vs than the shallowest layer of the Cascadia model, and the travel times constrain it only beneath the stations. Near-surface Vs from dense nodal and fibre arrays, or station terms estimated with a prior on their size, can settle which is right. Station terms are not estimated in the calibration.
+- **Top 300 m.** The calibrated geology, critical zone included, is 23% faster in Vp and 31% faster in Vs than the shallowest layer of the Cascadia model, and the travel times constrain it only beneath the stations. Near-surface Vs from dense nodal and fibre arrays, or station terms estimated with a prior on their size, can settle which is right. Station terms are not estimated in the calibration.
 - **Depth coverage of the calibration.** Only 30 of the 88 events are deeper than 11 km. Larger pick sets, such as the curated PNSN dataset [@ni2023], and Rainier-specific models [@obrebski2015; @flinders2017] would constrain the deep correction.
 - **Reference 1D model.** The PNSN one-dimensional model used for comparison is read from a local table whose identity (P3 Puget Sound or C3 Cascades) is not documented [TODO: confirm with PNSN and cite].
 - **Regional model below 9.9 km.** The regional model there is CRESCENT Vs with Brocher's Vp; the deep level of the Cascadia model (10.8–59.4 km) is not used.
 - **Depth to rock.** The two estimates differ by a factor of 13.9 at the median (SOLUS100 1.41 m, capped at 2.01 m; SoilGrids 2017 19.6 m), and the water table lies between them in 92.8% of the cells ([@sec:surface-soil]). No local data constrain the thickness of soil, regolith and weathered rock between 2 m and the top cells of L1, and the unconsolidated deposits of the geology model take map-unit thicknesses for eight symbols and fixed defaults (10–15 m) for the rest.
 - **Resolution.** L1 is 250 m × 50 m, so thin deposits fall below the cell size.
 - **Glaciers.** IceBoost exceeds the 1981 radar thicknesses on Emmons and Winthrop glaciers; its total should be compared with the lidar-based ice volume of @sisson2011.
-- **Relocated catalogue.** Only the 2023–2025 events of magnitude 1 or larger are relocated. The 500 older ComCat events at or above the ground wait for their picks to be cached, and 12 events stop at the base of the search volume in rainier3d.
+- **Relocated catalogue.** Only the 2023–2025 events of magnitude 1 or larger are relocated. The 500 older ComCat events at or above the ground are not relocated until their picks are cached, and 10 events stop at the base of the search volume in rainier3d.
 - **Geodesy and strain.** The GNSS network does not resolve strain on the edifice. The strain in the volume uses no Green's functions of the heterogeneous model and no rheology beyond linear elasticity ([@sec:strainmethod]):
     - the geodetic strain rate at depth is assigned (depth-invariant horizontal rate, plane stress), not inverted from sources;
     - the edifice-load stress is that of a uniform half-space with a flat surface, converted to strain with the local stiffness, with a confined-overburden approximation inside the cone.
@@ -1227,27 +1234,28 @@ Below the ground it shows Vs, Vp, Vp/Vs, density, units, alteration and the stra
 
 # Conclusions {#sec:conclusions}
 
-rainier3d assembles, in one reproducible structure, what is openly known about the subsurface and surface of Mount Rainier.
+rainier3d assembles, in one reproducible structure, what is openly known about the subsurface and surface of Mount Rainier. Seismic monitoring at the volcano relies on one-dimensional models, and the regional three-dimensional models do not resolve the edifice or the near surface; rainier3d fills the space between the two.
 
-- **Subsurface.** A geology-driven velocity model, fused with the regional tomography, calibrated on PNSN P and S−P travel times with events relocated in 3D, and validated on held-out events and an independent tomography. The calibration shows that the table rock is too slow near the surface: V₀ is raised by 31%. It also shows that the regional Vs beneath Rainier is 5–9% too slow at 2–7 km, a correction the iMUSH tomography confirms locally.
-- **Surface.** Layers for geology, ice, soil, water, vegetation and imagery on a common grid, and a catalogue of mass movements.
+- **Subsurface.** A geology-driven velocity model, fused with the regional tomography and calibrated on PNSN P and S−P travel times with every event relocated in 3D. On the held-out events the calibration lowers the RMS residual from 0.120 to 0.092 s for P and from 0.316 to 0.186 s for S. It raises the zero-pressure Vp of the rock units by a factor of 1.47 and makes the regional Vs beneath Rainier 5–8% faster at 2–7 km, a correction that the iMUSH tomography supports where it resolves Vs.
+- **Critical zone.** Soil, Quaternary cover, weathered and fractured rock in fine columns down to 150 m, with porosity, permeability, saturation and effective stress, joined to the rock below with one water table and one pore pressure.
+- **Surface.** Layers for geology, ice, soil, water, vegetation, terrain and imagery on a common grid, and a catalogue of mass movements.
 - **Geodesy and load.** GNSS strain rates, refreshed weekly, and the stress of the edifice load at depth, both carried into the model volume as strain.
-- **Earthquake locations.** The 2023–2025 PNSN catalogue relocated with NonLinLoc in the 1D and 3D models with the same picks: in rainier3d no event lies above the ground, and the median RMS falls from 0.119 to 0.109 s.
+- **Earthquake locations.** The 2023–2025 PNSN catalogue relocated with NonLinLoc in the 1D and 3D models with the same picks: the median RMS falls from 0.119 to 0.107 s, and one event lies above the ground in rainier3d (by 12 m), against four pinned at the topography in the 1D model.
 
-Every cached input is checksummed, and all but four are fetched by script from their original archives. Every parameter names its source, and every product of the release can be downloaded with one command in the formats that seismological codes read. One layer carries time, the mass-movement catalogue. The next steps are the events digitised from the literature and a water budget on the critical-zone columns, which would couple precipitation, the hydrological layers and the seismic properties.
+Every cached input is checksummed and fetched by script from its archive, except four model inputs and four viewer files read from local or delivered copies ([@sec:data]). Each parameter names its source or is marked as an author choice (`m1_placeholder`), and the products can be downloaded with one command in the formats that seismological codes read. The mass-movement catalogue carries time, and the critical-zone columns carry the state variables on which a groundwater model can run. The next steps are a laterally varying regional correction, an uncertainty for every gridded product, the events digitised from the literature, and a water budget on the critical-zone columns that would let precipitation change the seismic properties.
 
 # Code and data availability {.codedataavailability .unnumbered}
 
-The code, configuration, source registry and this paper are at <https://github.com/Denolle-Lab/mt-rainier-digital-model> (BSD-3-Clause). The 3D viewer in `web/viewer/` and the vendored canopy-storage code in `third_party/canopy-storage_seismic` are under the MIT licence. The derived products are the seven assets of the release `products-v1.0.0` of the same repository (CC-BY 4.0): the model, the uniform grids, the strain in the volume, the edifice-load stress, the alteration field, the mass-movement catalogue and a GNSS snapshot of 1 September 2026. They are listed with SHA-256 checksums in `SHA256SUMS` and `src/rainier3d/products.json`, downloaded with `rainier3d fetch`, and described product by product, with command-line and Python examples, in `docs/products.md`. The GNSS product is refreshed weekly in the release `gnss-latest`, with dated copies. The relocated 2023–2025 catalogue and the summaries of the December 2025 event are the assets of the releases `relocated-catalog-2023-2025-v1` and `storms-dec2025-v1` [TODO: licence of these two releases]. The viewer reads its map data from the release named in `web/viewer/DATA_RELEASE`. The software and the derived products are to be deposited on Zenodo as two versioned records (`docs/doi.md`) [TODO: concept and version DOIs; no `v1.0.0` software tag exists yet].
+The code, configuration, source registry and this paper are at <https://github.com/Denolle-Lab/mt-rainier-digital-model> (BSD-3-Clause). The 3D viewer in `web/viewer/` and the vendored canopy-storage code in `third_party/canopy-storage_seismic` are under the MIT licence. The derived products are published as assets of a versioned release of the same repository (CC-BY 4.0). The current release, `products-v1.0.0`, predates the critical-zone model; the release described in [@sec:access] will be built from the commit that accompanies this paper [TODO: products release and commit]. Its seven products are the model, the uniform grids, the strain in the volume, the edifice-load stress, the alteration field, the mass-movement catalogue and a GNSS snapshot of 1 September 2026. They are listed with SHA-256 checksums in `SHA256SUMS` and `src/rainier3d/products.json`, downloaded with `rainier3d fetch`, and described product by product, with command-line and Python examples, in `docs/products.md`. The GNSS product is refreshed weekly in the release `gnss-latest`, with dated copies. The relocated 2023–2025 catalogue and the summaries of the December 2025 event are the assets of the releases `relocated-catalog-2023-2025-v1` and `storms-dec2025-v1`, also under CC-BY 4.0. The viewer reads its map data from the release named in `web/viewer/DATA_RELEASE`. The software and the derived products will be deposited on Zenodo as two versioned records (`docs/doi.md`) once the subsurface stress model is in the release [TODO: concept and version DOIs, and the software tag].
 
 Appendix A lists the input data sets with their DOIs or service addresses. `docs/data_policy.md` gives the licence tier of each. `docs/data_manifest.csv` gives the checksum of each cached input.
 
-Two inputs require attribution notices:
+Three inputs require attribution notices:
 - GPS time series are provided by the Pacific Northwest Geodetic Array, Central Washington University.
 - The imagery layers contain modified Copernicus Sentinel data (2023, 2025).
 - MRMS precipitation is NOAA open data, whose terms request attribution.
 
-The code and this paper were written with an AI coding assistant (Claude, Anthropic) under the direction of the authors ([@sec:ai]). All numbers are produced by the scripts named in the text. DOIs were resolved at doi.org or against the Crossref and DataCite registries (`docs/citations.csv`) [TODO: check the DOIs of brocher_2005, glathida and rgi60, which the registry records as taken from memory].
+The code and this paper were written with an AI coding assistant (Claude, Anthropic) under the direction of the authors ([@sec:ai]). All numbers are produced by the scripts named in the text. DOIs were resolved at doi.org or against the Crossref and DataCite registries (`docs/citations.csv`).
 
 # Data sets {.appendix .unnumbered}
 

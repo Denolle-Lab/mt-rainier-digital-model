@@ -116,7 +116,7 @@ fdsn_iris_stations:
 brocher_2005:
   title: Brocher 2005, Empirical relations between elastic wavespeeds and density in the Earth's crust, BSSA 95(6)
   doi: 10.1785/0120050077
-  verified: "no: DOI from survey memory; relations coded from the paper's Eqs. 1, 6 and 9"
+  verified: "web-2026-10-07 (DOI resolved at doi.org, title and author checked); relations coded from the paper's Eqs. 1, 6 and 9"
   role: Vp->Vs, Vp->density (Nafe-Drake) fill-in relations
 
 moran_1999:
@@ -254,7 +254,7 @@ rgi60:
   title: RGI Consortium 2017, Randolph Glacier Inventory 6.0 (via OGGM rgi62_stats.csv)
   doi: 10.7265/N5-RGI-60
   url: https://cluster.klima.uni-bremen.de/~oggm/rgi/rgi62_stats.csv
-  verified: "web-2026-09-23 (file); DOI from memory"
+  verified: "web-2026-09-23 (file); web-2026-10-07 (DOI resolved at doi.org, title checked)"
   role: glacier IDs and outlines in the domain (219 glaciers, 97.3 km2)
 
 glathida:
@@ -262,7 +262,7 @@ glathida:
   license: "provider terms, to verify (see url)"
   doi: 10.5904/wgms-glathida-2020-10
   url: https://cluster.klima.uni-bremen.de/~oggm/glathida/glathida-v3.1.0/data/T.csv
-  verified: "web-2026-09-23 (file); DOI from memory"
+  verified: "web-2026-09-23 (file); web-2026-10-07 (DOI resolved at doi.org, title checked)"
   role: check of modeled thickness (7 Rainier glaciers, mean and max)
 
 solus100:
@@ -1001,3 +1001,131 @@ flinchum_2025:
   license: article (cited)
   verified: web-2026-10-03 (DOI resolved at doi.org, title and authors checked)
   role: curvature regression of weathering depth (S35 estimator)
+
+# Positioning of the data set and remaining citations (review 2026-10-07; DOIs resolved at doi.org)
+
+lee_2014_cvms426:
+  title: "Lee et al. 2014, Full-3-D tomography for crustal structure in Southern California based on the scattering-integral and the adjoint-wavefield methods, J. Geophys. Res. Solid Earth"
+  doi: 10.1002/2014jb011346
+  license: article (cited)
+  verified: web-2026-10-07 (DOI resolved at doi.org, title, first author and year checked)
+  role: comparable model or data set, positioning (Introduction)
+
+shaw_2015_cvmh:
+  title: "Shaw et al. 2015, Unified Structural Representation of the southern California crust and upper mantle, Earth Planet. Sci. Lett."
+  doi: 10.1016/j.epsl.2015.01.016
+  license: article (cited)
+  verified: web-2026-10-07 (DOI resolved at doi.org, title, first author and year checked)
+  role: comparable model or data set, positioning (Introduction)
+
+small_2017_ucvm:
+  title: "Small et al. 2017, The SCEC Unified Community Velocity Model Software Framework, Seismol. Res. Lett."
+  doi: 10.1785/0220170082
+  license: article (cited)
+  verified: web-2026-10-07 (DOI resolved at doi.org, title, first author and year checked)
+  role: comparable model or data set, positioning (Introduction)
+
+plesch_2007_cfm:
+  title: "Plesch et al. 2007, Community Fault Model (CFM) for Southern California, Bull. Seismol. Soc. Am."
+  doi: 10.1785/0120050211
+  license: article (cited)
+  verified: web-2026-10-07 (DOI resolved at doi.org, title, first author and year checked)
+  role: comparable model or data set, positioning (Introduction)
+
+hearn_2026_crm:
+  title: "Hearn et al. 2026, The SCEC Community Rheology Model for the Southern California Lithosphere - Geological Framework, Ductile Flow Laws, and Preliminary Implications, Earth Space Sci."
+  doi: 10.1029/2025ea004401
+  license: article (cited)
+  verified: web-2026-10-07 (DOI resolved at doi.org, title, first author and year checked)
+  role: comparable model or data set, positioning (Introduction)
+
+stephenson_2017_cascadia:
+  title: "Stephenson et al. 2017, P- and S-wave velocity models incorporating the Cascadia subduction zone for 3D earthquake ground motion simulations, Version 1.6, U.S. Geol. Surv. Open-File Rep."
+  doi: 10.3133/ofr20171152
+  license: article (cited)
+  verified: web-2026-10-07 (DOI resolved at doi.org, title, first author and year checked)
+  role: comparable model or data set, positioning (Introduction)
+
+huang_2015_yellowstone:
+  title: "Huang et al. 2015, The Yellowstone magmatic system from the mantle plume to the upper crust, Science"
+  doi: 10.1126/science.aaa5648
+  license: article (cited)
+  verified: web-2026-10-07 (DOI resolved at doi.org, title, first author and year checked)
+  role: comparable model or data set, positioning (Introduction)
+
+lin_2014_hawaii:
+  title: "Lin et al. 2014, Three-dimensional seismic velocity structure of Mauna Loa and Kilauea volcanoes in Hawaii from local seismic tomography, J. Geophys. Res. Solid Earth"
+  doi: 10.1002/2013jb010820
+  license: article (cited)
+  verified: web-2026-10-07 (DOI resolved at doi.org, title, first author and year checked)
+  role: comparable model or data set, positioning (Introduction)
+
+kiser_2016_msh:
+  title: "Kiser et al. 2016, Magma reservoirs from the upper crust to the Moho inferred from high-resolution Vp and Vs models beneath Mount St. Helens, Washington State, USA, Geology"
+  doi: 10.1130/g37591.1
+  license: article (cited)
+  verified: web-2026-10-07 (DOI resolved at doi.org, title, first author and year checked)
+  role: comparable model or data set, positioning (Introduction)
+
+totaro_2024_etna:
+  title: "Totaro et al. 2024, 3D seismic velocity models from local earthquake tomography furnish new insights on the Mount Etna volcano (Southern Italy), Sci. Rep."
+  doi: 10.1038/s41598-024-74349-w
+  license: article (cited)
+  verified: web-2026-10-07 (DOI resolved at doi.org, title, first author and year checked)
+  role: comparable model or data set, positioning (Introduction)
+
+calo_2018_campiflegrei:
+  title: "Calò et al. 2018, Anatomy of the Campi Flegrei caldera using Enhanced Seismic Tomography Models, Sci. Rep."
+  doi: 10.1038/s41598-018-34456-x
+  license: article (cited)
+  verified: web-2026-10-07 (DOI resolved at doi.org, title, first author and year checked)
+  role: comparable model or data set, positioning (Introduction)
+
+bauer_2021_digitalrevolution:
+  title: "Bauer et al. 2021, The digital revolution of Earth-system science, Nat. Comput. Sci."
+  doi: 10.1038/s43588-021-00023-0
+  license: article (cited)
+  verified: web-2026-10-07 (DOI resolved at doi.org, title, first author and year checked)
+  role: comparable model or data set, positioning (Introduction)
+
+ahlers_2026_germany3d:
+  title: "Ahlers et al. 2026, A unified 3D geological model for Germany and adjacent areas, Earth Syst. Sci. Data"
+  doi: 10.5194/essd-18-585-2026
+  license: article (cited)
+  verified: web-2026-10-07 (DOI resolved at doi.org, title, first author and year checked)
+  role: comparable model or data set, positioning (Introduction)
+
+michailos_2023_alpsmoho:
+  title: "Michailos et al. 2023, Moho depths beneath the European Alps - a homogeneously processed map and receiver functions database, Earth Syst. Sci. Data"
+  doi: 10.5194/essd-15-2117-2023
+  license: article (cited)
+  verified: web-2026-10-07 (DOI resolved at doi.org, title, first author and year checked)
+  role: comparable model or data set, positioning (Introduction)
+
+livani_2023_poplain:
+  title: "Livani et al. 2023, Subsurface geological and geophysical data from the Po Plain and the northern Adriatic Sea (north Italy), Earth Syst. Sci. Data"
+  doi: 10.5194/essd-15-4261-2023
+  license: article (cited)
+  verified: web-2026-10-07 (DOI resolved at doi.org, title, first author and year checked)
+  role: comparable model or data set, positioning (Introduction)
+
+wilkinson_2016_fair:
+  title: "DOI 10.1038/sdata.2016.18. Wilkinson et al. 2016, The FAIR Guiding Principles for scientific data management and stewardship, Sci. Data"
+  doi: 10.1038/sdata.2016.18
+  license: article (cited)
+  verified: web-2026-10-07 (DOI resolved at doi.org, title, first author and year checked)
+  role: FAIR principles
+
+podvin_1991_fd:
+  title: "Podvin et al. 1991, Finite difference computation of traveltimes in very contrasted velocity models - a massively parallel approach and its associated tools, Geophys. J. Int."
+  doi: 10.1111/j.1365-246x.1991.tb03461.x
+  license: article (cited)
+  verified: web-2026-10-07 (DOI resolved at doi.org, title, first author and year checked)
+  role: finite-difference eikonal solver of Grid2Time (S26)
+
+olsen_2003_q:
+  title: "Olsen et al. 2003, Estimation of Q for Long-Period (>2 sec) Waves in the Los Angeles Basin, Bull. Seismol. Soc. Am."
+  doi: 10.1785/0120020135
+  license: article (cited)
+  verified: web-2026-10-07 (DOI resolved at doi.org, title, first author and year checked)
+  role: Qs proportional to Vs and Qp = 2 Qs (configs/perturbations.yaml q block); relation as cited in the paper, to confirm against the article

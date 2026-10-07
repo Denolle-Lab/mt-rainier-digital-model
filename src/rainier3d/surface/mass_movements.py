@@ -18,6 +18,7 @@ Every service call is listed in docs/mass_movements.md.
 from __future__ import annotations
 
 import logging
+import time
 
 import geopandas as gpd
 import numpy as np
@@ -202,12 +203,17 @@ def fetch_crown_dems(dom: Domain, polys: gpd.GeoSeries, keys: list[str], workers
     def one(i):
         path = root / f"{keys[i]}.tif"
         if not path.exists():
-            try:
-                dem = py3dep.get_dem(tuple(boxes[i]), resolution=1, crs=4326)
-                dem.rio.to_raster(path, compress="deflate", predictor=3)
-            except Exception as e:  # noqa: BLE001 - one failed window must not stop the catalogue
-                log.warning("3DEP 1 m window %s failed: %s", keys[i], e)
-                return None
+            for attempt in range(4):  # the service drops requests under load: retry before falling back
+                try:
+                    dem = py3dep.get_dem(tuple(boxes[i]), resolution=1, crs=4326)
+                    dem.rio.to_raster(path, compress="deflate", predictor=3)
+                    break
+                except Exception as e:  # noqa: BLE001 - one failed window must not stop the catalogue
+                    if "not available" in str(e) and attempt < 3:
+                        time.sleep(10 * 2**attempt)
+                        continue
+                    log.warning("3DEP 1 m window %s failed: %s", keys[i], e)
+                    return None
         return path
 
     with ThreadPoolExecutor(workers) as ex:
