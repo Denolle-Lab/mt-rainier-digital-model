@@ -35,3 +35,26 @@ def test_fusion_keeps_regional_long_wavelengths_and_adds_no_extremes():
     lo, hi = np.fmin(geo, reg), np.fmax(geo, reg)
     assert np.all((out[mask] >= lo[mask] * (1 - 1e-6)) & (out[mask] <= hi[mask] * (1 + 1e-6)))
     assert blend.lowpass_misfit(out, reg, depth, mask, TABLE, 250.0, 1000) < 0.05
+
+
+def test_vertical_lowpass_spreads_a_flat_contact_below_the_geology_only_depth():
+    # a slow body 1 km wide (shorter than lambda_c, so the fusion keeps it) with a flat base at 1400 m below
+    # the ground, 50 m cells; the regional model is uniform
+    nz, dz, n = 60, 50.0, 40
+    depth = np.broadcast_to((25 + dz * np.arange(nz))[:, None, None], (nz, n, n)).copy()
+    mask = np.ones(depth.shape, bool)
+    body = np.zeros((n, n), bool)
+    body[18:22, 18:22] = True
+    geo = np.where((depth < 1400) & body, 2000.0, 4000.0)
+    reg = np.full(depth.shape, 4000.0)
+    sharp = blend.fuse(geo, reg, depth, mask, TABLE, 250.0, 300, 1000)
+    kw = {"lambda_z": 1000.0, "dz": dz, "z_smooth": 150.0}
+    smooth = blend.fuse(geo, reg, depth, mask, TABLE, 250.0, 300, 1000, **kw)
+    jump = lambda v: np.abs(np.diff(np.log(v[:, 20, 20]))).max()  # noqa: E731
+    assert jump(sharp) > 0.4  # 2615 -> 4000 m/s between two cells
+    assert jump(smooth) < 0.05
+    top = depth[:, 0, 0] - dz / 2 < 150  # cells reaching above z_smooth: the geology as is
+    assert np.allclose(smooth[top], geo[top])
+    # a contact at 600 m, inside the fusion taper, is smoothed too, and the smoothing starts without a step
+    geo2 = np.where((depth < 600) & body, 2000.0, 4000.0)
+    assert jump(blend.fuse(geo2, reg, depth, mask, TABLE, 250.0, 300, 1000, **kw)) < 0.1

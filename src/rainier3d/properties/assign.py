@@ -2,7 +2,8 @@
 
 Per unit: Vp from the crack-closure law at the effective pressure of the overburden; Vs from the
 unit's Vp/Vs, else Brocher (2005); density from the unit's value, else Nafe-Drake (Brocher 2005).
-Then the magma_mush and alteration factors, then Q from Vs. Output units: m/s, kg/m^3.
+Then the alteration factors, then Q from Vs. Output units: m/s, kg/m^3. The magma body (unit magma_mush) keeps
+the middle-crust values here: S5 applies its anomaly to the fused model (rainier3d.fusion.build).
 
 ``geo_cal`` (the ``geology`` block of configs/velocity_calibration.yaml, fitted by S13) scales, for rock units
 only, the zero-pressure Vp (V0 * exp(ln_v0), kept below 0.98 Vinf), the crack-closure pressure
@@ -15,7 +16,7 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 
-from rainier3d.geomodel.rules import AIR, MAGMA
+from rainier3d.geomodel.rules import AIR
 from rainier3d.petro import relations as rel
 from rainier3d.petro.table import rock_unit_ids
 
@@ -32,7 +33,7 @@ def _lut(table: pd.DataFrame, col: str, n: int = 256) -> np.ndarray:
 def rock_properties(u, p_mpa, a, table: pd.DataFrame, pert: dict, geo_cal: dict | None = None):
     """Vp, Vs (km/s) and density (g/cm3) of map units ``u`` at effective pressure ``p_mpa`` and alteration
     ``a``:
-    crack closure, Vp/Vs or Brocher (2005), unit density or Nafe-Drake, then the magma and alteration factors.
+    crack closure, Vp/Vs or Brocher (2005), unit density or Nafe-Drake, then the alteration factors.
     The one rock law of the model: S4 applies it to every cell, and the critical-zone medium
     (rainier3d.cz.medium) to its rock end-member, at the same effective pressure."""
     rock = np.isin(u, rock_unit_ids())
@@ -46,9 +47,6 @@ def rock_properties(u, p_mpa, a, table: pd.DataFrame, pert: dict, geo_cal: dict 
     vs = np.where(rock, vs * np.exp(gc["ln_vs"]), vs)
     rho = _lut(table, "rho_gcc")[u]
     rho = np.where(np.isnan(rho), rel.nafe_drake_rho_from_vp(vp), rho)
-    m = u == MAGMA
-    mp = pert["magma_mush"]
-    vp, vs, rho = (np.where(m, v * (1 - mp[k]), v) for v, k in ((vp, "dvp"), (vs, "dvs"), (rho, "drho")))
     ap = pert["alteration"]
     return vp * (1 - a * ap["dvp"]), vs * (1 - a * ap["dvs"]), rho * (1 - a * ap["drho"])
 

@@ -7,7 +7,7 @@ alteration:            # multiplied by the 0-1 alteration field: V <- V * (1 - a
   drho: 0.12
   source_key: m1_placeholder
 
-magma_mush:            # applied inside the magma_body ellipsoid
+magma_mush:            # applied by S5 to the fused model inside the magma_body sphere (configs/units.yaml), tapered
   dvp: 0.10
   dvs: 0.15
   drho: 0.03

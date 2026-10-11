@@ -159,7 +159,7 @@ CONTINUOUS = {
         3000,
         "cmc.roma",
         False,
-        "fused model, mean of the top 100 m below ground",
+        "critical-zone columns of the model, time-averaged Vs over the top 100 m below the ground or the bed",
     ),
     "ndvi": (
         "ndvi",
@@ -396,8 +396,17 @@ def _values_u16(
     return np.clip(q, 0, 65535).astype("<u2"), scale, lo
 
 
+def _vs_top_cz(cz: xr.Dataset, h: float = 100.0) -> np.ndarray:
+    """Time-averaged Vs (m/s) over the top ``h`` m of the critical-zone columns (y, x), below the ground or
+    the glacier bed. The 50 m L1 cells give a value that depends on where the ground falls in the top cell."""
+    top = cz["cz_depth"].values - cz["cz_thickness"].values / 2
+    w = np.clip(np.minimum(top + cz["cz_thickness"].values, h) - top, 0.0, None)
+    return h / (w[:, None, None] / cz["vs"].values).sum(0)
+
+
 def surface_derived(tree: xr.DataTree) -> dict[str, np.ndarray]:
-    """Model-derived surface maps: alteration and Vs in the top rock cells of L1, on the surface grid."""
+    """Model-derived surface maps on the surface grid: Vs over the top 100 m (from the critical-zone columns
+    when the model has them, else the top rock cells of L1) and alteration."""
     s = tree["surface"].to_dataset()
     l1 = tree["L1"].to_dataset()
     depth, rock = l1["depth"].values, l1["unit"].values > 1  # rock = not air, not ice
@@ -416,6 +425,8 @@ def surface_derived(tree: xr.DataTree) -> dict[str, np.ndarray]:
             continue
         v = np.where(top, l1[var].values, 0.0).sum(0) / np.maximum(n, 1)
         v = np.where(n > 0, v, np.nan)
+        if key == "vs_top" and "cz" in tree.children:
+            v = np.where(n > 0, _vs_top_cz(tree["cz"].to_dataset()), np.nan)
         # L1 is coarser than the surface grid, and not by a whole factor (250 m vs 100 m): each surface cell
         # takes the L1 cell around its centre
         v = xr.DataArray(v, coords={"y": l1.y.values, "x": l1.x.values}, dims=("y", "x"))
