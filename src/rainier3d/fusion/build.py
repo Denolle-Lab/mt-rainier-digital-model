@@ -52,6 +52,16 @@ def regional_level(lev, depth, cvm, cres, cal: dict | None) -> dict:
     return apply_bias(regional.regional_on_level(lev, depth, cvm, cres), depth, cal)
 
 
+def smoothing(fc: dict) -> dict:
+    """The geology filters of the fusion block of configs/domain.yaml (fusion.blend.smooth_geology)."""
+    return {
+        "z_smooth": fc.get("lambda_z_from_depth_m", 0.0),
+        "lambda_z": fc.get("lambda_z_m", 0.0),
+        "lambda_h": fc.get("lambda_h_m", 0.0),
+        "growth_h": fc.get("lambda_h_growth", 1.0),
+    }
+
+
 def fuse_level(
     g, p, reg: dict, lev, fc: dict, q: dict, name: str, full: bool = True, magma: dict | None = None
 ):
@@ -62,11 +72,7 @@ def fuse_level(
     out = g.copy()
     # fuse Vs and Vp/Vs (not Vp and Vs separately), so Vp/Vs stays between its two inputs
     args = (depth, mask, fc["lambda_c_by_depth"], lev.dx, fc["geology_only_depth_m"], fc["taper_depth_m"])
-    kw = {
-        "lambda_z": fc.get("lambda_z_m", 0.0),
-        "dz": lev.dz,
-        "z_smooth": fc.get("lambda_z_from_depth_m", 0.0),
-    }
+    kw = {"dz": lev.dz, **smoothing(fc)}
     vs_f = blend.fuse(p["vs"].values, reg["vs"], *args, **kw)
     kappa = blend.fuse(p["vp"].values / p["vs"].values, reg["vp"] / reg["vs"], *args, **kw)
     vp_f = vs_f * kappa
