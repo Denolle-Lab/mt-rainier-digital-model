@@ -72,7 +72,7 @@ def load_picks(dom, caches, min_picks: int = 6, min_p: int = 4):
     events = pd.concat(events)
     events = events[~events.index.duplicated()].loc[sorted(keep)]
     sta_xyd = np.column_stack([stations.x, stations.y, -stations.elev])
-    return picks, sta_xyd, events
+    return picks, sta_xyd, events, stations
 
 
 def split_events(events: pd.DataFrame, how: str, block_m: float, n_picks: pd.Series) -> tuple[set, list]:
@@ -126,7 +126,10 @@ def main():
         np.broadcast_to(zs[:, None, None] > ground[None] + tc["skin"] * grid.dx, (zs.size,) + ground.shape)
     )
 
-    picks, sta_xyd, events = load_picks(dom, tc["pick_caches"])
+    picks, sta_xyd, events, stations = load_picks(dom, tc["pick_caches"])
+    stations.assign(n_picks=picks.groupby("si").size().reindex(stations.index).fillna(0).astype(int)).to_csv(
+        out_dir / "stations.csv", index_label="si"
+    )
     x0, y0, x1, y1 = dom.bounds
     nodes = TM.Nodes(
         np.arange(x0, x1 + 1, tc["node_dx_m"]), np.arange(y0, y1 + 1, tc["node_dx_m"]), tc["node_depths_m"]
@@ -182,14 +185,16 @@ def main():
     # ``stop_rel_tol``; otherwise half the step is tried, and if that fails too the last kept model is final
     m = np.zeros(2 * nodes.n)
     rec, state = forward(m, "start")
+    save_state(state, fit, out_dir, "start")
     hist, extras, lam_s, stop = [rec | {"accepted": True}], {}, None, "iterations"
     for it in range(1, n_iter + 1):
         K, dws, n_failed, A, r, in_fit = system(state, m)
         hist[-1]["rays_closed_straight"] = n_failed
         if "fd_check" not in extras:
-            extras["fd_check"] = fd_check(
+            extras["fd_check"], pairs = fd_check(
                 K, dws, state[1], grid, state[3], state[2], sta_xyd, nodes, m, velocities
             )
+            pairs.to_csv(out_dir / "fd_check.csv", index=False)
         Af, rf = A[in_fit], r[in_fit]
         if lam_s is None:
             scan = []
@@ -218,9 +223,10 @@ def main():
     kept = [h for h in hist if h["accepted"]]
     extras["stop"] = stop
 
+    save_state(state, fit, out_dir, "final")
     # checkerboard with the kernels of the final model
     _, dws, _, A, r, in_fit = system(state, m)
-    cb = {}
+    cb, cb_fields = {}, {}
     rng = np.random.default_rng(0)
     for cell in tc["checkerboard_cells_m"]:
         m_true = TM.checkerboard(nodes, cell, tc["checkerboard_amp"])
@@ -228,6 +234,10 @@ def main():
         r_syn = Af @ m_true + rng.normal(0, 1, Af.shape[0])  # rows are in units of the pick sigma
         m_rec = TM.regularised_step(Af, r_syn, np.zeros_like(m), Lreg, lam_s, tc["lam_d"])
         cb[str(int(cell))] = recovery(m_true, m_rec, dws, nodes, tc["dws_min_m"])
+        for j, ph in enumerate(("p", "s")):
+            sl = slice(j * nodes.n, (j + 1) * nodes.n)
+            cb_fields[f"true_{ph}_{int(cell)}"] = (("x", "y", "d"), m_true[sl].reshape(nodes.shape))
+            cb_fields[f"recovered_{ph}_{int(cell)}"] = (("x", "y", "d"), m_rec[sl].reshape(nodes.shape))
         logging.info("checkerboard %d m: %s", cell, cb[str(int(cell))])
 
     summary = {
@@ -258,6 +268,7 @@ def main():
         attrs={"long_name": "ln V perturbation of the fused model (S37)", "d": "m below sea level"},
     )
     node_ds.to_netcdf(out_dir / "nodes.nc")
+    xr.Dataset(cb_fields, coords=node_ds.coords).to_netcdf(out_dir / "checkerboard.nc")
     write_model(tree, node_ds, nodes, m, dom.path("processed") / "model_let.zarr", summary)
     figures(node_ds, cb, nodes, tc, out_dir)
     logging.info("wrote %s and model_let.zarr (%.1f min)", out_dir, summary["runtime_min"])
@@ -285,7 +296,17 @@ def fd_check(K, dws, T, grid, pk, cat, sta_xyd, nodes, m, velocities, h: float =
         "corr": float(np.corrcoef(fd, ray)[0, 1]),
     }
     logging.info("finite-difference check of the S kernel: %s", out)
-    return out
+    return out, pd.DataFrame({"finite_difference": fd, "ray": ray})
+
+
+def save_state(state, fit, out_dir, tag):
+    """Picks (residual, weight, fitting or held out) and relocated catalogue of one model."""
+    _, _, cat, pk = state
+    pk = pk.assign(fitting=pk.event.isin(fit))
+    pk[["event", "phase", "si", "tt_obs", "res", "w", "fitting"]].to_csv(
+        out_dir / f"picks_{tag}.csv", index=False
+    )
+    cat.assign(fitting=cat.index.isin(list(fit))).to_csv(out_dir / f"catalog_{tag}.csv")
 
 
 def recovery(m_true, m_rec, dws, nodes, dws_min):
