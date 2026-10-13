@@ -21,8 +21,9 @@ from rainier3d.validate import pnsn
 log = logging.getLogger(__name__)
 
 
-def _get(url: str, tries: int = 4) -> requests.Response:
-    """GET with retries and backoff (ComCat occasionally drops a request or a DNS lookup)."""
+def _get(url: str, tries: int = 6) -> requests.Response:
+    """GET with retries and backoff (ComCat occasionally drops a request or a DNS lookup, and answers 429 when
+    asked too often: then wait a minute or more, as its Retry-After says)."""
     import time
 
     for k in range(tries):
@@ -30,20 +31,28 @@ def _get(url: str, tries: int = 4) -> requests.Response:
             r = requests.get(url, timeout=60)
             r.raise_for_status()
             return r
-        except requests.RequestException:
+        except requests.RequestException as e:
             if k == tries - 1:
                 raise
-            time.sleep(2 * (k + 1))
+            resp = getattr(e, "response", None)
+            if resp is not None and resp.status_code == 429:
+                time.sleep(max(float(resp.headers.get("Retry-After", 0) or 0), 60.0 * (k + 1)))
+            else:
+                time.sleep(2 * (k + 1))
     raise AssertionError
 
 
 def _quakeml(ev: dict, qdir: Path) -> Path | None:
     q = qdir / f"{ev['id']}.xml"
+    none = qdir / f"{ev['id']}.none"  # marker: the event has no phase data, do not ask again
     if q.exists():
         return q
+    if none.exists():
+        return None
     det = _get(ev["properties"]["detail"]).json()
     pdata = det["properties"]["products"].get("phase-data")
     if not pdata:
+        none.touch()
         return None
     q.write_bytes(_get(pdata[0]["contents"]["quakeml.xml"]["url"]).content)
     return q
