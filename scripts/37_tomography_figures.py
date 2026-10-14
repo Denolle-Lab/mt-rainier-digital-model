@@ -204,7 +204,6 @@ def fig_checks(out, fd, S, H):
     a.set_ylabel("held-out nRMS (linearised)")
     a.set_title(f"(b) smoothing on held-out events\nchosen λs = {S['lam_s']:g}", loc="left")
     a = ax[2]
-    lab = [h["model"].replace("step x", "×") for h in H]
     H = [h for h in H if "held_out_misfit" in h]  # failed trials have no misfit
     lab = [h["model"].replace("step x", "×") for h in H]
     y = [h["held_out_misfit"] for h in H]

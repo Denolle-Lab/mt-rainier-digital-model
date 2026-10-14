@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import logging
 from concurrent.futures import ThreadPoolExecutor
+from datetime import UTC
 from pathlib import Path
 
 import numpy as np
@@ -19,6 +20,24 @@ from rainier3d.config.domain import Domain
 from rainier3d.validate import pnsn
 
 log = logging.getLogger(__name__)
+
+
+def _retry_after_s(value) -> float:
+    """Seconds of a Retry-After header, which RFC 7231 allows as a number of seconds or an HTTP date; 0 if
+    absent or unreadable (the caller's backoff applies)."""
+    if not value:
+        return 0.0
+    try:
+        return max(float(value), 0.0)
+    except ValueError:
+        pass
+    from datetime import datetime
+    from email.utils import parsedate_to_datetime
+
+    try:
+        return max((parsedate_to_datetime(value) - datetime.now(UTC)).total_seconds(), 0.0)
+    except (TypeError, ValueError):
+        return 0.0
 
 
 def _get(url: str, tries: int = 6) -> requests.Response:
@@ -36,7 +55,7 @@ def _get(url: str, tries: int = 6) -> requests.Response:
                 raise
             resp = getattr(e, "response", None)
             if resp is not None and resp.status_code == 429:
-                time.sleep(max(float(resp.headers.get("Retry-After", 0) or 0), 60.0 * (k + 1)))
+                time.sleep(max(_retry_after_s(resp.headers.get("Retry-After")), 60.0 * (k + 1)))
             else:
                 time.sleep(2 * (k + 1))
     raise AssertionError
