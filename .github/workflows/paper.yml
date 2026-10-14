@@ -1,6 +1,6 @@
 name: Build the paper (HTML and ESSD PDF)
 
-# Builds docs/paper/rainier3d_paper.md into docs/paper/rainier3d_paper.html and .pdf with scripts/23_paper.py (pixi
+# Builds docs/paper/rainier3d_paper.md and rainier3d_supplement.md into .html and .pdf with scripts/23_paper.py (pixi
 # environment "paper": pandoc, pandoc-crossref, tectonic, graphviz). No model data are needed: figures are committed
 # by S10, S16, S21 and S22. The build is byte-reproducible on the same platform (fixed
 # SOURCE_DATE_EPOCH); the committed copy is the one built here on Linux, so local builds are previews.
@@ -55,7 +55,7 @@ jobs:
         run: pixi run -e paper paper
       - name: Is the committed paper up to date?
         run: |
-          if git diff --quiet -- docs/paper/rainier3d_paper.html docs/paper/rainier3d_paper.pdf; then
+          if git diff --quiet -- docs/paper/rainier3d_paper.html docs/paper/rainier3d_paper.pdf docs/paper/rainier3d_supplement.html docs/paper/rainier3d_supplement.pdf; then
             echo "The committed paper matches this build." | tee -a "$GITHUB_STEP_SUMMARY"
           else
             echo "The committed paper differs from this build; main commits the Linux build after merge." | tee -a "$GITHUB_STEP_SUMMARY"
@@ -66,13 +66,16 @@ jobs:
           path: |
             docs/paper/rainier3d_paper.html
             docs/paper/rainier3d_paper.pdf
+            docs/paper/rainier3d_supplement.html
+            docs/paper/rainier3d_supplement.pdf
             outputs/paper/rainier3d_paper.tex
+            outputs/paper/rainier3d_supplement.tex
       - name: Commit the rebuilt paper (main only)
         if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add docs/paper/rainier3d_paper.html docs/paper/rainier3d_paper.pdf
+          git add docs/paper/rainier3d_paper.html docs/paper/rainier3d_paper.pdf docs/paper/rainier3d_supplement.html docs/paper/rainier3d_supplement.pdf
           if ! git diff --cached --quiet; then
             git commit -m "Paper: rebuild HTML and PDF (paper.yml)" && git push
             # pushes by the Actions token start no workflows, so deploy the site explicitly
@@ -89,4 +92,5 @@ jobs:
             --title "rainier3d paper (rebuilt on every change)" \
             --notes "Built by .github/workflows/paper.yml from docs/paper/rainier3d_paper.md."
           gh release upload paper-latest docs/paper/rainier3d_paper.html docs/paper/rainier3d_paper.pdf \
-            outputs/paper/rainier3d_paper.tex --clobber
+            docs/paper/rainier3d_supplement.html docs/paper/rainier3d_supplement.pdf \
+            outputs/paper/rainier3d_paper.tex outputs/paper/rainier3d_supplement.tex --clobber

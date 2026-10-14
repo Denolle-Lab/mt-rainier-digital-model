@@ -444,6 +444,18 @@ lomax_2000:
   verified: web-2026-09-24 (Crossref)
   role: grid-search location on station travel-time grids (reciprocity)
 
+paige_saunders_1982:
+  title: Paige & Saunders 1982, LSQR, an algorithm for sparse linear equations and sparse least squares, ACM Transactions on Mathematical Software 8(1)
+  doi: 10.1145/355984.355989
+  verified: web-2026-10-14 (doi.org, Crossref BibTeX)
+  role: solver of the regularised tomography step (S37, rainier3d.validate.tomo)
+
+leveque_1993:
+  title: Leveque, Rivera & Wittlinger 1993, On the use of the checker-board test to assess the resolution of tomographic inversions, GJI 115(1)
+  doi: 10.1111/j.1365-246X.1993.tb05605.x
+  verified: web-2026-10-14 (doi.org, Crossref BibTeX)
+  role: limits of the checkerboard resolution test (S37 supplement)
+
 thurber_1983:
   title: Thurber 1983, Earthquake locations and three-dimensional crustal structure in the Coyote Lake area, central California, JGR 88(B10)
   doi: 10.1029/JB088iB10p08226
