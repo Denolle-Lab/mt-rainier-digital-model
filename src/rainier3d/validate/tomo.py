@@ -1,6 +1,6 @@
 """Local-earthquake tomography (S37): ln Vp and ln Vs perturbations of the fused model on a coarse node grid.
 
-    V = V_model * exp(m(x, y, d)),   m trilinear between nodes, one field per phase
+    V = V_model * exp(w(d_bed) m(x, y, d)),   m trilinear between nodes, one field per phase
 
 The forward model and the location are those of S13 (rainier3d.validate.locate): pykonal fields per station
 on the S6 grid with air above the DEM, relocation below the ground, rays down grad T. The perturbation is
@@ -12,6 +12,10 @@ event's rows on the complement of its hypocentre partials (Pavlis & Booker 1980)
 
 (L: second differences along x, y and d within each phase) is solved by LSQR, as in SIMUL-type tomography
 (Thurber 1983) with the damping and smoothing scaled by the mean squared column norm of A'.
+
+w(d_bed) (``cz_taper``) is 0 in the top ``z0`` m below the ground or the glacier bed, the critical-zone
+columns of S4, and rises linearly to 1 at ``z1`` m: the tomography leaves the critical zone, built from rock
+physics, as it is.
 
 Coordinates are (x, y, d) metres, d = -z positive down, as in rainier3d.validate.locate.
 """
@@ -94,13 +98,16 @@ def kernels(
     nodes: Nodes,
     density: bool = False,
     keep_rows=(),
+    taper_xyd=None,
 ):
     """dT/dm (n_picks, 2 n; P nodes then S nodes) as a sparse matrix, the derivative weight sum per node
     (2 n,: ray length in metres weighted by the trilinear weights) and the number of rays closed straight.
 
     ``density``: also the ray density on the eikonal grid, per phase: ray length (m) and number of distinct
     rays in each cell (nearest node), rock only. ``keep_rows``: pick rows whose ray paths are returned (for
-    figures), as {row: (n, 3) points from the source to the station}."""
+    figures), as {row: (n, 3) points from the source to the station}. ``taper_xyd``: the weight of the
+    perturbation on the eikonal grid (``cz_taper``), which multiplies the kernels and the derivative weight
+    sum at every ray point."""
     rows, cols, vals = [], [], []
     dws = np.zeros(2 * nodes.n)
     n_failed = 0
@@ -123,6 +130,8 @@ def kernels(
                 u = np.unique(lin.astype(np.int64) * len(src) + ids)  # one count per ray and cell
                 np.add.at(dens[ph]["rays"].reshape(-1), u // len(src), 1.0)
             k, w = nodes.weights(p)
+            if taper_xyd is not None:
+                w = w * grid.sample(taper_xyd, p)[:, None]
             rows.append(np.repeat(g.row.values[ids], 8))
             cols.append((k + j * nodes.n).ravel())
             vals.append((-(ln / v)[:, None] * w).ravel())
@@ -154,6 +163,12 @@ def fields_timed(vel_xyd: np.ndarray, grid: Grid, stations_xyd: np.ndarray, limi
         raise TimeoutError(f"{len(pending)} of {len(futs)} eikonal solves unfinished after {limit_s:.0f} s")
     ex.shutdown()
     return np.stack([f.result() for f in futs])
+
+
+def cz_taper(depth_below_bed, z0: float, z1: float):
+    """Weight of the perturbation: 0 in the critical zone (less than z0 below the ground or the glacier bed),
+    rising linearly to 1 at z1, so that the critical-zone columns and their petrophysics stay as built."""
+    return np.clip((np.asarray(depth_below_bed, float) - z0) / max(z1 - z0, 1e-9), 0.0, 1.0)
 
 
 def model_on_grid_slowness(tree, var: str, grid: Grid, phase: str) -> np.ndarray:

@@ -126,6 +126,16 @@ def main():
     v0 = {
         ph: L.Grid.xyd(TM.model_on_grid_slowness(tree, v, grid, ph)) for ph, v in (("P", "vp"), ("S", "vs"))
     }
+    # depth below the ground or the glacier bed at the grid nodes, and the critical-zone taper of m
+    ice = (
+        tree["surface"].to_dataset()["ice_thickness"].fillna(0)
+        .interp(x=("gx", np.clip(xs, float(tree["surface"].x.min()), float(tree["surface"].x.max()))),
+                y=("gy", np.clip(ys, float(tree["surface"].y.min()), float(tree["surface"].y.max()))))
+        .transpose("gx", "gy").values
+    )  # fmt: skip
+    z0, z1 = tc["cz_taper_m"]
+    d_bed = ground[:, :, None] - ice[:, :, None] + zs[None, None, :] * -1.0  # (nx, ny, nd): ground - z - ice
+    taper = TM.cz_taper(d_bed, z0, z1)
     is_air = L.Grid.xyd(
         np.broadcast_to(zs[:, None, None] > ground[None] + tc["skin"] * grid.dx, (zs.size,) + ground.shape)
     )
@@ -152,7 +162,7 @@ def main():
     def velocities(m):
         out = {}
         for j, ph in enumerate(("P", "S")):
-            v = v0[ph] * np.exp(nodes.on_grid(m[j * nodes.n : (j + 1) * nodes.n], grid))
+            v = v0[ph] * np.exp(taper * nodes.on_grid(m[j * nodes.n : (j + 1) * nodes.n], grid))
             out[ph] = np.where(is_air, L.AIR_V, v)
         return out
 
@@ -196,7 +206,7 @@ def main():
 
     def system(state, m):
         vel, T, cat, pk = state
-        K, dws, n_failed = TM.kernels(T, grid, pk, cat, sta_xyd, vel, nodes)
+        K, dws, n_failed = TM.kernels(T, grid, pk, cat, sta_xyd, vel, nodes, taper_xyd=taper)
         A, r, ev_rows = TM.separated(pk, cat, T, grid, K)
         return K, dws, n_failed, A, r, np.isin(ev_rows, list(fit))
 
@@ -253,7 +263,7 @@ def main():
     save_state(state, fit, out_dir, "final")
     # checkerboard with the kernels of the final model
     _, dws, _, A, r, in_fit = system(state, m)
-    rays_and_density(state, grid, sta_xyd, nodes, tc, out_dir)
+    rays_and_density(state, grid, sta_xyd, nodes, tc, out_dir, taper)
     cb, cb_fields = {}, {}
     rng = np.random.default_rng(0)
     for cell in tc["checkerboard_cells_m"]:
@@ -297,12 +307,12 @@ def main():
     )
     node_ds.to_netcdf(out_dir / "nodes.nc")
     xr.Dataset(cb_fields, coords=node_ds.coords).to_netcdf(out_dir / "checkerboard.nc")
-    write_model(tree, node_ds, nodes, m, dom.path("processed") / "model_let.zarr", summary)
+    write_model(tree, node_ds, nodes, m, dom.path("processed") / "model_let.zarr", summary, tc["cz_taper_m"])
     figures(node_ds, cb, nodes, tc, out_dir)
     logging.info("wrote %s and model_let.zarr (%.1f min)", out_dir, summary["runtime_min"])
 
 
-def rays_and_density(state, grid, sta_xyd, nodes, tc, out_dir):
+def rays_and_density(state, grid, sta_xyd, nodes, tc, out_dir, taper):
     """Ray density of the final model on the eikonal grid (ray length and number of rays per cell, P and S)
     -> ray_density.nc, and the paths of a random sample of rays (``tomography.rays_sample`` per phase,
     picks with non-zero weight, seed 0) -> rays_sample.json (km, z up)."""
@@ -311,7 +321,9 @@ def rays_and_density(state, grid, sta_xyd, nodes, tc, out_dir):
     used = pk[pk.w > 0]
     keep = np.concatenate([rng.choice(used.row[used.phase == ph].values, tc["rays_sample"], replace=False)
                            for ph in ("P", "S")])  # fmt: skip
-    _, _, _, dens, paths = TM.kernels(T, grid, pk, cat, sta_xyd, vel, nodes, density=True, keep_rows=keep)
+    _, _, _, dens, paths = TM.kernels(
+        T, grid, pk, cat, sta_xyd, vel, nodes, density=True, keep_rows=keep, taper_xyd=taper
+    )
     coords = {"x": grid.xs, "y": grid.ys, "z": grid.zs}
     fields = {
         f"{k}_{ph.lower()}": (("x", "y", "z"), dens[ph][k].astype(np.float32))
@@ -393,18 +405,22 @@ def recovery(m_true, m_rec, dws, nodes, dws_min):
     return out
 
 
-def write_model(tree, node_ds, nodes, m, path, summary):
-    """model.zarr with vp, vs times exp(m) on every level (m at the cell centres, d = -z), rho by Nafe-Drake;
-    the node fields under /let."""
+def write_model(tree, node_ds, nodes, m, path, summary, cz_taper_m):
+    """model.zarr with vp, vs times exp(w m) on every level (m at the cell centres, d = -z; w the
+    critical-zone taper at the cell's depth below the ground or the glacier bed), rho by Nafe-Drake; the
+    node fields under /let. The critical-zone columns (/cz) and the cells that average them are unchanged."""
     out = {}
+    surf_ice = tree["surface"].to_dataset()["ice_thickness"].fillna(0)
     for name in tree.children:
         ds = tree[name].to_dataset()
         if name in ("L1", "L2", "L3"):
             zz, yy, xx = np.meshgrid(ds.z.values, ds.y.values, ds.x.values, indexing="ij")
             p = np.column_stack([xx.ravel(), yy.ravel(), -zz.ravel()])
             k, w = nodes.weights(p)
+            ice = surf_ice.sel(x=ds.x, y=ds.y, method="nearest").values[None]
+            wt = TM.cz_taper(ds["depth"].values - ice, *cz_taper_m)
             for j, v in enumerate(("vp", "vs")):
-                f = (m[j * nodes.n : (j + 1) * nodes.n][k] * w).sum(1).reshape(zz.shape)
+                f = wt * (m[j * nodes.n : (j + 1) * nodes.n][k] * w).sum(1).reshape(zz.shape)
                 old = ds[v].values
                 ds[v] = (("z", "y", "x"), (old * np.exp(f)).astype(np.float32), ds[v].attrs)
                 ds[f"dln{v}_let"] = (

@@ -1,5 +1,8 @@
 """Invariants of the built model (skipped until pixi run s5 has produced data/processed/model.zarr)."""
 
+import os
+from pathlib import Path
+
 import numpy as np
 import pandas as pd
 import pytest
@@ -9,7 +12,8 @@ from rainier3d.geomodel.rules import AIR, ICE, MAGMA, kinds
 from rainier3d.petro.table import units_config
 
 DOM = load_domain()
-MODEL = DOM.path("processed") / "model.zarr"
+# RAINIER3D_MODEL points the invariants at another store, e.g. data/processed/model_let.zarr (S37)
+MODEL = Path(os.environ.get("RAINIER3D_MODEL", DOM.path("processed") / "model.zarr"))
 pytestmark = pytest.mark.skipif(not MODEL.exists(), reason="model.zarr not built")
 
 
@@ -59,7 +63,10 @@ def test_physical_ranges(tree, lev):
         dx, dz = float(ds.attrs["dx"]), float(ds.attrs["dz"])
         rgf = np.exp(smooth_geology(np.log(rg), u != AIR, ds["depth"].values, dx, dz, **smoothing(fc)))
         lo, hi = np.fmin(lo, rgf), np.fmax(hi, rgf)
-    assert np.all((r[rock] >= lo[rock] * (1 - 1e-4)) & (r[rock] <= hi[rock] * (1 + 1e-4)))
+    # a store with the S37 tomography (model_let.zarr) carries its factor exp(w (m_P - m_S)) on Vp/Vs: the
+    # fusion bound applies to the fused model underneath, the physical bounds above to the final ratio
+    rf = r / np.exp(ds["dlnvp_let"].values - ds["dlnvs_let"].values) if "dlnvp_let" in ds else r
+    assert np.all((rf[rock] >= lo[rock] * (1 - 1e-4)) & (rf[rock] <= hi[rock] * (1 + 1e-4)))
     rho = ds["rho"].values[u != AIR]
     assert rho.min() >= 900 and rho.max() <= 3100
 

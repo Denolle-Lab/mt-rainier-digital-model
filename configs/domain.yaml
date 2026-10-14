@@ -65,6 +65,9 @@ validation:
 # sea level, denser where the earthquakes are (0-15 km).
 tomography:
   grid_dx_m: 250                  # eikonal grid of S37 (S6 and S13 keep validation.dx); grid search at validation.dx
+  # the perturbation is 0 in the critical-zone columns (150 m below the ground or bed, configs/cz.yaml
+  # medium.fine_base_m) and full 500 m down (placeholder), so the critical zone keeps its rock physics
+  cz_taper_m: [150, 500]
   rays_sample: 1000               # rays per phase whose paths are kept for figures
   node_dx_m: 3000
   node_depths_m: [-3000, 0, 2000, 4000, 6000, 9000, 13000, 18000, 25000]
