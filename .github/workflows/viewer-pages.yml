@@ -1,7 +1,7 @@
 name: Deploy the 3D viewer, the paper and the tomography report to GitHub Pages
 
 # The site serves the viewer at /, the paper (docs/paper/rainier3d_paper.html and .pdf) at /paper/ and the
-# tomography report (docs/tomography/, from scripts/37_tomography_figures.py --site) at /tomography/.
+# tomography report (docs/tomography/, from scripts/37_tomography.py --site docs/tomography) at /tomography/.
 # The viewer's map data (terrain, imagery, stations, quakes and the rainier3d model layers) is not in git.
 # It is built with `pixi run viewer-data && pixi run s11 && pixi run viewer-bundle` and published as the
 # release asset viewer-atlas-bundle.tar.gz under the tag named in web/viewer/DATA_RELEASE.

@@ -15,10 +15,12 @@ Checks: the ray kernel of one node against a finite difference through the eikon
 with the kernels of the last iteration (recovery as the correlation of the input and recovered patterns where
 the derivative weight sum is above ``dws_min_m``).
 
-Writes outputs/tomography/ (history.json, summary.json, nodes.nc, figures) and data/processed/model_let.zarr:
+Writes outputs/tomography/ (history.json, summary.json, nodes.nc; figures in report/ by
+rainier3d.report.tomography_figures) and data/processed/model_let.zarr:
 model.zarr with vp, vs (and rho by Nafe-Drake) multiplied by exp(m) on L1-L3, and the node fields under /let.
 
-Usage: pixi run python scripts/37_tomography.py [--iterations 3]
+Usage: pixi run s37 [-- --iterations 3] [--site docs/tomography]
+       pixi run s37 -- --figures-only [--site docs/tomography]
 """
 
 from __future__ import annotations
@@ -108,7 +110,14 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--iterations", type=int, default=None)
     ap.add_argument("--model", default=None, help="starting model (default data/processed/model.zarr)")
+    ap.add_argument("--figures-only", action="store_true", help="redraw the figures from outputs/tomography/")
+    ap.add_argument("--site", default=None, help="also copy the figures and the 3D data to this folder")
     a = ap.parse_args()
+    if a.figures_only:
+        from rainier3d.report import tomography_figures
+
+        tomography_figures.make_all(a.site)
+        return
     t_start = time.time()
     dom = load_domain()
     tc, vc = dom.cfg["tomography"], dom.cfg["validation"]
@@ -308,7 +317,9 @@ def main():
     node_ds.to_netcdf(out_dir / "nodes.nc")
     xr.Dataset(cb_fields, coords=node_ds.coords).to_netcdf(out_dir / "checkerboard.nc")
     write_model(tree, node_ds, nodes, m, dom.path("processed") / "model_let.zarr", summary, tc["cz_taper_m"])
-    figures(node_ds, cb, nodes, tc, out_dir)
+    from rainier3d.report import tomography_figures
+
+    tomography_figures.make_all(a.site)
     logging.info("wrote %s and model_let.zarr (%.1f min)", out_dir, summary["runtime_min"])
 
 
@@ -440,37 +451,6 @@ def write_model(tree, node_ds, nodes, m, path, summary, cz_taper_m):
     t.attrs = {**tree.attrs, "let": "S37 local-earthquake tomography (scripts/37_tomography.py)",
                "let_lam_s": summary["lam_s"], "let_lam_d": summary["lam_d"]}  # fmt: skip
     write(t, path)
-
-
-def figures(node_ds, cb, nodes, tc, out_dir):
-    import matplotlib
-
-    matplotlib.use("Agg")
-    import matplotlib.pyplot as plt
-
-    ds_show = [d for d in nodes.axes[2] if d >= 0][:6]
-    fig, ax = plt.subplots(3, len(ds_show), figsize=(3.2 * len(ds_show), 9.5), squeeze=False)
-    for c, d in enumerate(ds_show):
-        sl = node_ds.sel(d=d)
-        panels = (
-            ("dlnvp", "dln Vp", "RdBu", 0.08),
-            ("dlnvs", "dln Vs", "RdBu", 0.08),
-            ("dws_s", "DWS S (m)", "viridis", None),
-        )
-        for r, (v, lab, cm, lim) in enumerate(panels):
-            a = sl[v].values.T
-            im = ax[r, c].pcolormesh(nodes.axes[0] / 1e3, nodes.axes[1] / 1e3, a, cmap=cm, shading="nearest",
-                                     vmin=-lim if lim else None, vmax=lim)  # fmt: skip
-            if lim:
-                hide = sl["dws_s" if v == "dlnvs" else "dws_p"].values.T < tc["dws_min_m"]
-                ax[r, c].contourf(nodes.axes[0] / 1e3, nodes.axes[1] / 1e3, hide, levels=[0.5, 1.5],
-                                  colors="w", alpha=0.6)  # fmt: skip
-            ax[r, c].set_title(f"{lab}, {d / 1e3:.0f} km bsl", fontsize=9)
-            ax[r, c].set_aspect("equal")
-            plt.colorbar(im, ax=ax[r, c], shrink=0.7)
-    plt.tight_layout()
-    plt.savefig(out_dir / "fig_let_slices.png", dpi=90)
-    plt.close(fig)
 
 
 if __name__ == "__main__":

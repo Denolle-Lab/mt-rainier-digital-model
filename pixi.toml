@@ -67,13 +67,11 @@ s8 = "python scripts/08_atlas.py"
 s9 = "python scripts/09_export_grids.py"
 s10 = "python scripts/10_report.py"
 s11 = "python scripts/11_seismic_atlas.py"
-s12 = "python scripts/12_calibrate_vs.py"
 s13 = "python scripts/13_joint_calibration.py"
 s14 = "python scripts/14_relocate.py"
 bib = "python scripts/15_bibliography.py"
 s17 = "python scripts/17_gnss_fetch.py"
 s18 = "python scripts/18_gnss_strain.py"
-s25 = "python scripts/25_strain_volume.py"
 # 3D viewer (web/viewer, React + three.js): terrain, stations and quakes from USGS/EarthScope, then S11 model layers
 viewer-data = { cmd = "python -m rainier.build --out ../site/public/atlas --cache ../../../data/raw/viewer_cache", cwd = "web/viewer/data" }
 viewer-data-test = { cmd = "pytest -q", cwd = "web/viewer/data" }
@@ -91,6 +89,24 @@ s24 = "python scripts/24_mass_movements.py"
 s29 = "python scripts/29_flood_event.py"
 s30 = "python scripts/30_terrain_geometry.py"
 s36 = "python scripts/36_packwood_magnetics.py"
+s19 = "python scripts/19_canopy_layers.py"
+s21 = "python scripts/21_compare_imush.py"
+s26 = "python scripts/26_relocate_catalog.py"
+s37 = "python scripts/37_tomography.py"
+s14-published = "python scripts/14_relocate.py --model data/processed/model.zarr --name fused_joint --skin 1"
+s20 = "python scripts/20_publish_products.py"
+
+# The pipeline in eight families, in dependency order (docs/model_construction.md, README "Pipeline"). Each family
+# runs its stages in order; `pixi run pipeline` runs all eight. The numbered tasks above remain the stages.
+inputs = { depends-on = ["manifest"] }
+surface = { depends-on = ["s1", "s2", "s22", { task = "canopy", environment = "canopy" }, "s19"] }
+model = { depends-on = ["s3", "s4", "s5"] }
+calibrate = { cmd = "python scripts/04_properties.py && python scripts/05_fusion.py", depends-on = ["s13"] }
+validate = { depends-on = ["s6", "s14-published", "s21", "s26"] }
+tomography = "python scripts/37_tomography.py --site docs/tomography"
+applications = { depends-on = ["s17", "s18", "s24", "s30", "s31", "s33", "s34", "s35", "s36", "s29"] }
+deliver = { depends-on = ["s7", "s9", "s10", "bib", { task = "paper", environment = "paper" }, "platform", "s20"] }
+pipeline = { depends-on = ["inputs", "surface", "model", "calibrate", "validate", "tomography", "applications", "deliver"] }
 
 # Slim environment for the weekly GNSS refresh on GitHub Actions (.github/workflows/gnss-weekly.yml): only what
 # S17, S18 (--no-load) and S20 (--only gnss) import. The package runs from src/ without installing it.
