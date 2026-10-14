@@ -38,6 +38,12 @@ fusion:
   lambda_c_by_depth: [[0, 6000], [2000, 10000], [10000, 20000]]
   geology_only_depth_m: 300   # above this depth the geology model is used as is
   taper_depth_m: 1000         # linear taper to the blended model between the two depths
+  # Vertical cutoff wavelength (m) of the geology: flat-lying contacts (edifice base, cap base) spread over ~1 km
+  # instead of one 50 m cell. Placeholder: two cells of the 500 m eikonal grid (validation.dx). Applied to the
+  # cells entirely below lambda_z_from_depth_m, the base of the critical-zone columns (configs/cz.yaml
+  # medium.fine_base_m), with a cutoff growing from 0 there to lambda_z_m 250 m deeper (rainier3d.fusion.blend).
+  lambda_z_m: 1000
+  lambda_z_from_depth_m: 150
   lowpass_rms_tol: 0.03       # RMS of ln V between LP(fused) and LP(regional); invariant test
 
 # Eikonal grid for the PNSN check (S6).

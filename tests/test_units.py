@@ -89,3 +89,17 @@ def test_symbol_thicknesses_are_dmu_midpoints_of_unconsolidated_symbols():
     for sym, v in geo["symbol_thickness_m"].items():
         assert cw[sym]["unit_id"] in geo["unconsolidated_thickness_m"], sym  # a surface deposit
         assert abs(v["thickness_m"] - sum(v["range_m"]) / 2) < 0.06, sym  # midpoint of the DMU range
+
+
+def test_magma_weight_is_a_tapered_sphere():
+    from rainier3d.geomodel.rules import magma_weight
+
+    r = np.linspace(0, 8000, 81)
+    w = magma_weight(r, 0.0, -11500.0, 0.0, 0.0, -11500.0, 6500.0, 2000.0)
+    assert np.allclose(w[r <= 4500], 1.0) and np.all(w[r >= 6500] == 0.0)  # exactly 0: the unit test of S3
+    assert np.all(np.diff(w) <= 1e-12)  # falls monotonically through the taper
+    # spherical: the same weight at the same distance in x and in z
+    assert np.isclose(
+        magma_weight(5500.0, 0, -11500.0, 0, 0, -11500.0, 6500.0, 2000.0),
+        magma_weight(0.0, 0, -6000.0, 0, 0, -11500.0, 6500.0, 2000.0),
+    )
