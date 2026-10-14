@@ -84,6 +84,12 @@ def main():
     fig_residuals(out, p0, p1)
     fig_station_terms(out, p0, p1, ctx)
     fig_relocation(out, c0, c1)
+    if (src / "ray_density.nc").exists():
+        dens = xr.open_dataset(src / "ray_density.nc").load()
+        rays = json.loads((src / "rays_sample.json").read_text())
+        fig_ray_density(out, dens, ctx)
+        fig_rays_3d(out, rays, st, dom)
+        export_3d(out, rays, st, dom)
     print("figures in", out)
 
 
@@ -177,6 +183,8 @@ def fig_checks(out, fd, S, H):
     a.set_ylabel("held-out nRMS (linearised)")
     a.set_title(f"(b) smoothing on held-out events\nchosen λs = {S['lam_s']:g}", loc="left")
     a = ax[2]
+    lab = [h["model"].replace("step x", "×") for h in H]
+    H = [h for h in H if "held_out_misfit" in h]  # failed trials have no misfit
     lab = [h["model"].replace("step x", "×") for h in H]
     y = [h["held_out_misfit"] for h in H]
     col = [BLUE if h["accepted"] else ORANGE for h in H]
@@ -397,6 +405,98 @@ def fig_relocation(out, c0, c1):
     ax[2].set_title("(c) depth change with depth")
     fig.savefig(out / "fig09_relocation.png")
     plt.close(fig)
+
+
+def fig_ray_density(out, dens, ctx):
+    """Ray length density in 1 km cubes (km of ray per km^3, the eikonal-grid lengths summed over the cube):
+    depth slices for P and S and sections through the summit for P + S."""
+    dx = float(dens.attrs.get("dx_m", 250))
+    k = max(int(round(1000 / dx)), 1)
+    agg = {ph: dens[f"length_{ph}"].coarsen(x=k, y=k, z=k, boundary="trim").sum() / 1e3 for ph in ("p", "s")}
+    ds = [0, 2000, 4000, 6000, 9000, 13000]
+    fig, ax = plt.subplots(2, len(ds), figsize=(1.45 * len(ds) + 0.8, 3.6), squeeze=False)
+    for r, ph in enumerate(("p", "s")):
+        for c, d in enumerate(ds):
+            a = ax[r, c]
+            sl = agg[ph].sel(z=-d, method="nearest")
+            lg = np.log10(np.maximum(sl.values, 0.1)).T
+            im = a.pcolormesh(
+                km(sl.x), km(sl.y), lg, cmap=SEQ, vmin=0, vmax=4, shading="nearest", rasterized=True
+            )
+            stations(a, ctx["st"], 4)
+            frame(a, ctx, ticks=False)
+            if r == 0:
+                a.set_title(f"{d / 1e3:.0f} km bsl")
+            if c == 0:
+                a.set_ylabel(f"{ph.upper()} rays")
+    fig.colorbar(im, ax=ax.ravel().tolist(), shrink=0.8, pad=0.01, label="log10 km of ray per km³")
+    fig.suptitle(f"Ray length density in 1 km cubes (rays traced on the {dx:.0f} m grid), final model", y=1.0)
+    fig.savefig(out / "fig10_ray_density_slices.png")
+    plt.close(fig)
+
+    sx, sy = ctx["summit"]
+    tot = agg["p"] + agg["s"]
+    fig, ax = plt.subplots(2, 1, figsize=(7.2, 4.6), gridspec_kw={"hspace": 0.4})
+    for a, (sec, lab, axis) in zip(ax, ((tot.sel(y=sy, method="nearest"), "W-E through the summit", "x"),
+                                       (tot.sel(x=sx, method="nearest"), "S-N through the summit", "y")),
+                                   strict=True):  # fmt: skip
+        h = sec.transpose("z", axis)
+        lg = np.log10(np.maximum(h.values, 0.1))
+        im = a.pcolormesh(
+            km(h[axis]), km(h.z), lg, cmap=SEQ, vmin=0, vmax=4, shading="nearest", rasterized=True
+        )
+        a.set_ylim(-25, 4.5)
+        a.set_ylabel("elevation (km)")
+        a.set_xlabel("easting (km)" if axis == "x" else "northing (km)")
+        a.set_title(f"P + S ray length density in 1 km cubes, {lab}", loc="left")
+        fig.colorbar(im, ax=a, shrink=0.9, pad=0.01, label="log10 km/km³")
+    fig.savefig(out / "fig10b_ray_density_sections.png")
+    plt.close(fig)
+
+
+def fig_rays_3d(out, rays, st, dom):
+    """Static 3D view of the sampled rays (P blue, S orange), stations and hypocentres."""
+    from mpl_toolkits.mplot3d import Axes3D  # noqa: F401
+
+    fig = plt.figure(figsize=(7.2, 5.6))
+    a = fig.add_subplot(111, projection="3d")
+    n = {"P": 0, "S": 0}
+    for r in rays:
+        if n[r["phase"]] >= 400:  # 400 per phase keeps the figure legible
+            continue
+        n[r["phase"]] += 1
+        q = np.asarray(r["xyz_km"])
+        a.plot(q[:, 0], q[:, 1], q[:, 2], color=BLUE if r["phase"] == "P" else ORANGE, lw=0.35, alpha=0.35)
+    src = np.array([r["xyz_km"][0] for r in rays])
+    a.scatter(src[:, 0], src[:, 1], src[:, 2], s=1.5, c=INK, alpha=0.5, depthshade=False)
+    a.scatter(km(st.x), km(st.y), st.elev / 1e3, marker="v", s=14, c="white", edgecolors=INK, linewidths=0.6)
+    x0, y0, x1, y1 = dom.bounds
+    a.set_xlim(km(x0), km(x1))
+    a.set_ylim(km(y0), km(y1))
+    a.set_zlim(-25, 5)
+    a.set_box_aspect((70, 75, 30))
+    a.view_init(elev=22, azim=-60)
+    a.set_xlabel("easting (km)")
+    a.set_ylabel("northing (km)")
+    a.set_zlabel("elevation (km)")
+    a.set_title(
+        f"Sampled rays in the final model: {n['P']} P (blue), {n['S']} S (orange); dots: sources", loc="left"
+    )
+    fig.savefig(out / "fig11_rays_3d.png")
+    plt.close(fig)
+
+
+def export_3d(out, rays, st, dom):
+    """Data of the interactive 3D view: rays (as sampled), stations and a 1 km terrain grid (km, z up)."""
+    tree = read_tree(dom.path("processed") / "model.zarr")
+    e = tree["surface"].to_dataset()["elevation"].coarsen(x=10, y=10, boundary="trim").mean()
+    data = {
+        "rays": rays,
+        "stations": np.round(np.column_stack([km(st.x), km(st.y), st.elev / 1e3]), 3).tolist(),
+        "terrain": {"x": np.round(km(e.x.values), 2).tolist(), "y": np.round(km(e.y.values), 2).tolist(),
+                    "z": np.round(e.values / 1e3, 3).tolist()},
+    }  # fmt: skip
+    (out / "rays3d.json").write_text(json.dumps(data))
 
 
 if __name__ == "__main__":

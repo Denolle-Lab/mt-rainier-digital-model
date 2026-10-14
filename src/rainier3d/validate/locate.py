@@ -121,7 +121,15 @@ def _huber_w(rn: np.ndarray) -> np.ndarray:
 
 
 def locate_event(
-    T: dict, grid: Grid, ph: np.ndarray, st: np.ndarray, t_obs: np.ndarray, prior, half=15000.0, ground=None
+    T: dict,
+    grid: Grid,
+    ph: np.ndarray,
+    st: np.ndarray,
+    t_obs: np.ndarray,
+    prior,
+    half=15000.0,
+    ground=None,
+    stride: int = 1,
 ):
     """Hypocentre (x, y, d), origin-time shift t0 (s, relative to the catalogue origin) and residuals.
 
@@ -129,21 +137,23 @@ def locate_event(
     measured from the catalogue origin time. Grid search (L1, median origin time) within ``half`` m of the
     prior horizontally and over the full depth range, then Huber Gauss-Newton on interpolated times. With
     ``ground`` (nx, ny DEM elevation), the search excludes nodes above the ground and the refinement adds a
-    stiff penalty row (1 sigma per 10 m) for hypocentres more than GROUND_TOL above it.
+    stiff penalty row (1 sigma per 10 m) for hypocentres more than GROUND_TOL above it. ``stride`` > 1 runs
+    the grid search on every stride-th node (a fine grid costs stride^3 less), the refinement on all of them.
     """
     sig = np.array([SIGMA[p] for p in ph])
     i0, j0 = (np.floor((np.asarray(prior[:2]) - half - grid.o[:2]) / grid.dx)).astype(int)
     i1, j1 = (np.ceil((np.asarray(prior[:2]) + half - grid.o[:2]) / grid.dx)).astype(int) + 1
     i0, j0 = max(i0, 0), max(j0, 0)
-    stack = np.stack([T[p][s, i0:i1, j0:j1, :] for p, s in zip(ph, st, strict=True)]).astype(np.float64)
+    k = int(stride)
+    stack = np.stack([T[p][s, i0:i1:k, j0:j1:k, ::k] for p, s in zip(ph, st, strict=True)]).astype(np.float64)
     r = t_obs[:, None, None, None] - stack
     r -= np.median(r, axis=0, keepdims=True)
     mis = np.sum(np.abs(r) / sig[:, None, None, None], axis=0)
     if ground is not None:
-        g_sub = ground[i0 : i0 + mis.shape[0], j0 : j0 + mis.shape[1]]
-        mis = np.where(grid.zs[None, None, :] > g_sub[:, :, None], np.inf, mis)
+        g_sub = ground[i0:i1:k, j0:j1:k][: mis.shape[0], : mis.shape[1]]
+        mis = np.where(grid.zs[::k][None, None, :] > g_sub[:, :, None], np.inf, mis)
     a, b, c = np.unravel_index(np.argmin(mis), mis.shape)
-    p0 = grid.o + grid.dx * np.array([i0 + a, j0 + b, c])
+    p0 = grid.o + grid.dx * np.array([i0 + k * a, j0 + k * b, k * c])
     t00 = float(np.median(t_obs - stack[:, a, b, c]))
 
     def pred(q):
@@ -197,15 +207,23 @@ def locate_event(
 
 
 def locate_all(
-    T: dict, grid: Grid, picks: pd.DataFrame, events: pd.DataFrame, ground=None
+    T: dict, grid: Grid, picks: pd.DataFrame, events: pd.DataFrame, ground=None, stride: int = 1
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
-    """Relocate every event; returns the catalogue and the picks with ``res`` and ``w`` columns."""
+    """Relocate every event; returns the catalogue and the picks with ``res`` and ``w`` columns.
+    ``stride``: grid-search stride of ``locate_event``."""
     cat, parts = [], []
     keys = ("x", "y", "d", "t0", "sx", "sy", "sd", "st0", "above_ground_m")
     for e, g in picks.groupby("event", sort=False):
         ev = events.loc[e]
         out = locate_event(
-            T, grid, g.phase.values, g.si.values, g.tt_obs.values, (ev.x, ev.y, ev.d), ground=ground
+            T,
+            grid,
+            g.phase.values,
+            g.si.values,
+            g.tt_obs.values,
+            (ev.x, ev.y, ev.d),
+            ground=ground,
+            stride=stride,
         )
         cat.append({"event": e, **{k: out[k] for k in keys}})
         parts.append(g.assign(res=out["res"], w=out["w"]))

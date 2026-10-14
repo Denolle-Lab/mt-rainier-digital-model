@@ -84,20 +84,44 @@ class Nodes:
         return sp.vstack(ops, format="csr")
 
 
-def kernels(T: dict, grid: Grid, picks: pd.DataFrame, cat: pd.DataFrame, sta_xyd, vel: dict, nodes: Nodes):
+def kernels(
+    T: dict,
+    grid: Grid,
+    picks: pd.DataFrame,
+    cat: pd.DataFrame,
+    sta_xyd,
+    vel: dict,
+    nodes: Nodes,
+    density: bool = False,
+    keep_rows=(),
+):
     """dT/dm (n_picks, 2 n; P nodes then S nodes) as a sparse matrix, the derivative weight sum per node
-    (2 n,: ray length in metres weighted by the trilinear weights) and the number of rays closed straight."""
+    (2 n,: ray length in metres weighted by the trilinear weights) and the number of rays closed straight.
+
+    ``density``: also the ray density on the eikonal grid, per phase: ray length (m) and number of distinct
+    rays in each cell (nearest node), rock only. ``keep_rows``: pick rows whose ray paths are returned (for
+    figures), as {row: (n, 3) points from the source to the station}."""
     rows, cols, vals = [], [], []
     dws = np.zeros(2 * nodes.n)
     n_failed = 0
+    dens = {ph: {"length": np.zeros(grid.shape), "rays": np.zeros(grid.shape)} for ph in ("P", "S")}
+    keep, paths = set(keep_rows), {}
     for j, ph in enumerate(("P", "S")):
         for s, g in picks[picks.phase == ph].groupby("si"):
             src = cat.loc[g.event, ["x", "y", "d"]].values.astype(float)
             p, ln, ids, failed = trace_rays(T[ph][s], grid, sta_xyd[s], src)
             n_failed += int(failed.sum())
+            for i in np.flatnonzero(np.isin(g.row.values, list(keep))) if keep else ():
+                paths[int(g.row.values[i])] = np.vstack([src[i], p[ids == i], sta_xyd[s]])
             v = grid.sample(vel[ph], p)
             rock = v > 1.01 * AIR_V  # the perturbation acts on rock only
             p, ln, ids, v = p[rock], ln[rock], ids[rock], v[rock]
+            if density:
+                c = np.clip(np.rint((p - grid.o) / grid.dx).astype(int), 0, np.array(grid.shape) - 1)
+                lin = np.ravel_multi_index(c.T, grid.shape)
+                np.add.at(dens[ph]["length"].reshape(-1), lin, ln)
+                u = np.unique(lin.astype(np.int64) * len(src) + ids)  # one count per ray and cell
+                np.add.at(dens[ph]["rays"].reshape(-1), u // len(src), 1.0)
             k, w = nodes.weights(p)
             rows.append(np.repeat(g.row.values[ids], 8))
             cols.append((k + j * nodes.n).ravel())
@@ -106,7 +130,55 @@ def kernels(T: dict, grid: Grid, picks: pd.DataFrame, cat: pd.DataFrame, sta_xyd
     K = sp.coo_matrix(
         (np.concatenate(vals), (np.concatenate(rows), np.concatenate(cols))), shape=(len(picks), 2 * nodes.n)
     ).tocsr()
+    if density or keep:
+        return K, dws, n_failed, dens, paths
     return K, dws, n_failed
+
+
+def fields_timed(vel_xyd: np.ndarray, grid: Grid, stations_xyd: np.ndarray, limit_s=None, workers: int = 8):
+    """``locate.fields`` with a time limit (s) on the whole set: past it the workers are stopped and
+    TimeoutError is raised, rather than a stalled solve holding the inversion."""
+    import os
+    from concurrent.futures import ProcessPoolExecutor, wait
+
+    from rainier3d.validate.locate import _field_one
+
+    v = np.ascontiguousarray(vel_xyd, dtype=float)
+    ex = ProcessPoolExecutor(max_workers=min(workers, os.cpu_count() or 1))
+    futs = [ex.submit(_field_one, (v, grid.o, grid.dx, tuple(s))) for s in stations_xyd]
+    done, pending = wait(futs, timeout=limit_s)
+    if pending:
+        for p in list(getattr(ex, "_processes", {}).values()):
+            p.terminate()
+        ex.shutdown(wait=False, cancel_futures=True)
+        raise TimeoutError(f"{len(pending)} of {len(futs)} eikonal solves unfinished after {limit_s:.0f} s")
+    ex.shutdown()
+    return np.stack([f.result() for f in futs])
+
+
+def model_on_grid_slowness(tree, var: str, grid: Grid, phase: str) -> np.ndarray:
+    """(nz, nx, ny) velocity of the model on the eikonal grid, as ``pnsn.model_on_grid`` but with each node in
+    the depth range of L1 taking the slowness average of the L1 cells (rock only) whose centres lie within
+    half a node spacing of it, so that thin layers (the critical zone) keep their vertical travel time on a
+    grid coarser than 50 m. Horizontally the L1 cell nearest to the node is used."""
+    from rainier3d.validate import pnsn
+
+    xs, ys, zs = grid.xs, grid.ys, grid.zs
+    out = pnsn.model_on_grid(tree, var, xs, ys, zs, phase)
+    l1 = tree["L1"].to_dataset()
+    zc, dzl = l1.z.values, float(l1.attrs["dz"])
+    v = l1[var].sel(x=xs, y=ys, method="nearest").transpose("z", "x", "y").values  # (nzl, nx, ny)
+    slow = np.where(np.isfinite(v) & (v > 0), 1.0 / np.where(v > 0, v, 1.0), 0.0)
+    rock = (np.isfinite(v) & (v > 0)).astype(float)
+    top, bot = zc.max() + dzl / 2, zc.min() - dzl / 2
+    for kz, z in enumerate(zs):
+        if not (bot <= z <= top) or grid.dx <= dzl:
+            continue
+        sel = np.abs(zc - z) < grid.dx / 2
+        n = rock[sel].sum(0)
+        avg = np.where(n > 0, slow[sel].sum(0) / np.maximum(n, 1), np.nan)
+        out[kz] = np.where(np.isfinite(avg), 1.0 / np.where(np.isfinite(avg), avg, 1.0), out[kz])
+    return out
 
 
 def separated(picks: pd.DataFrame, cat: pd.DataFrame, T: dict, grid: Grid, K: sp.csr_matrix):

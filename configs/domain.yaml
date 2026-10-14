@@ -64,6 +64,8 @@ validation:
 # Placeholders: node spacing between the station spacing (~5 km) and the 500 m eikonal grid; depth nodes in m below
 # sea level, denser where the earthquakes are (0-15 km).
 tomography:
+  grid_dx_m: 250                  # eikonal grid of S37 (S6 and S13 keep validation.dx); grid search at validation.dx
+  rays_sample: 1000               # rays per phase whose paths are kept for figures
   node_dx_m: 3000
   node_depths_m: [-3000, 0, 2000, 4000, 6000, 9000, 13000, 18000, 25000]
   # PNSN picks: the S13 validation events plus these catalogue caches (data/raw/pnsn/<name>, rainier3d.catalog.fetch)
@@ -72,7 +74,7 @@ tomography:
   held_out_block_m: 10000
   iterations: 6                   # at most; a step is kept only if the relocated held-out misfit falls
   stop_rel_tol: 0.005             # by more than 0.5% (full step, else half step; otherwise stop)
-  lam_s: [3.0, 10.0, 30.0, 100.0, 300.0, 1000.0]   # smoothing, relative to the mean squared column norm; chosen on held-out events
+  lam_s: [0.1, 0.3, 1.0, 3.0, 10.0, 30.0, 100.0]   # smoothing, relative to the mean squared column norm; chosen on held-out events
   lam_d: 0.03                     # damping towards the starting model, same scale
   skin: 1                         # rock cells above the DEM, as in S13
   checkerboard_cells_m: [6000, 12000]

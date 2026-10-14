@@ -118,10 +118,14 @@ def main():
     model_path = a.model or dom.path("processed") / "model.zarr"
     tree = read_tree(model_path)
 
-    xs, ys, zs = pnsn.grid_axes(dom, vc["dx"], vc["z_top"], vc["z_bot"])
-    grid = L.Grid(xs, ys, zs, vc["dx"])
+    gdx = tc.get("grid_dx_m", vc["dx"])  # the eikonal grid of the tomography (S6 and S13 keep theirs)
+    xs, ys, zs = pnsn.grid_axes(dom, gdx, vc["z_top"], vc["z_bot"])
+    grid = L.Grid(xs, ys, zs, gdx)
+    stride = max(int(round(vc["dx"] / gdx)), 1)  # grid search at the S6 spacing, refinement on this grid
     ground = L.ground_on_grid(tree, grid)
-    v0 = {ph: L.Grid.xyd(pnsn.model_on_grid(tree, v, xs, ys, zs, ph)) for ph, v in (("P", "vp"), ("S", "vs"))}
+    v0 = {
+        ph: L.Grid.xyd(TM.model_on_grid_slowness(tree, v, grid, ph)) for ph, v in (("P", "vp"), ("S", "vs"))
+    }
     is_air = L.Grid.xyd(
         np.broadcast_to(zs[:, None, None] > ground[None] + tc["skin"] * grid.dx, (zs.size,) + ground.shape)
     )
@@ -152,12 +156,27 @@ def main():
             out[ph] = np.where(is_air, L.AIR_V, v)
         return out
 
+    budget = {"fields_s": None}
+
     def forward(m, label):
-        """Fields, relocation and residual statistics of model m."""
+        """Fields, relocation and residual statistics of model m. The model is saved first, checked for
+        non-finite or non-positive values, and the fields must finish within 3 times those of the start."""
         t0 = time.time()
+        tag = label.replace(" ", "_").replace("x", "")
+        np.savez(out_dir / f"model_{tag}.npz", m=m)
         vel = velocities(m)
-        T = {ph: L.fields(v, grid, sta_xyd) for ph, v in vel.items()}
-        cat, pk = L.locate_all(T, grid, picks, events, ground=ground)
+        logging.info(
+            "%s: m P %.3f to %.3f, S %.3f to %.3f; non-finite m %d, non-positive or non-finite V %d",
+            label, m[: nodes.n].min(), m[: nodes.n].max(), m[nodes.n :].min(), m[nodes.n :].max(),
+            int((~np.isfinite(m)).sum()), int(sum((~np.isfinite(v) | (v <= 0)).sum() for v in vel.values())),
+        )  # fmt: skip
+        if not np.isfinite(m).all() or any((~np.isfinite(v) | (v <= 0)).any() for v in vel.values()):
+            raise FloatingPointError(f"{label}: non-finite model, saved in model_{tag}.npz")
+        tf = time.time()
+        limit = None if budget["fields_s"] is None else max(3 * budget["fields_s"], 600.0)
+        T = {ph: TM.fields_timed(v, grid, sta_xyd, limit) for ph, v in vel.items()}
+        budget["fields_s"] = budget["fields_s"] or time.time() - tf
+        cat, pk = L.locate_all(T, grid, picks, events, ground=ground, stride=stride)
         rec = {
             "model": label,
             "fit": L.residual_stats(pk[pk.event.isin(fit)]),
@@ -204,11 +223,19 @@ def main():
                 logging.info("lam_s %g: held-out linearised nRMS %.4f", ls, scan[-1]["held_out_linear_nrms"])
             extras["lam_scan"] = scan
             extras["held_out_linear_nrms_no_change"] = TM.score(A, r, ~in_fit, np.zeros_like(m))
-            lam_s = min(scan, key=lambda s: s["held_out_linear_nrms"])["lam_s"]
+            # the smoothest weight whose held-out score is within 1% of the best
+            best_score = min(s["held_out_linear_nrms"] for s in scan)
+            lam_s = max(s["lam_s"] for s in scan if s["held_out_linear_nrms"] <= 1.01 * best_score)
         dm = TM.regularised_step(Af, rf, m, Lreg, lam_s, tc["lam_d"])
         best = hist[-1]["held_out_misfit"]
         for frac in (1.0, 0.5):
-            rec, st = forward(m + frac * dm, f"it {it} step x{frac:g}")
+            label = f"it {it} step x{frac:g}"
+            try:
+                rec, st = forward(m + frac * dm, label)
+            except (FloatingPointError, TimeoutError) as e:  # a failed trial counts as rejected
+                logging.warning("%s failed: %s", label, e)
+                hist.append({"model": label, "accepted": False, "step": frac, "error": str(e)})
+                continue
             ok = rec["held_out_misfit"] < best * (1 - tc["stop_rel_tol"])
             hist.append(rec | {"accepted": ok, "step": frac})
             (out_dir / "history.json").write_text(json.dumps(hist, indent=1))
@@ -217,7 +244,7 @@ def main():
                 break
         else:
             tol = tc["stop_rel_tol"]
-            stop = f"iteration {it}: held-out misfit did not fall by {tol:.1%} (full or half step)"
+            stop = f"iteration {it}: held-out misfit did not fall by {tol:.1%} (full or half step, or failed)"
             logging.info("stop: %s", stop)
             break
     kept = [h for h in hist if h["accepted"]]
@@ -226,6 +253,7 @@ def main():
     save_state(state, fit, out_dir, "final")
     # checkerboard with the kernels of the final model
     _, dws, _, A, r, in_fit = system(state, m)
+    rays_and_density(state, grid, sta_xyd, nodes, tc, out_dir)
     cb, cb_fields = {}, {}
     rng = np.random.default_rng(0)
     for cell in tc["checkerboard_cells_m"]:
@@ -272,6 +300,41 @@ def main():
     write_model(tree, node_ds, nodes, m, dom.path("processed") / "model_let.zarr", summary)
     figures(node_ds, cb, nodes, tc, out_dir)
     logging.info("wrote %s and model_let.zarr (%.1f min)", out_dir, summary["runtime_min"])
+
+
+def rays_and_density(state, grid, sta_xyd, nodes, tc, out_dir):
+    """Ray density of the final model on the eikonal grid (ray length and number of rays per cell, P and S)
+    -> ray_density.nc, and the paths of a random sample of rays (``tomography.rays_sample`` per phase,
+    picks with non-zero weight, seed 0) -> rays_sample.json (km, z up)."""
+    vel, T, cat, pk = state
+    rng = np.random.default_rng(0)
+    used = pk[pk.w > 0]
+    keep = np.concatenate([rng.choice(used.row[used.phase == ph].values, tc["rays_sample"], replace=False)
+                           for ph in ("P", "S")])  # fmt: skip
+    _, _, _, dens, paths = TM.kernels(T, grid, pk, cat, sta_xyd, vel, nodes, density=True, keep_rows=keep)
+    coords = {"x": grid.xs, "y": grid.ys, "z": grid.zs}
+    fields = {
+        f"{k}_{ph.lower()}": (("x", "y", "z"), dens[ph][k].astype(np.float32))
+        for ph in dens
+        for k in dens[ph]
+    }
+    attrs = {
+        "length": "ray length in the cell (m)",
+        "rays": "number of distinct rays in the cell",
+        "dx_m": grid.dx,
+    }
+    xr.Dataset(fields, coords=coords, attrs=attrs).to_netcdf(out_dir / "ray_density.nc")
+    info = pk.set_index("row")
+    rays = []
+    for row, pts in paths.items():
+        q = pts[:: max(1, len(pts) // 60)] if len(pts) > 60 else pts  # about 60 vertices per ray
+        q = np.vstack([q, pts[-1]])
+        xyz = np.round(np.column_stack([q[:, 0] / 1e3, q[:, 1] / 1e3, -q[:, 2] / 1e3]), 3)
+        rays.append(
+            {"phase": info.loc[row, "phase"], "event": info.loc[row, "event"], "xyz_km": xyz.tolist()}
+        )
+    (out_dir / "rays_sample.json").write_text(json.dumps(rays))
+    logging.info("ray density and %d sample rays written", len(rays))
 
 
 def fd_check(K, dws, T, grid, pk, cat, sta_xyd, nodes, m, velocities, h: float = 0.05):
