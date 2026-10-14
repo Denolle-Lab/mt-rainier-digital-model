@@ -398,7 +398,7 @@ def fig_station_terms(out, p0, p1, ctx):
             frame(a, ctx, ticks=(c == 0 and r == 1))
             rms = np.sqrt(np.mean(g["mean"] ** 2))
             a.set_title(
-                f"{ph}, {tag} model\nRMS of station means {rms:.3f} s ({len(g)} stations)", loc="left"
+                f"{ph}, {tag} model\nstation means: RMS {rms:.3f} s, {len(g)} st.", loc="left", fontsize=7.5
             )
         fig.colorbar(
             im, ax=ax[r, :].tolist(), shrink=0.8, pad=0.01, label="mean held-out residual (s), red: late"

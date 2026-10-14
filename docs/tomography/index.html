@@ -56,10 +56,10 @@ p { margin: 0 0 14px; }
 .keywords { font-family: var(--sans); font-size: 14px; color: var(--ink-2); margin-top: 10px; }
 .status { background: var(--tint); border-radius: 6px; padding: 14px 16px; font-family: var(--sans); font-size: 14.5px; line-height: 1.55; margin: 22px 0; }
 .status strong { font-weight: 600; }
-figure { margin: 34px auto; max-width: 980px; }
+figure { margin: 34px 0; width: min(980px, calc(100vw - 40px)); position: relative; left: 50%; transform: translateX(-50%); }
 figure .plate { background: var(--plate); border: 1px solid var(--rule); border-radius: 4px; padding: 10px; }
 figure img { display: block; width: 100%; height: auto; }
-figure.narrow { max-width: 760px; }
+figure.narrow { width: min(760px, calc(100vw - 40px)); }
 figcaption { font-family: var(--sans); font-size: 14px; line-height: 1.5; color: var(--ink-2); margin: 10px auto 0; max-width: 80ch; }
 figcaption b { color: var(--ink); font-weight: 600; }
 #rays3d { width: 100%; height: min(640px, 78vw); min-height: 380px; }
@@ -71,7 +71,8 @@ caption { text-align: left; font-size: 14px; color: var(--ink-2); padding-bottom
 caption b { color: var(--ink); font-weight: 600; }
 th, td { padding: 6px 10px; border-bottom: 1px solid var(--rule); text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
 th:first-child, td:first-child { text-align: left; white-space: normal; }
-thead th { font-weight: 600; border-bottom: 1.5px solid var(--ink-2); }
+thead th { font-weight: 600; border-bottom: 1.5px solid var(--ink-2); white-space: normal; vertical-align: bottom; }
+td:first-child { min-width: 9em; }
 .eq { font-family: var(--serif); font-style: italic; text-align: center; margin: 16px 0; overflow-x: auto; }
 .refs p { padding-left: 2em; text-indent: -2em; font-size: 15.5px; }
 a { color: var(--accent); }
@@ -199,7 +200,7 @@ code { font-family: var(--mono); font-size: 0.86em; }
 
 <div class="tablewrap"><table>
 <caption><b>Table 3.</b> Residuals after relocation in the starting and final models (picks with non-zero weight).</caption>
-<thead><tr><th>Set and phase</th><th>RMS start (s)</th><th>RMS final (s)</th><th>Change</th><th>Median |r| start (s)</th><th>Median |r| final (s)</th></tr></thead>
+<thead><tr><th>Set and phase</th><th>RMS, start (s)</th><th>RMS, final (s)</th><th>Change</th><th>Median |r|, start (s)</th><th>Median |r|, final (s)</th></tr></thead>
 <tbody>
 <tr><td>Held out, P</td><td>0.0908</td><td>0.0712</td><td>&minus;22%</td><td>0.0482</td><td>0.0307</td></tr>
 <tr><td>Held out, S</td><td>0.1794</td><td>0.1167</td><td>&minus;35%</td><td>0.1083</td><td>0.0592</td></tr>
