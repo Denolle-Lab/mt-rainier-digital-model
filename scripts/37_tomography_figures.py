@@ -8,7 +8,10 @@ Colours: dln V on a diverging blue (fast) to red (slow) scale with a grey midpoi
 ramp; start / final and fitting / held-out on the first two categorical slots (blue, orange). Nodes whose
 derivative weight sum is below ``tomography.dws_min_m`` are greyed out.
 
-Usage: pixi run python scripts/37_tomography_figures.py
+With ``--site DIR`` (docs/tomography for the GitHub Pages report) the figures are also copied to DIR and the
+3D data written there with at most 30 vertices per ray, to keep the committed file small.
+
+Usage: pixi run python scripts/37_tomography_figures.py [--site docs/tomography]
 """
 
 from __future__ import annotations
@@ -55,6 +58,13 @@ plt.rcParams.update(
 
 
 def main():
+    import argparse
+
+    ap = argparse.ArgumentParser()
+    ap.add_argument(
+        "--site", default=None, help="also copy the figures and a light 3D data file to this folder"
+    )
+    a = ap.parse_args()
     dom = load_domain()
     tc = dom.cfg["tomography"]
     src = dom.path("outputs") / "tomography"
@@ -90,6 +100,17 @@ def main():
         fig_ray_density(out, dens, ctx)
         fig_rays_3d(out, rays, st, dom)
         export_3d(out, rays, st, dom)
+    if a.site:
+        import shutil
+        from pathlib import Path
+
+        site = Path(a.site)
+        site.mkdir(parents=True, exist_ok=True)
+        for f in sorted(out.glob("fig*.png")):
+            shutil.copy2(f, site / f.name)
+        if (src / "rays_sample.json").exists():
+            export_3d(site, rays, st, dom, max_vertices=30)
+        print("site files in", site)
     print("figures in", out)
 
 
@@ -486,8 +507,17 @@ def fig_rays_3d(out, rays, st, dom):
     plt.close(fig)
 
 
-def export_3d(out, rays, st, dom):
-    """Data of the interactive 3D view: rays (as sampled), stations and a 1 km terrain grid (km, z up)."""
+def export_3d(out, rays, st, dom, max_vertices=None):
+    """Data of the interactive 3D view: rays (as sampled, or thinned to ``max_vertices`` keeping both ends),
+    stations and a 1 km terrain grid (km, z up)."""
+    if max_vertices:
+        thin = []
+        for r in rays:
+            q = r["xyz_km"]
+            idx = np.unique(np.linspace(0, len(q) - 1, min(len(q), max_vertices)).round().astype(int))
+            thin.append({"phase": r["phase"], "event": r["event"],
+                         "xyz_km": [[round(c, 2) for c in q[i]] for i in idx]})  # fmt: skip
+        rays = thin
     tree = read_tree(dom.path("processed") / "model.zarr")
     e = tree["surface"].to_dataset()["elevation"].coarsen(x=10, y=10, boundary="trim").mean()
     data = {
