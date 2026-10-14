@@ -1,8 +1,11 @@
 """Figures of the S37 local-earthquake tomography, from its saved outputs -> outputs/tomography/report/.
 
+Called at the end of scripts/37_tomography.py, or alone with its ``--figures-only`` (formerly a script of
+its own).
+
 Reads outputs/tomography/ (summary.json, history.json, nodes.nc, checkerboard.nc, picks_*.csv, catalog_*.csv,
 stations.csv, fd_check.csv), data/processed/model.zarr (starting model) and model_let.zarr (final model).
-Nothing is recomputed: rerun scripts/37_tomography.py first.
+Nothing is recomputed.
 
 Colours: dln V on a diverging blue (fast) to red (slow) scale with a grey midpoint; ray coverage on one blue
 ramp; start / final and fitting / held-out on the first two categorical slots (blue, orange). Nodes whose
@@ -11,7 +14,7 @@ derivative weight sum is below ``tomography.dws_min_m`` are greyed out.
 With ``--site DIR`` (docs/tomography for the GitHub Pages report) the figures are also copied to DIR and the
 3D data written there with at most 30 vertices per ray, to keep the committed file small.
 
-Usage: pixi run python scripts/37_tomography_figures.py [--site docs/tomography]
+Usage: pixi run python scripts/37_tomography.py --figures-only [--site docs/tomography]
 """
 
 from __future__ import annotations
@@ -57,14 +60,8 @@ plt.rcParams.update(
 )
 
 
-def main():
-    import argparse
-
-    ap = argparse.ArgumentParser()
-    ap.add_argument(
-        "--site", default=None, help="also copy the figures and a light 3D data file to this folder"
-    )
-    a = ap.parse_args()
+def make_all(site=None):
+    """All report figures from outputs/tomography/; with ``site``, also the copies for the site folder."""
     dom = load_domain()
     tc = dom.cfg["tomography"]
     src = dom.path("outputs") / "tomography"
@@ -100,11 +97,11 @@ def main():
         fig_ray_density(out, dens, ctx)
         fig_rays_3d(out, rays, st, dom)
         export_3d(out, rays, st, dom)
-    if a.site:
+    if site:
         import shutil
         from pathlib import Path
 
-        site = Path(a.site)
+        site = Path(site)
         site.mkdir(parents=True, exist_ok=True)
         for f in sorted(out.glob("fig*.png")):
             shutil.copy2(f, site / f.name)
@@ -526,7 +523,3 @@ def export_3d(out, rays, st, dom, max_vertices=None):
                     "z": np.round(e.values / 1e3, 3).tolist()},
     }  # fmt: skip
     (out / "rays3d.json").write_text(json.dumps(data))
-
-
-if __name__ == "__main__":
-    main()

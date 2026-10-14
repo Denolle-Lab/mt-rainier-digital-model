@@ -76,7 +76,7 @@ rebuild:
     stages: [s9]
     needs: [model]
   strain_3d:
-    stages: [s17, s18, s25]
+    stages: [s17, s18]   # S18 includes the strain in the volume (formerly S25)
     raw: [gnss]
     needs: [model]
   edifice_load:

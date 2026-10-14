@@ -98,7 +98,8 @@ The model is built in four layers of evidence, from the most local to the most c
   critical-zone cells and broke the travel-time agreement in 79% of the columns, for a held-out misfit of 0.258
   against 0.274: a small gain bought with an unresolved change to a layer built from rock physics.
 - **Product.** `data/processed/model_let.zarr`; `model.zarr` remains the stage-3 model until the update is adopted.
-  Report: `docs/tomography/index.html` (site `/tomography/`).
+  Report: `docs/tomography/index.html` (site `/tomography/`). The stages run as the `pixi` families `model`,
+  `calibrate` and `tomography` (README, Pipeline).
 
 ## Disclosure paragraph for the paper
 
