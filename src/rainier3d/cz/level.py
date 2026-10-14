@@ -1,5 +1,7 @@
 """The critical zone inside the subsurface model (S4): one medium (rainier3d.cz.medium) on the columns of
-each level, with the near-surface cells set to the travel-time average of the columns inside them.
+each level, with the near-surface cells set to the travel-time average of the columns inside them. The top
+rock cell of a column averages from the ground (or the glacier bed) down to its base, whatever part of it is
+in air.
 
 Inputs, sampled at the cell columns of each level: the geology model's surface node (S3: ice thickness,
 surface unit, bedrock unit, deposit thickness) and the S2 layers (soil thickness, bulk density, clay, POLARIS
@@ -119,12 +121,17 @@ class Context:
                 )
             }
             base = edges[-1]
+            first = np.ones(ice.shape, bool)  # columns whose top rock cell is still to come
             for kk in range(len(zl)):
                 a = np.clip(d[kk, sl] - dzl / 2 - ice, 0.0, None)  # the cell in column coordinates
                 b = d[kk, sl] + dzl / 2 - ice
                 touch = (u[kk, sl] != AIR) & (u[kk, sl] != ICE) & (b > 0) & (a < base)
                 if not touch.any():
                     continue
+                # the top rock cell starts at the ground (or the glacier bed): the part of the column inside
+                # the air or ice cell above it would otherwise be in no cell
+                a = np.where(touch & first, 0.0, a)
+                first &= ~touch
                 bb = np.minimum(b, base)
                 h = np.maximum(bb - a, 1e-9)
                 deep = np.maximum(b - base, 0.0)  # below the fine columns the cell keeps its rock value

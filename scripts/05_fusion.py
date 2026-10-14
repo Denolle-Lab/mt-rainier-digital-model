@@ -3,7 +3,7 @@
 model.zarr is the master product: /surface, /soil (the S2 soil profiles) and /L1, /L2, /L3 with unit,
 alteration, depth, the fused vp, vs, rho, qp, qs, and the two inputs (``*_geology``, ``*_regional``) for
 comparison.
-Vs and Vp/Vs are fused (Vp = Vs * Vp/Vs).
+Vs and Vp/Vs are fused (Vp = Vs * Vp/Vs), then the magma-body anomaly is applied to the fused model.
 The regional Vp and Vs are first multiplied by the static bias of configs/velocity_calibration.yaml
 (S13); without that file, by the Vs-only factor of configs/vs_calibration.yaml (S12). The geology part
 of the S13 calibration enters in S4. The level recipe is rainier3d.fusion.build, shared with S13.
@@ -45,7 +45,8 @@ def main():
     geo = read_tree(dom.path("processed") / "geomodel.zarr")
     props = read_tree(dom.path("processed") / "properties_geology.zarr")
     cvm, cres = regional.load_cvm(dom), regional.load_crescent(dom)
-    q = perturbations()["q"]
+    pert = perturbations()
+    q = pert["q"]
 
     surf = geo["surface"].to_dataset()
     env = dom.path("processed") / "surface_layers.zarr"
@@ -60,7 +61,7 @@ def main():
     for name, lev in dom.levels.items():
         g, p = geo[name].to_dataset(), props[name].to_dataset()
         reg = build.regional_level(lev, g["depth"].values, cvm, cres, cal)
-        out, rows = build.fuse_level(g, p, reg, lev, fc, q, name)
+        out, rows = build.fuse_level(g, p, reg, lev, fc, q, name, magma=pert["magma_mush"])
         report += rows
         if cal is not None:
             out.attrs["vs_calibration"] = f"configs/{cal_path.name} ({cal['date']})"

@@ -249,13 +249,17 @@ Map units are crosswalked to 16 model units and extended to depth by column rule
 - Rainier andesite above an interpolated pre-volcanic surface;
 - basement units extruded to −4 km, and plutons to −10 km;
 - middle crust below;
-- a placeholder magma ellipsoid and a placeholder conduit-centred alteration field.
+- a placeholder magma sphere (its anomaly applied to the fused model, with a cosine taper) and the alteration
+  field of the 1996 EM survey.
 
 Vp follows a crack-closure law in effective overburden pressure. Vs and density come from
 unit values or from Brocher (2005). Fusion works in ln V: Vs and Vp/Vs are fused as
-LP(regional) + HP(geology), with a horizontal Gaussian whose cutoff wavelength grows with depth.
+LP(regional) + HP(geology), with a horizontal Gaussian whose cutoff wavelength grows with depth. Below the
+critical-zone columns the geology is first low-passed in the vertical (cutoff 1 km), so that flat-lying contacts
+such as the edifice base do not reach the model as one-cell steps.
 Alternating projections then keep each cell between its two inputs and restore the regional
-low-pass. The top 300 m is pure geology, tapering into the fused model by 1 km. The regional
+low-pass. The top 300 m is geology alone (smoothed in the vertical below 150 m), tapering into the fused
+model by 1 km. The regional
 model is USGS Cascadia CVM v1.7 to 9.9 km below ground, and CRESCENT Gen0 below.
 
 ## Sources

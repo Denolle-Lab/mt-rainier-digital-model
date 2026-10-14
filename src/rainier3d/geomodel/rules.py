@@ -9,7 +9,9 @@ Column rule, top down, for a cell at elevation z with depth d = DEM - z below th
   young_volcanics / distal andesite cap    that unit, to cap_thickness below the bedrock top
   z > base of the bedrock unit             bedrock unit (map unit, or nearest mapped basement unit)
   otherwise                                middle_crust
-then the magma_mush ellipsoid overrides whatever it contains.
+then the magma_mush sphere overrides whatever it contains. Its velocity anomaly is not a unit property: S5
+applies it to the fused model with the weight ``magma_weight`` (1 in the core, a cosine taper to 0 at
+the radius).
 
 The edifice base is the pre-volcanic surface: DEM elevations where basement crops out against the
 edifice footprint, interpolated linearly across it.
@@ -82,8 +84,11 @@ def edifice_base(
     return np.where(footprint, base, np.nan)
 
 
-def ellipsoid(xx, yy, zz, cx, cy, cz, ah, av):
-    return ((xx - cx) ** 2 + (yy - cy) ** 2) / ah**2 + (zz - cz) ** 2 / av**2 <= 1.0
+def magma_weight(xx, yy, zz, cx, cy, cz, radius, taper):
+    """Weight of the magma-body anomaly: 1 within radius - taper of the centre, cos^2 to 0 at the radius."""
+    r = np.sqrt((xx - cx) ** 2 + (yy - cy) ** 2 + (zz - cz) ** 2)
+    s = np.clip((r - (radius - taper)) / max(taper, 1e-9), 0.0, 1.0)
+    return np.where(r < radius, np.cos(0.5 * np.pi * s) ** 2, 0.0)
 
 
 def surface_on_level(surf: xr.Dataset, lev: Level) -> xr.Dataset:
@@ -136,10 +141,9 @@ def build_level(
 
     xx, yy = np.meshgrid(lev.x, lev.y)
     mb = geo["magma_body"]
-    inside = ellipsoid(
-        xx[None], yy[None], z, *summit_xy, mb["center_z"], mb["semi_axis_h_m"], mb["semi_axis_v_m"]
-    )
-    unit = np.where(inside & (unit != AIR), MAGMA, unit).astype(np.uint8)
+    w_magma = magma_weight(xx[None], yy[None], z, *summit_xy, mb["center_z"], mb["radius_m"], mb["taper_m"])
+    w_magma = np.where(unit != AIR, w_magma, 0.0)
+    unit = np.where(w_magma > 0, MAGMA, unit).astype(np.uint8)
 
     al = geo["alteration"]
     if al.get("source") == "finn_2001":
@@ -164,6 +168,7 @@ def build_level(
             "unit": (dims, unit),
             "alteration": (dims, alt),
             "depth": (dims, np.broadcast_to(d, unit.shape).astype(np.float32)),
+            "magma_weight": (dims, w_magma.astype(np.float32)),
             "elevation": (("y", "x"), s["elevation"].values.astype(np.float32)),
         },
         coords=coords,

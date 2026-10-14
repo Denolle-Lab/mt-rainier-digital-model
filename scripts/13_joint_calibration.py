@@ -122,7 +122,9 @@ def main():
             gl = geo[n].to_dataset()
             p = assign(gl, table, pert, g, cz)
             reg = build.apply_bias(reg0[n], gl["depth"].values, cal)
-            nodes[f"/{n}"], _ = build.fuse_level(gl, p, reg, lev, fc, q, n, full=False)
+            nodes[f"/{n}"], _ = build.fuse_level(
+                gl, p, reg, lev, fc, q, n, full=False, magma=pert["magma_mush"]
+            )
         tree = xr.DataTree.from_dict(nodes)
         out = {}
         for ph in phases:

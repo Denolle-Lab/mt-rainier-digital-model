@@ -38,6 +38,17 @@ fusion:
   lambda_c_by_depth: [[0, 6000], [2000, 10000], [10000, 20000]]
   geology_only_depth_m: 300   # above this depth the geology model is used as is
   taper_depth_m: 1000         # linear taper to the blended model between the two depths
+  # Vertical cutoff wavelength (m) of the geology: flat-lying contacts (edifice base, cap base) spread over ~1 km
+  # instead of one 50 m cell. Placeholder: two cells of the 500 m eikonal grid (validation.dx). Applied to the
+  # cells entirely below lambda_z_from_depth_m, the base of the critical-zone columns (configs/cz.yaml
+  # medium.fine_base_m), with a cutoff growing from 0 there to lambda_z_m 250 m deeper (rainier3d.fusion.blend).
+  lambda_z_m: 1000
+  lambda_z_from_depth_m: 150
+  # Horizontal cutoff (m) of the geology below lambda_z_from_depth_m: map units extruded to depth end in vertical
+  # walls; the cutoff grows as lambda_h_growth x depth below the critical-zone base, to lambda_h_m (placeholders:
+  # 2 km at 2 km depth, below the node spacing of the S37 tomography, which then sets the contrasts it resolves).
+  lambda_h_m: 2000
+  lambda_h_growth: 1.0
   lowpass_rms_tol: 0.03       # RMS of ln V between LP(fused) and LP(regional); invariant test
 
 # Eikonal grid for the PNSN check (S6).
@@ -48,3 +59,27 @@ validation:
   min_magnitude: 2.0
   start: "2015-01-01"
   end: "2026-09-01"
+
+# Local-earthquake tomography (S37, rainier3d.validate.tomo): ln Vp and ln Vs perturbations of the fused model.
+# Placeholders: node spacing between the station spacing (~5 km) and the 500 m eikonal grid; depth nodes in m below
+# sea level, denser where the earthquakes are (0-15 km).
+tomography:
+  grid_dx_m: 250                  # eikonal grid of S37 (S6 and S13 keep validation.dx); grid search at validation.dx
+  # the perturbation is 0 in the critical-zone columns (150 m below the ground or bed, configs/cz.yaml
+  # medium.fine_base_m) and full 500 m down (placeholder), so the critical zone keeps its rock physics
+  cz_taper_m: [150, 500]
+  rays_sample: 1000               # rays per phase whose paths are kept for figures
+  node_dx_m: 3000
+  node_depths_m: [-3000, 0, 2000, 4000, 6000, 9000, 13000, 18000, 25000]
+  # PNSN picks: the S13 validation events plus these catalogue caches (data/raw/pnsn/<name>, rainier3d.catalog.fetch)
+  pick_caches: [catalog_2023_2025_m1, catalog_2015-01-01_2026-09-23_m0.5]
+  held_out: blocks                # blocks (alternate squares of epicentres) or alternate (every other event in time)
+  held_out_block_m: 10000
+  iterations: 6                   # at most; a step is kept only if the relocated held-out misfit falls
+  stop_rel_tol: 0.005             # by more than 0.5% (full step, else half step; otherwise stop)
+  lam_s: [0.1, 0.3, 1.0, 3.0, 10.0, 30.0, 100.0]   # smoothing, relative to the mean squared column norm; chosen on held-out events
+  lam_d: 0.03                     # damping towards the starting model, same scale
+  skin: 1                         # rock cells above the DEM, as in S13
+  checkerboard_cells_m: [6000, 12000]
+  checkerboard_amp: 0.05
+  dws_min_m: 5000                 # ray length (weighted) below which a node counts as unsampled

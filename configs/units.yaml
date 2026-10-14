@@ -69,10 +69,10 @@ geometry:
     slope_smoothing_m: 1000
     min_slope_deg: 3
     max_thickness_m: 200          # order of the largest radar thicknesses in Driedger & Kennard 1986 (to verify)
-  magma_body:                     # geometry after Moran et al. 1999 (5-18 km beneath the summit);
+  magma_body:                     # a sphere beneath the summit, after Moran et al. 1999 (5-18 km beneath the summit);
     center_z: -11500              # depth reference (below sea level or below summit) to verify
-    semi_axis_h_m: 5000
-    semi_axis_v_m: 6500
+    radius_m: 6500                # spans the 5-18 km depth range of Moran et al. 1999
+    taper_m: 2000                 # cosine taper of the anomaly inside the radius (m1_placeholder)
     source_key: moran_1999
   alteration:
     source: finn_2001             # finn_2001 (S22 maps from the 1996 helicopter EM survey) or gaussian (below)

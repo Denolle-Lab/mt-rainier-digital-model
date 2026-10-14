@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import logging
 from concurrent.futures import ThreadPoolExecutor
+from datetime import UTC
 from pathlib import Path
 
 import numpy as np
@@ -21,8 +22,27 @@ from rainier3d.validate import pnsn
 log = logging.getLogger(__name__)
 
 
-def _get(url: str, tries: int = 4) -> requests.Response:
-    """GET with retries and backoff (ComCat occasionally drops a request or a DNS lookup)."""
+def _retry_after_s(value) -> float:
+    """Seconds of a Retry-After header, which RFC 7231 allows as a number of seconds or an HTTP date; 0 if
+    absent or unreadable (the caller's backoff applies)."""
+    if not value:
+        return 0.0
+    try:
+        return max(float(value), 0.0)
+    except ValueError:
+        pass
+    from datetime import datetime
+    from email.utils import parsedate_to_datetime
+
+    try:
+        return max((parsedate_to_datetime(value) - datetime.now(UTC)).total_seconds(), 0.0)
+    except (TypeError, ValueError):
+        return 0.0
+
+
+def _get(url: str, tries: int = 6) -> requests.Response:
+    """GET with retries and backoff (ComCat occasionally drops a request or a DNS lookup, and answers 429 when
+    asked too often: then wait a minute or more, as its Retry-After says)."""
     import time
 
     for k in range(tries):
@@ -30,20 +50,28 @@ def _get(url: str, tries: int = 4) -> requests.Response:
             r = requests.get(url, timeout=60)
             r.raise_for_status()
             return r
-        except requests.RequestException:
+        except requests.RequestException as e:
             if k == tries - 1:
                 raise
-            time.sleep(2 * (k + 1))
+            resp = getattr(e, "response", None)
+            if resp is not None and resp.status_code == 429:
+                time.sleep(max(_retry_after_s(resp.headers.get("Retry-After")), 60.0 * (k + 1)))
+            else:
+                time.sleep(2 * (k + 1))
     raise AssertionError
 
 
 def _quakeml(ev: dict, qdir: Path) -> Path | None:
     q = qdir / f"{ev['id']}.xml"
+    none = qdir / f"{ev['id']}.none"  # marker: the event has no phase data, do not ask again
     if q.exists():
         return q
+    if none.exists():
+        return None
     det = _get(ev["properties"]["detail"]).json()
     pdata = det["properties"]["products"].get("phase-data")
     if not pdata:
+        none.touch()
         return None
     q.write_bytes(_get(pdata[0]["contents"]["quakeml.xml"]["url"]).content)
     return q

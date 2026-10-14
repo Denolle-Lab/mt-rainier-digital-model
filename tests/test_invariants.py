@@ -1,5 +1,8 @@
 """Invariants of the built model (skipped until pixi run s5 has produced data/processed/model.zarr)."""
 
+import os
+from pathlib import Path
+
 import numpy as np
 import pandas as pd
 import pytest
@@ -9,7 +12,8 @@ from rainier3d.geomodel.rules import AIR, ICE, MAGMA, kinds
 from rainier3d.petro.table import units_config
 
 DOM = load_domain()
-MODEL = DOM.path("processed") / "model.zarr"
+# RAINIER3D_MODEL points the invariants at another store, e.g. data/processed/model_let.zarr (S37)
+MODEL = Path(os.environ.get("RAINIER3D_MODEL", DOM.path("processed") / "model.zarr"))
 pytestmark = pytest.mark.skipif(not MODEL.exists(), reason="model.zarr not built")
 
 
@@ -45,11 +49,24 @@ def test_physical_ranges(tree, lev):
     cz = rock & (loose | (w > 0))
     assert np.nanmin(r[rock]) >= 1.5 and np.nanmax(r[rock & ~cz], initial=0) <= 3.0
     assert np.nanmax(r[cz], initial=0) <= 5.0
-    # fused Vp/Vs lies between the geology and regional ratios (CVM v1.7 itself reaches 2.22 at >1 km)
+    # fused Vp/Vs lies between the geology and regional ratios (CVM v1.7 itself reaches 2.22 at >1 km); below
+    # lambda_z_from_depth_m the geology enters the fusion low-passed (lambda_z_m, lambda_h_m), so its
+    # low-passed ratio is a bound too
     rg = (ds["vp_geology"] / ds["vs_geology"]).values
     rr = (ds["vp_regional"] / ds["vs_regional"]).values
     lo, hi = np.fmin(rg, rr), np.fmax(rg, rr)
-    assert np.all((r[rock] >= lo[rock] * (1 - 1e-4)) & (r[rock] <= hi[rock] * (1 + 1e-4)))
+    fc = DOM.cfg["fusion"]
+    if fc.get("lambda_z_m", 0) > 0 or fc.get("lambda_h_m", 0) > 0:
+        from rainier3d.fusion.blend import smooth_geology
+        from rainier3d.fusion.build import smoothing
+
+        dx, dz = float(ds.attrs["dx"]), float(ds.attrs["dz"])
+        rgf = np.exp(smooth_geology(np.log(rg), u != AIR, ds["depth"].values, dx, dz, **smoothing(fc)))
+        lo, hi = np.fmin(lo, rgf), np.fmax(hi, rgf)
+    # a store with the S37 tomography (model_let.zarr) carries its factor exp(w (m_P - m_S)) on Vp/Vs: the
+    # fusion bound applies to the fused model underneath, the physical bounds above to the final ratio
+    rf = r / np.exp(ds["dlnvp_let"].values - ds["dlnvs_let"].values) if "dlnvp_let" in ds else r
+    assert np.all((rf[rock] >= lo[rock] * (1 - 1e-4)) & (rf[rock] <= hi[rock] * (1 + 1e-4)))
     rho = ds["rho"].values[u != AIR]
     assert rho.min() >= 900 and rho.max() <= 3100
 
@@ -90,3 +107,31 @@ def test_nll_air_skin():
     assert s[:, 0, 0].tolist() == [True, True, False, False, False, False]
     assert not s[:, 0, 1].any()
     assert slow_air(air, skin_cells=2)[:, 0, 0].tolist() == [True, False, False, False, False, False]
+
+
+def test_l1_keeps_the_travel_time_of_the_critical_zone(tree):
+    # vertical S time through the top two rock cells of L1, the first from the ground down, equals that of the
+    # fine columns they average (to their base, at most 125 m: inside the 150 m columns); columns without ice
+    if "cz" not in tree.children:
+        pytest.skip("model without the critical zone")
+    l1, cz = tree["L1"].to_dataset(), tree["cz"].to_dataset()
+    d, u, vs = l1["depth"].values, l1["unit"].values, l1["vs"].values
+    rock = (u != AIR) & (u != ICE)
+    k0 = np.argmax(rock, axis=0)
+    k = np.minimum(k0, rock.shape[0] - 2)[None]  # columns without two rock cells in L1: masked below
+    dz = float(l1.attrs["dz"])
+    base = np.take_along_axis(d, k + 1, 0)[0] + dz / 2
+    t_l1 = (base - dz) / np.take_along_axis(vs, k, 0)[0] + dz / np.take_along_axis(vs, k + 1, 0)[0]
+    top = cz["cz_depth"].values - cz["cz_thickness"].values / 2
+    w = np.clip(
+        np.minimum(top[:, None, None] + cz["cz_thickness"].values[:, None, None], base) - top[:, None, None],
+        0,
+        None,
+    )
+    t_cz = (w / cz["vs"].values).sum(0)
+    ok = (cz["ice_thickness"].values == 0) & ~(u == ICE).any(0) & rock.any(0) & (k0 < rock.shape[0] - 1)
+    ok &= np.isfinite(t_cz)
+    r = t_l1[ok] / t_cz[ok]
+    assert np.abs(r - 1).max() < 1e-3, (
+        f"L1/cz S time over the top two rock cells: {r.min():.4f}-{r.max():.4f}"
+    )

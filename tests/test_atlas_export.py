@@ -127,3 +127,15 @@ def test_retired_kinds_at_a_running_site():
     ]
     assert retired_kinds(pr01, "seismic") == {"infrasound": ["2018-10-04", "2020-06-08"]}
     assert retired_kinds([dict(pr01[1])], "infrasound") == {}  # a past site: nothing singled out
+
+
+def test_vs_top_from_the_critical_zone_is_the_time_average_of_the_top_100_m():
+    from rainier3d.export.atlas import _vs_top_cz
+
+    dz = np.array([20.0, 30.0, 50.0, 50.0])  # 20 m at 500 m/s over rock at 2000 m/s
+    z = np.cumsum(dz) - dz / 2
+    vs = np.broadcast_to(np.array([500.0, 2000, 2000, 2000])[:, None, None], (4, 2, 3))
+    cz = xr.Dataset(
+        {"vs": (("cz_depth", "y", "x"), vs), "cz_thickness": ("cz_depth", dz)}, coords={"cz_depth": z}
+    )
+    assert np.allclose(_vs_top_cz(cz), 100 / (20 / 500 + 80 / 2000))
