@@ -166,7 +166,10 @@ def prepare(dom: Domain, events_csv) -> tuple[pd.DataFrame, pd.DataFrame, pd.Dat
 # ---------------------------------------------------------------- models
 def pnsn_1d(z_m: np.ndarray, phase: str) -> np.ndarray:
     """Velocity (m/s) of the PNSN 1D model at elevations z_m (NAVD88 m; depth = -z)."""
-    t = pd.read_csv(PNSN_1D)
+    from rainier3d.config.domain import load_domain
+    from rainier3d.fusion.regional import staged
+
+    t = pd.read_csv(staged(load_domain(), "vel_pnsn_wa.csv", PNSN_1D))
     t.columns = [c.strip() for c in t.columns]
     top, v, g = (
         t["depth"].values.astype(float),

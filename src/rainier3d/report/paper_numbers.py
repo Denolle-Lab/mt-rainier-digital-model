@@ -504,6 +504,14 @@ def model():
         "with/without the CZ in the top 50 m of L1; top-cell Vp/Vs > 3",
         "model.zarr, properties_geology.zarr",
     )
+    from rainier3d.report.roughness import roughness
+
+    put(
+        "model.roughness",
+        roughness(load_domain().path("processed") / "model.zarr"),
+        "|d ln Vs| between neighbouring 250 m cells at level and regional-model interfaces, and laterally",
+        "rainier3d.report.roughness",
+    )
     uncalibrated(g, m, bins)
     invariant_without_magma(g)
 

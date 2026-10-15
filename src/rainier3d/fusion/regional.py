@@ -26,6 +26,12 @@ CVM_FILES = [
     HOME / "GitHub/gwl-space-time-smooth/data/raw/CVM17_L2.nc",
 ]
 CRESCENT = HOME / "GitHub/cascadia_obs_ensemble/data/tomography/CRESCENT_Gen0.nc"
+
+
+def staged(dom: Domain, name: str, fallback: Path) -> Path:
+    """A machine-local input: its copy staged in data/raw/regional/ (checksummed by S0), else ``fallback``."""
+    p = dom.path("raw") / "regional" / name
+    return p if p.exists() else fallback
 CVM_MAX_DEPTH = 9900.0
 
 
@@ -54,7 +60,7 @@ def load_cvm(dom: Domain, pad: float = 2000.0) -> xr.Dataset:
 
 def load_crescent(dom: Domain) -> xr.Dataset:
     """CRESCENT Gen0 Vs and its uncertainty (m/s) on (depth_bsl m, y, x) over the domain."""
-    with xr.open_dataset(CRESCENT) as ds:
+    with xr.open_dataset(staged(dom, "CRESCENT_Gen0.nc", CRESCENT)) as ds:
         lon0, lat0, lon1, lat1 = dom.bbox_4326
         sub = ds.sel(longitude=slice(lon0 - 0.5, lon1 + 0.5), latitude=slice(lat0 - 0.5, lat1 + 0.5)).load()
     tf = Transformer.from_crs("EPSG:4326", dom.crs, always_xy=True)

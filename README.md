@@ -327,6 +327,8 @@ model is USGS Cascadia CVM v1.7 to 9.9 km below ground, and CRESCENT Gen0 below.
 - `~/GitHub/cascadia_obs_ensemble/data/tomography/CRESCENT_Gen0.nc`
 - `~/GitHub/cascadia_obs_ensemble/data/vel_pnsn_wa.csv`: PNSN 1D model; which PNSN model this
   is remains unconfirmed.
+- S5 and S6 read staged copies of CRESCENT Gen0 and the PNSN 1D table from `data/raw/regional/` when present
+  (checksummed in `docs/data_manifest.csv`), so a server needs only `data/raw/` (`docs/running_remotely.md`).
 - The DAS channel table, the two KMZ overlays and the Synoptic station catalogue are copied once into `data/raw/`
   by `pixi run platform` (`local_inputs` in `configs/platform.yaml`); after that, no step reads them from
   `~/Downloads` or `~/GitHub`.
