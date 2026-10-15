@@ -47,10 +47,23 @@ committed manifest:
 
 ```bash
 # on the machine with the cache (about 5.8 GB)
-rsync -avP data/raw/ <user>@<server>:mt-rainier-digital-model/data/raw/
+rsync -avP data/raw/ <user>@<server>:mt-rainier-digital-model/data/raw/   # over ssh
 # on the server
 pixi run manifest -- --check          # every file of docs/data_manifest.csv present and identical
 ```
+
+**Integrity.**
+- **The check:** `--check` recomputes the SHA-256 of every cached file and compares it with the committed
+  manifest. It lists missing and different files, and exits with an error if there are any.
+- **Repair:** if it reports a file, copy again with `rsync -avP --checksum` (which compares contents rather
+  than sizes and dates), and check again. Start the run only once the check passes.
+- **Why not download again:** copying keeps the exact bytes the published model was built from. A fresh
+  download does not:
+  - live services (ComCat, NHDPlus, 3DEP, the GNSS archives) can return different bytes after the data freeze;
+  - some inputs cannot be downloaded by a script: CVM v1.7 sits behind a captcha, and the DAS table, the KMZ
+    overlays and the Synoptic catalogue are local files (`configs/sources.yaml`).
+  The stages do download what is missing and scriptable, so a server without a cache would rebuild most of
+  it, but `--check` would then list the files that differ from the published inputs.
 
 The model products in `data/processed/` and the outputs are rebuilt by the pipeline, so they do not need copying.
 To skip families that have not changed, copy `data/processed/` and `outputs/` as well.
