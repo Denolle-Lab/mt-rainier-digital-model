@@ -17,6 +17,9 @@ geometry numbers are placeholders, marked `m1_placeholder` in `configs/`.
 
 ## Download the derived products
 
+**Using the velocity model:** start with [`docs/velocity_model.md`](docs/velocity_model.md) (what it contains, which
+version to use, what it resolves) and run `examples/velocity_model_quickstart.py`.
+
 The derived products are the assets of the GitHub release
 [`products-v1.0.0`](https://github.com/Denolle-Lab/mt-rainier-digital-model/releases/tag/products-v1.0.0), under
 CC-BY 4.0. Every archive is listed with its SHA-256 in the release file `SHA256SUMS` and in
@@ -128,6 +131,24 @@ of the layers you use; the Zenodo DOI plan is in `docs/doi.md`.
 
 ## Pipeline
 
+The stages run in eight families, in dependency order; each is one `pixi run` task that runs its stages in order,
+and `pixi run pipeline` runs all eight (`docs/model_construction.md` explains the model stages):
+
+| Family (`pixi run ...`) | Stages | Needs |
+|---|---|---|
+| `inputs` | S0 | – |
+| `surface` | S1, S2, S22, S19 | inputs |
+| `model` | S3, S4, S5 | surface |
+| `calibrate` | S13, then S4 and S5 again with the new calibration | model |
+| `validate` | S6, S14 (published model), S21, S26 | calibrate |
+| `tomography` | S37, with the report site `docs/tomography/` | calibrate |
+| `applications` | S17, S18, S24, S30, S31, S33, S34, S35, S36, S29 | model |
+| `deliver` | S7, S9, S10, bibliography, paper (environment `paper`), S32 platform | all of the above |
+
+S20 (the product archives, `pixi run s20 --tag products-vX.Y.Z`, with `--upload` to publish the release), S27 (the
+Zenodo deposit) and S28 (the canopy-storage downloads, `pixi run -e canopy canopy`, which need NASA Earthdata
+and Sentinel Hub credentials and several GB) run by hand; S19 uses the delivered files when S28 has not run. The stages:
+
 | Stage | Script | Product (`data/processed/`, `outputs/`) |
 |---|---|---|
 | S0 input manifest | `scripts/00_data_manifest.py` | `docs/data_manifest.csv`: size and SHA-256 of every cached input under `data/raw/`; `--check` compares a rebuilt cache |
@@ -140,21 +161,21 @@ of the layers you use; the Zenodo DOI plan is in `docs/doi.md`.
 | S7 export/viz | `scripts/07_export_viz.py` | `vtk/*.vti`, `*.vts`, sections, `rainier3d_view.png`/`.html` |
 | S8 sensor atlas | `scripts/08_atlas.py` | `web/atlas/data/`: sites, DAS fiber, PNSN events, overlay images; `data/processed/overlays/*.tif` |
 | S9 ray-tracing grids | `scripts/09_export_grids.py` | `outputs/grids/`: uniform netCDF, NonLinLoc P/S grids, EMC netCDF |
-| S10 paper figures | `scripts/10_report.py` | `docs/paper/figures/*.png` from the built model (committed) |
+| S10 paper figures | `scripts/10_report.py` | `docs/paper/figures/*.png` from the built model, and the calibration and relocation figures in `docs/joint_calibration/` (`rainier3d.report.calibration_figures`, formerly S16; committed) |
 | S11 seismic atlas layers | `scripts/11_seismic_atlas.py` | `<rainier-seismic-atlas>/site/public/atlas/model/`: surface layers, imagery, streams for the 3D viewer |
-| S12 Vs-only calibration | `scripts/12_calibrate_vs.py` | `configs/vs_calibration.yaml`: depth factor on the regional Vs with catalogue hypocentres fixed (the alternative parameterisation compared in the paper) |
+| S12 (retired) | – | `configs/vs_calibration.yaml` remains: the Vs-only depth factor with catalogue hypocentres fixed, the alternative parameterisation compared in the paper; the script is in the git history before the pipeline families |
 | S13 joint calibration | `scripts/13_joint_calibration.py` | `configs/velocity_calibration.yaml`: geology multipliers and regional bias fitted to PNSN P and S picks with 3D relocation (`docs/joint_calibration.md`) |
 | S14 relocation | `scripts/14_relocate.py` | `outputs/relocation/<model>/`: every PNSN event relocated in a given model, with topography |
 | S15 bibliography | `scripts/15_bibliography.py` | `docs/references.bib`, `docs/citations.csv` from `configs/sources.yaml` (`pixi run bib`) |
-| S16 relocation figures | `scripts/16_relocation_figures.py` | calibration figures in `docs/joint_calibration/` and `docs/paper/figures/` |
-| S17, S18 GNSS | `scripts/17_gnss_fetch.py`, `scripts/18_gnss_strain.py` | GNSS velocities, strain rate, daily strain, edifice-load stress (`docs/gnss_strain.md`); refreshed weekly by `.github/workflows/gnss-weekly.yml` |
+| S16 (merged into S10) | – | – |
+| S17, S18 GNSS | `scripts/17_gnss_fetch.py`, `scripts/18_gnss_strain.py` | GNSS velocities, strain rate, daily strain, edifice-load stress, and the strain in the model volume (`strain_3d.zarr`, formerly S25; `--no-volume`) (`docs/gnss_strain.md`); refreshed weekly by `.github/workflows/gnss-weekly.yml` (`--no-load`) |
 | S19 vegetation layers | `scripts/19_canopy_layers.py` | `surface_canopy.zarr`: lidar canopy, Sentinel-2 LAI, GEDI (`configs/canopy_products.yaml`) |
 | S20 products | `scripts/20_publish_products.py` | release archives and `src/rainier3d/products.json` |
 | S21 iMUSH check | `scripts/21_compare_imush.py` | `outputs/model_comparison/`: comparison with Ulberg et al. (2020) |
 | S22 alteration | `scripts/22_alteration_finn2001.py` | `alteration_finn2001.zarr`: alteration from the 1996 helicopter EM survey (`docs/alteration.md`) |
 | S23 paper | `scripts/23_paper.py` | `docs/paper/rainier3d_paper.html` and `.pdf` (ESSD class) from `docs/paper/rainier3d_paper.md` (`pixi run -e paper paper`; `.github/workflows/paper.yml`) |
 | S24 mass movements | `scripts/24_mass_movements.py` | `outputs/mass_movements/`: lahar and debris-flow outlines, landslide and seismic event points, faults, 1998 lahar zones; paper figure; viewer layers (`docs/mass_movements.md` lists every service call) |
-| S25 strain in the volume | `scripts/25_strain_volume.py` | `data/processed/strain_3d.zarr`, `outputs/gnss/strain_orientation.csv`: GNSS strain rate carried down and edifice-load strain, with orientations for shear-wave splitting (`docs/gnss_strain.md`) |
+| S25 (merged into S18) | – | – |
 | S26 relocated catalogue | `scripts/26_relocate_catalog.py` | `outputs/catalog/`: the PNSN catalogue relocated with NonLinLoc in the PNSN 1D model and in the rainier3d 3D model, same picks and settings, topography mask; viewer before/after (`quakes_relocated.*`) |
 | S27 Zenodo deposit | `scripts/27_zenodo_deposit.py` | a draft version of the software or data record on Zenodo (`docs/doi.md`) |
 | S28 canopy-storage pipeline | `scripts/28_canopy_pipeline.py` | `data/raw/canopy_storage/`: GEDI L3 canopy height, GEDI L2B footprints and grids, Sentinel-2 LAI, from the vendored code of `third_party/canopy-storage_seismic` (MIT); read by S19 (`docs/canopy_pipeline.md`; `pixi run -e canopy canopy`) |
@@ -166,15 +187,46 @@ of the layers you use; the Zenodo DOI plan is in `docs/doi.md`.
 | S34 storm synthetics | `scripts/34_cz_storm.py` | `cz_storm_<event>.zarr`: SYNTHETIC dv/v through an observed rain event (1D Richards in the model's columns) |
 | S35 weathering depth | `scripts/35_cz_weathering_depth.py` | `outputs/cz/weathering_depth.json`: depth-to-bedrock estimators scored on the borehole picks |
 | S36 magnetics | `scripts/36_packwood_magnetics.py` | `data/processed/packwood_magnetics.zarr`: apparent magnetisation of the 2022 Packwood aeromagnetic survey merged with the 1996 survey of S22, with glacier ice as rock and with it excluded (`configs/magnetics.yaml`, `docs/packwood_magnetics.md`); viewer layers (group "Geology") |
+| S37 tomography | `scripts/37_tomography.py` | `data/processed/model_let.zarr`, `outputs/tomography/`: local-earthquake tomography of the calibrated model below the critical zone, with ray density, checkerboards and the report figures (`rainier3d.report.tomography_figures`; `--figures-only`, `--site docs/tomography`); the report page `docs/tomography/` and Supplement S1 of the paper |
 
 `docs/eikonal_benchmark.md` compares the eikonal solvers (`scripts/bench_eikonal.py`).
 
 ```
 pixi install
-pixi run all      # s1-s8
+pixi run all      # s1-s8, the check before a pull request
+pixi run pipeline # the eight families, inputs to delivery
 pixi run test
 pixi run viz      # interactive PyVista window
 ```
+
+### Run time and resources
+
+A full `pixi run pipeline` takes about six hours on a laptop. The times below were measured on 14 October 2026
+on an Apple M1 Max (10 cores: 8 performance, 2 efficiency; 64 GB RAM; macOS 15.7), with the raw cache under
+`data/raw/` already downloaded. They come from that run's logs and the write times of each stage's product.
+
+| Family | Time | Longest stage |
+|---|---|---|
+| `inputs` | 1 min | S0 |
+| `surface` | 80 min | S2, 56 min, streaming POLARIS over the network; S2 now caches it under `data/raw/polaris/`, so later runs read it locally |
+| `model` | 1 min | S4 |
+| `calibrate` | 31 min | S13, 29 min (8 workers) |
+| `validate` | 83 min | S26, about 80 min (NonLinLoc on a single core) |
+| `tomography` | 100–130 min | S37 (8 workers): 100.5 min on 13 October; 132 min on 14 October, when another job made the laptop swap |
+| `applications` | 40 min | S34 and S29, about 10 min each |
+| `deliver` | 6 min | S32 (viewer bundle) |
+
+- **Run families separately:** each family can be run on its own once the families it needs have run, so a long
+  rebuild can be split over several sessions. After a change to the model, `pixi run model && pixi run calibrate &&
+  pixi run validate` is the part that matters for the published numbers.
+- **CPU:** the eikonal pools of S6, S13, S14 and S37 use 8 worker processes, or `RAINIER3D_WORKERS` if set, never
+  more than the core count. Other jobs on the same machine slow them down.
+- **Memory:** S37 reached 19.6 GB summed resident memory across its workers (an upper bound, since forked workers
+  share pages), and `deliver` 7.7 GB (S10); memory was sampled every 30 s during these two families only. Plan on
+  32 GB RAM; with 16 GB, set `RAINIER3D_WORKERS=4`, which lowers the peak and lengthens those stages (not measured).
+- **Disk:** about 13 GB: `data/raw/` 5.8 GB, `data/processed/` 3.5 GB, `outputs/` 3.1 GB.
+- **First download:** filling `data/raw/` from scratch adds the download time of each source and depends on the
+  network. S28 (canopy storage, several GB from NASA Earthdata) is not part of the pipeline.
 
 ## Paper
 

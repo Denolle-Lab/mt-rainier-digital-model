@@ -60,3 +60,22 @@ def test_soil_config_names_registry_keys():
     keys = {k for ks in cfg["source_keys"].values() for k in ks}
     assert keys <= set(reg)
     assert cfg["summary_cm"][1] in cfg["solus"]["depths_cm"]  # summaries end on a prediction depth
+
+
+def test_remote_rasters_are_read_from_their_cached_window(tmp_path):
+    # SOLUS100 and POLARIS URLs resolve to data/raw/<source>/<file>.tif once cached; local paths pass through
+    from types import SimpleNamespace
+
+    from rainier3d.surface.layers import _cached
+
+    dom = SimpleNamespace(path=lambda key: tmp_path / key)
+    url = "/vsicurl/http://hydrology.cee.duke.edu/POLARIS/PROPERTIES/v1.0/vrt/ksat_mean_0_5.vrt"
+    cache = tmp_path / "raw" / "polaris" / "ksat_mean_0_5.tif"
+    cache.parent.mkdir(parents=True)
+    cache.write_bytes(b"")
+    assert _cached(dom, url) == str(cache)
+    solus = "/vsicurl/https://storage.googleapis.com/solus100pub/claytotal_5_cm_p.tif"
+    (tmp_path / "raw" / "solus100").mkdir()
+    (tmp_path / "raw" / "solus100" / "claytotal_5_cm_p.tif").write_bytes(b"")
+    assert _cached(dom, solus).endswith("solus100/claytotal_5_cm_p.tif")
+    assert _cached(dom, "/data/local.tif") == "/data/local.tif"

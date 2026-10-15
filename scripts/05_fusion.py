@@ -67,6 +67,13 @@ def main():
             out.attrs["vs_calibration"] = f"configs/{cal_path.name} ({cal['date']})"
         nodes[f"/{name}"] = out
 
+    from rainier3d.io.attrs import CZ, LEVEL, describe
+
+    for k, ds in nodes.items():  # units and descriptions of every variable (docs/velocity_model.md)
+        if k in ("/L1", "/L2", "/L3"):
+            describe(ds, LEVEL)
+        elif k == "/cz":
+            describe(ds, CZ)
     tree = xr.DataTree.from_dict(nodes)
     tree.attrs = {
         "crs": dom.crs,

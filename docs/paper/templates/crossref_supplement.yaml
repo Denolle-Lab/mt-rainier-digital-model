@@ -1,0 +1,18 @@
+# pandoc-crossref settings for docs/paper/rainier3d_supplement.md (scripts/23_paper.py): figures, tables, equations
+# and sections numbered S1, S2, ... In the PDF, LaTeX numbers them (\thefigure etc. in the supplement's header).
+figureTitle: "Figure S"
+tableTitle: "Table S"
+figureTemplate: "$$figureTitle$$$$i$$$$titleDelim$$ $$t$$"
+tableTemplate: "$$tableTitle$$$$i$$$$titleDelim$$ $$t$$"
+figPrefix: ["Fig. S", "Figs. S"]
+tblPrefix: ["Table S", "Tables S"]
+secPrefix: ["Sect. S", "Sects. S"]
+eqnPrefix: ["Eq. S", "Eqs. S"]
+figPrefixTemplate: "$$p$$$$i$$"
+tblPrefixTemplate: "$$p$$$$i$$"
+secPrefixTemplate: "$$p$$$$i$$"
+eqnPrefixTemplate: "$$p$$$$i$$"
+titleDelim: "."
+linkReferences: true
+nameInLink: true
+chapters: false

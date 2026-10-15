@@ -1,11 +1,12 @@
-"""S16: figures for the joint Vp-Vs calibration with 3D relocation (S13, S14) -> docs/joint_calibration/.
+"""Figures of the joint Vp-Vs calibration with 3D relocation (S13, S14) -> docs/joint_calibration/ (S10).
 
-Reads configs/vs_calibration.yaml (S12), configs/velocity_calibration_v1.yaml (first S13 run, depth factors),
+Reads configs/vs_calibration.yaml (the retired Vs-only calibration), configs/velocity_calibration_v1.yaml
+(first S13 run, depth factors),
 configs/velocity_calibration.yaml (S13 with the critical zone: geology multipliers + static bias of the
 regional model), the S14 relocations in outputs/relocation/<name>/ (all with slow air above the DEM + 1 cell),
 and the model snapshots in data/processed/ named in MODELS.
 
-Usage: pixi run python scripts/16_relocation_figures.py
+Run by S10 (scripts/10_report.py), formerly S16.
 """
 
 from __future__ import annotations
@@ -27,7 +28,7 @@ REPORT_FIG = REPO / "docs" / "paper" / "figures"  # copies under the report's fi
 MODELS = {
     "pnsn1d": ("PNSN 1D", None),
     "fused_nocal": ("3D, uncalibrated", "data/processed/model_nocal.zarr"),
-    "fused_vscal": ("3D, Vs only (S12)", "data/processed/model_vscal_20260924.zarr"),
+    "fused_vscal": ("3D, Vs only (retired S12)", "data/processed/model_vscal_20260924.zarr"),
     "fused_v1": ("3D, depth factors (S13 v1)", "data/processed/model_joint_s13.zarr"),
     "fused_joint": ("3D, geology + bias + critical zone (S13)", "data/processed/model.zarr"),
 }
@@ -257,7 +258,8 @@ def relocation_qc():
     pd.DataFrame(rows).to_csv(OUT / "relocation_qc.csv", index=False)
 
 
-def main():
+def make_all():
+    """All calibration and relocation figures, and relocation_qc.csv."""
     OUT.mkdir(parents=True, exist_ok=True)
     REPORT_FIG.mkdir(parents=True, exist_ok=True)
     relocation_qc()
@@ -265,7 +267,3 @@ def main():
     fig_geology()
     fig_residuals()
     fig_hypocentres()
-
-
-if __name__ == "__main__":
-    main()

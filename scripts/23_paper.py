@@ -1,7 +1,8 @@
-"""S23: build the paper, docs/paper/rainier3d_paper.md -> docs/paper/rainier3d_paper.{html,pdf} (committed).
+"""S23: build the paper and its supplement, docs/paper/rainier3d_{paper,supplement}.md -> .html, .pdf.
 
-  rainier3d_paper.html     one self-contained page (figures embedded, MathML equations, no scripts)
-  rainier3d_paper.pdf      the same text in the Copernicus ESSD manuscript class (natbib + copernicus.bst)
+  rainier3d_paper.html      one self-contained page (figures embedded, MathML equations, no scripts)
+  rainier3d_paper.pdf       the same text in the Copernicus ESSD manuscript class (natbib + copernicus.bst)
+  rainier3d_supplement.*    the supplement (the local-earthquake tomography, S37), numbered S1, S2, ...
 
 Intermediate files (LaTeX source, logs, the Copernicus package) stay in outputs/paper/. SOURCE_DATE_EPOCH is
 fixed, so the same text gives the same bytes on the same platform; the committed copy is the Linux CI build.
@@ -12,7 +13,7 @@ docs/paper/workflow.dot, rendered here with Graphviz. Citations [@key] resolve t
 from Copernicus and checked against COPERNICUS_SHA256; it is not redistributed with this repository.
 No model data are needed, so .github/workflows/paper.yml runs this on a clean checkout.
 
-Usage: pixi run -e paper paper [-- --html-only | --pdf-only]
+Usage: pixi run -e paper paper [-- --html-only | --pdf-only] [--only paper|supplement]
 """
 
 from __future__ import annotations
@@ -33,6 +34,11 @@ import yaml
 REPO = Path(__file__).resolve().parents[1]
 DOCS = REPO / "docs" / "paper"
 SRC = DOCS / "rainier3d_paper.md"
+# the documents: source and pandoc-crossref settings
+DOCUMENTS = {
+    "paper": (SRC, "crossref.yaml"),
+    "supplement": (DOCS / "rainier3d_supplement.md", "crossref_supplement.yaml"),
+}
 TPL = DOCS / "templates"
 BIB = REPO / "docs" / "references.bib"
 OUT = REPO / "outputs" / "paper"
@@ -43,6 +49,8 @@ COPERNICUS_FILES = ("copernicus.cls", "copernicus.cfg", "copernicus.bst", "pdfsc
 # text characters -> LaTeX for the 8-bit fonts of the class (also valid under pdfLaTeX + newunicodechar)
 UNICODE = {
     "−": r"\ensuremath{-}",
+    "△": r"\ensuremath{\bigtriangleup}",
+    "▽": r"\ensuremath{\bigtriangledown}",
     "₂": r"\ensuremath{_2}",
     "⁹": r"\ensuremath{^9}",
     "⁷": r"\ensuremath{^7}",
@@ -95,6 +103,11 @@ UNICODE = {
     "é": r"\'e",
     "É": r"\'E",
     "ô": r"\^o",
+    "ò": r"\`o",
+    "ć": r"\'c",
+    "č": r"\v{c}",
+    "ī": r"\=\i",
+    "Ś": r"\'S",
     "á": r"\'a",
     "ó": r"\'o",
     "ø": r"{\o}",
@@ -191,20 +204,20 @@ def longtables_to_floats(tex: str) -> str:
     return "".join(out)
 
 
-def pandoc_common() -> list[str]:
+def pandoc_common(src: Path = SRC, crossref: str = "crossref.yaml") -> list[str]:
     return [
-        *("pandoc", SRC, "--from", "markdown+smart+lists_without_preceding_blankline"),
+        *("pandoc", src, "--from", "markdown+smart+lists_without_preceding_blankline"),
         *("--filter", "pandoc-crossref"),
-        *("--metadata-file", TPL / "crossref.yaml", "--bibliography", BIB),
+        *("--metadata-file", TPL / crossref, "--bibliography", BIB),
         *("--resource-path", f"{DOCS}:{REPO / 'docs'}"),
     ]
 
 
-def html() -> Path:
-    out = OUT / "rainier3d_paper.html"
+def html(src: Path = SRC, crossref: str = "crossref.yaml") -> Path:
+    out = OUT / src.with_suffix(".html").name
     run(
         [
-            *pandoc_common(),
+            *pandoc_common(src, crossref),
             *("--to", "html5", "--standalone", "--template", TPL / "report.html", "--number-sections"),
             *("--citeproc", "--csl", TPL / "copernicus-publications.csl", "--mathml", "--embed-resources"),
             *("--toc", "--toc-depth", "2", "--default-image-extension", "svg", "--section-divs", "-o", out),
@@ -213,14 +226,14 @@ def html() -> Path:
     return out
 
 
-def pdf() -> Path:
-    tex = OUT / "rainier3d_paper.tex"
+def pdf(src: Path = SRC, crossref: str = "crossref.yaml") -> Path:
+    tex = OUT / src.with_suffix(".tex").name
     copernicus(OUT)
     shutil.copy(BIB, OUT / "references.bib")
     umap = "\n".join(f"\\newunicodechar{{{c}}}{{{v}}}" for c, v in UNICODE.items())
     run(
         [
-            *pandoc_common(),
+            *pandoc_common(src, crossref),
             *("--to", "latex", "--template", TPL / "essd.latex", "--natbib"),
             *("--lua-filter", TPL / "essd.lua", "--default-image-extension", "pdf"),
             *("--variable", f"unicode-map={umap}"),
@@ -237,20 +250,24 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--html-only", action="store_true")
     ap.add_argument("--pdf-only", action="store_true")
+    ap.add_argument("--only", choices=sorted(DOCUMENTS), default=None, help="build one document")
     a = ap.parse_args()
     OUT.mkdir(parents=True, exist_ok=True)
     # fixed timestamp: the PDF bytes depend only on the text (its metadata dates read 1970, by design)
     os.environ["SOURCE_DATE_EPOCH"] = "0"
-    text = SRC.read_text()
-    check_unicode(text + BIB.read_text())
-    meta = yaml.safe_load(re.match(r"---\n(.*?)\n---\n", text, re.S).group(1))
-    log.info("%s: %d words", meta["title"], len(re.sub(r"^---.*?---", "", text, flags=re.S).split()))
     workflow_figure()
     made = []
-    if not a.pdf_only:
-        made.append(html())
-    if not a.html_only:
-        made.append(pdf())
+    for name, (src, crossref) in DOCUMENTS.items():
+        if (a.only and name != a.only) or not src.exists():
+            continue
+        text = src.read_text()
+        check_unicode(text + BIB.read_text())
+        meta = yaml.safe_load(re.match(r"---\n(.*?)\n---\n", text, re.S).group(1))
+        log.info("%s: %d words", meta["title"], len(re.sub(r"^---.*?---", "", text, flags=re.S).split()))
+        if not a.pdf_only:
+            made.append(html(src, crossref))
+        if not a.html_only:
+            made.append(pdf(src, crossref))
     made = [Path(shutil.copy(p, DOCS / p.name)) for p in made]  # the paper lives next to its source
     for p in made:
         log.info("wrote %s (%.1f MB)", p.relative_to(REPO), p.stat().st_size / 1e6)

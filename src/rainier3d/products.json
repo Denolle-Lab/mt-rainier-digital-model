@@ -15,6 +15,11 @@
       ],
       "cite": "Denolle, M., Yao, D., Hemmett, M., K\u00f6pfli, M., Han, S., and Kidiwela, M. (2026). rainier3d: a reproducible digital model of the subsurface and surface of Mount Rainier, Washington. https://github.com/Denolle-Lab/mt-rainier-digital-model"
     },
+    "model_let": {
+      "description": "The fused model after the S37 local-earthquake tomography: Vp, Vs and rho of model with the smooth ln V update (dlnvp_let, dlnvs_let, zero in the top 150 m) and the node grid /let; same layout as model (xarray DataTree, zarr v3)",
+      "license": "CC-BY-4.0 (derived product); see docs/data_policy.md for each input",
+      "cite": "Denolle, M., Yao, D., Hemmett, M., K\u00f6pfli, M., Han, S., and Kidiwela, M. (2026). rainier3d: a reproducible digital model of the subsurface and surface of Mount Rainier, Washington. https://github.com/Denolle-Lab/mt-rainier-digital-model"
+    },
     "grids": {
       "version": "products-v1.0.0",
       "url": "https://github.com/Denolle-Lab/mt-rainier-digital-model/releases/download/products-v1.0.0/rainier3d_grids.zip",

@@ -43,7 +43,9 @@ from rainier3d.io import store
 
 REPOSITORY = "Denolle-Lab/mt-rainier-digital-model"
 CATALOG = REPO / "src" / "rainier3d" / "products.json"
-PRODUCTS = ["model", "gnss", "edifice_load", "strain_3d", "grids", "alteration", "mass_movements"]
+PRODUCTS = [
+    "model", "model_let", "gnss", "edifice_load", "strain_3d", "grids", "alteration", "mass_movements",
+]  # fmt: skip
 SPEC = REPO / "configs" / "products.yaml"
 
 
@@ -77,15 +79,18 @@ def sha256(p: Path) -> str:
     return h.hexdigest()
 
 
-def package_model(dom, tmp: Path, out: Path, bad: set[str]):
+def package_model(dom, tmp: Path, out: Path, bad: set[str], key: str = "model"):
     """Only what rainier3d computes (configs/products.yaml): resampled third-party fields and variables whose
-    sources may not be redistributed are dropped, and listed in the archive's excluded_variables."""
+    sources may not be redistributed are dropped, and listed in the archive's excluded_variables. ``key``
+    "model_let" packages the tomography model (S37) the same way, with its node grid /let."""
     sp = spec()["model"]
     resampled = {"surface": set(sp["surface"]["resampled"])}
     resampled |= {lev: set(sp["levels"]["resampled"]) for lev in ("L1", "L2", "L3")}
-    tree = xr.open_datatree(dom.path("processed") / "model.zarr", engine="zarr", consolidated=False)
+    src = dom.path("processed") / f"{key}.zarr"
+    tree = xr.open_datatree(src, engine="zarr", consolidated=False)
+    names = sp["nodes"] + (spec()[key].get("extra_nodes", []) if key != "model" else [])
     nodes, dropped = {}, []
-    for name in sp["nodes"]:
+    for name in names:
         if name not in tree:
             continue
         ds = tree[name].to_dataset()
@@ -95,8 +100,8 @@ def package_model(dom, tmp: Path, out: Path, bad: set[str]):
         nodes[f"/{name}"] = ds.drop_vars(drop)
     t = xr.DataTree.from_dict(nodes)
     t.attrs = dict(tree.attrs) | {"excluded_variables": ", ".join(dropped), "license": "CC-BY-4.0 (derived)"}
-    store.write(t, tmp / "model.zarr")
-    return zip_dir(tmp / "model.zarr", out / "rainier3d_model.zarr.zip", "model.zarr"), dropped
+    store.write(t, tmp / f"{key}.zarr")
+    return zip_dir(tmp / f"{key}.zarr", out / f"rainier3d_{key}.zarr.zip", f"{key}.zarr"), dropped
 
 
 def rebuild_docs(dom, tag: str, built: dict, out: Path) -> list[Path]:
@@ -226,6 +231,8 @@ def main():
     # model: drop variables built from sources that may not be redistributed
     if "model" in only:
         built["model"] = package_model(dom, tmp, out, bad)
+    if "model_let" in only and (dom.path("processed") / "model_let.zarr").exists():
+        built["model_let"] = package_model(dom, tmp, out, bad, key="model_let")
     if "gnss" in only:
         built["gnss"] = package_gnss(dom, tmp, out)
     s3 = dom.path("processed") / "strain_3d.zarr"

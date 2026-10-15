@@ -136,6 +136,27 @@ def unbrace_names(author: str) -> str:
     return "{" + re.sub(r"\{([^{},]+)\}", fix, inner) + "}"
 
 
+def drop_empty_names(author: str) -> str:
+    """A DOI record can end its author list with an empty name ('... and Vergne, Jérôme and }'), which BibTeX
+    prints as a dangling 'and'; drop empty names. Splits only at ' and ' outside braces."""
+    braced = author.startswith("{") and author.endswith("}")
+    inner = author[1:-1] if braced else author
+    names, depth, cur, k = [], 0, "", 0
+    while k < len(inner):
+        ch = inner[k]
+        depth += ch == "{"
+        depth -= ch == "}"
+        if depth == 0 and re.match(r"\s+and(\s+|$)", inner[k:]):
+            names.append(cur)
+            cur, k = "", k + re.match(r"\s+and(\s+|$)", inner[k:]).end()
+            continue
+        cur += ch
+        k += 1
+    names.append(cur)
+    inner = " and ".join(n.strip() for n in names if n.strip())
+    return "{" + inner + "}" if braced else inner
+
+
 def split_fields(body: str) -> list[str]:
     """Split 'a={x, y}, b=2' at top-level commas."""
     out, depth, cur = [], 0, ""
@@ -173,7 +194,7 @@ def normalize(entry: str, doi: str, key: str, override: dict | None = None) -> s
     if "pages" in out:
         out["pages"] = out["pages"].replace("–", "--").replace("—", "--")
     if "author" in out:
-        out["author"] = unbrace_names(out["author"])
+        out["author"] = unbrace_names(drop_empty_names(out["author"]))
     if doi in AUTHOR_FIXES:
         out["author"] = "{" + AUTHOR_FIXES[doi] + "}"
     for field, value in (override or {}).items():  # bib_author, bib_title, bib_year from the registry

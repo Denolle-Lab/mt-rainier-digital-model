@@ -47,3 +47,14 @@ def test_missing_keys_are_reported_by_cause(tmp_path, monkeypatch):
     assert "could not be fetched from doi.org for known2020" in str(e.value)
     assert "not in configs/sources.yaml: unknown2021" in str(e.value)
     assert not (tmp_path / "docs" / "references.bib").exists()
+
+
+def test_empty_author_names_are_dropped_outside_braces():
+    b = _bib_script()
+    assert b.drop_empty_names("{Michailos, Konstantinos and Vergne, Jérôme and }") == (
+        "{Michailos, Konstantinos and Vergne, Jérôme}"
+    )
+    assert b.drop_empty_names("{{U.S. Fish and Wildlife Service} and Smith, A.}") == (
+        "{{U.S. Fish and Wildlife Service} and Smith, A.}"
+    )
+    assert b.drop_empty_names("{Andersen, B. and Anderson, C.}") == "{Andersen, B. and Anderson, C.}"

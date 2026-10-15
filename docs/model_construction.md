@@ -66,7 +66,7 @@ The model is built in four layers of evidence, from the most local to the most c
   to the fused model, so the fusion does not remove it.
 - **Calibration (S13, `configs/velocity_calibration.yaml`).** Three global factors of the rock law and a
   depth-dependent bias of the regional model, fitted to PNSN P and S arrivals of 88 events with 3D relocation;
-  held-out RMS 0.0921 s (P), 0.1865 s (S).
+  held-out RMS 0.0930 s (P), 0.1878 s (S) (refit of 14 October 2026).
 
 ## 4 Tomography (S37)
 
@@ -84,21 +84,22 @@ The model is built in four layers of evidence, from the most local to the most c
   weight and decide when to stop: a step is kept only if it lowers their misfit after relocation by more than 0.5%.
 - **What it does to discontinuities.** The tomography adjusts structure of about 12 km and larger; it does not
   sharpen or smooth contacts at the kilometre scale, which stage 3 sets.
-- **Result (run of 2026-10-13, 100.5 min).** Two steps kept, smoothing weight 0.3 chosen on the held-out events.
-  Held-out RMS 0.0908 → 0.0726 s (P, −20%) and 0.1794 → 0.1220 s (S, −32%); RMS of held-out station means
-  0.051 → 0.023 s (P) and 0.151 → 0.068 s (S), without station terms. Checkerboard: 12 km cells recovered with
-  correlation 0.63–0.74 and 40–58% of the amplitude between sea level and 6 km depth, 6 km cells with 0.38–0.44 in
-  the top 2 km; nothing above sea level and little below 12 km. Ray kernels checked against finite differences
-  through the eikonal solver (slope 0.998, correlation 0.9993). Within the sampled volume the update has a mean of
-  +0.5% (Vp) and −0.1% (Vs) and an RMS of about 5%.
-- **The critical zone after the tomography.** Unchanged in the 150 m columns; at most 2.0% (Vp) and 2.9% (Vs) in the
+- **Result (run of 2026-10-14 on the recalibrated model, 131.8 min on a loaded laptop).** Two steps kept, smoothing
+  weight 0.3 chosen on the held-out events. Held-out RMS 0.0909 → 0.0725 s (P, −20%) and 0.1796 → 0.1209 s (S,
+  −33%); RMS of held-out station means 0.051 → 0.023 s (P) and 0.152 → 0.067 s (S), without station terms.
+  Checkerboard: 12 km cells recovered with correlation 0.63–0.75 and 41–59% of the amplitude between sea level and
+  6 km depth, 6 km cells with 0.37–0.45 in the top 2 km; nothing above sea level and little below 12 km. Ray kernels
+  checked against finite differences through the eikonal solver (slope 0.997, correlation 0.9993). On the sampled
+  nodes the update has a mean of +0.6% (Vp) and 0.0% (Vs) and an RMS of 4.5% and 5.3%.
+- **The critical zone after the tomography.** Unchanged in the 150 m columns; at most 2.0% (Vp) and 2.8% (Vs) in the
   L1 cells that straddle the 150 m base. All 10 invariants of `tests/test_invariants.py` pass on `model_let.zarr`
   (`RAINIER3D_MODEL=data/processed/model_let.zarr pixi run pytest tests/test_invariants.py`), including the
   critical-zone travel time. Without the taper the same inversion changed Vs by more than 5% in 30% of the
   critical-zone cells and broke the travel-time agreement in 79% of the columns, for a held-out misfit of 0.258
   against 0.274: a small gain bought with an unresolved change to a layer built from rock physics.
 - **Product.** `data/processed/model_let.zarr`; `model.zarr` remains the stage-3 model until the update is adopted.
-  Report: `docs/tomography/index.html` (site `/tomography/`).
+  Report: `docs/tomography/index.html` (site `/tomography/`). The stages run as the `pixi` families `model`,
+  `calibrate` and `tomography` (README, Pipeline).
 
 ## Disclosure paragraph for the paper
 

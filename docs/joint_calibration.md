@@ -9,7 +9,15 @@ bibliography: references.bib
 
 # Fitting the geology model of rainier3d to PNSN arrivals with 3D relocation
 
-**Scripts:** S13 (`scripts/13_joint_calibration.py`), S14 (`scripts/14_relocate.py`) and S16 (`scripts/16_relocation_figures.py`). The location and inversion code is in `src/rainier3d/validate/locate.py`. The model assembly that S5 and S13 share is in `src/rainier3d/fusion/build.py`.
+> **Superseded calibration.** This record documents calibration v2 of 24 September 2026, made without the
+> critical zone and kept as `configs/velocity_calibration_v2.yaml`. The published model uses the calibration
+> refitted with the critical zone in every trial model and with the smoothed geology of the fusion
+> (`configs/velocity_calibration.yaml` of 14 October 2026, diagnostics in `outputs/joint_calibration/`): V0 ×1.44,
+> P* ×1.42 (not resolved), Vs ×0.951, and on the held-out half after the three fitting-half iterations an RMS of
+> 0.093 s (P) and 0.188 s (S). The paper reports those numbers, from `outputs/paper/numbers.json`; the method
+> below is unchanged.
+
+**Scripts:** S13 (`scripts/13_joint_calibration.py`), S14 (`scripts/14_relocate.py`) and the calibration figures of S10 (`scripts/10_report.py`, `rainier3d.report.calibration_figures`, formerly S16). The location and inversion code is in `src/rainier3d/validate/locate.py`. The model assembly that S5 and S13 share is in `src/rainier3d/fusion/build.py`.
 **Result:** `configs/velocity_calibration.yaml`, version 2, dated 2026-09-24. S4 applies its `geology` block and S5 its `regional_bias` block. It supersedes the Vs-only calibration of S12 (`configs/vs_calibration.yaml`) and the first S13 run, which used depth factors (`configs/velocity_calibration_v1.yaml`).
 **Model:** `data/processed/model.zarr`, rebuilt by S4 and S5; the same model is snapshotted as `data/processed/model_v2.zarr`.
 **Status of the numbers:** all were produced by the runs described here on 24 September 2026. The exception is the NonLinLoc cross-check in Section 4.1, which comes from a separate session's record.
@@ -191,7 +199,7 @@ With the catalogue hypocentres fixed (S6, `outputs/pnsn_report.txt`), the v2 mod
 
 ### 4.5 Hypocentres and topography
 
-**Table 6.** Relocation quality control (`docs/joint_calibration/relocation_qc.csv`, S16). "Above ground" counts events above the DEM interpolated at the epicentre; the location tolerates 50 m.
+**Table 6.** Relocation quality control (`docs/joint_calibration/relocation_qc.csv`, S10). "Above ground" counts events above the DEM interpolated at the epicentre; the location tolerates 50 m.
 
 | Model | Events above ground | At grid top | Depth change > 5 km |
 |---|---|---|---|
@@ -304,7 +312,7 @@ $PY scripts/04_properties.py && $PY scripts/05_fusion.py
 $PY scripts/06_validate_pnsn.py && $PY -m pytest -q tests
 $PY scripts/14_relocate.py --model data/processed/model.zarr --name fused_joint --skin 1   # 1.5 min per model
 $PY scripts/14_relocate.py --model 1d --name pnsn1d --skin 1
-$PY scripts/16_relocation_figures.py
+$PY scripts/10_report.py   # the figures of S13 and S14 (formerly scripts/16_relocation_figures.py)
 $PY scripts/21_compare_imush.py                     # needs data/raw/emc/iMUSH-localEQ-Ulberg-2020.r0.0-n4c.nc (URL in the script)
 pixi run bib
 ```

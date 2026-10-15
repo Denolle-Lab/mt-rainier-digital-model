@@ -1,9 +1,9 @@
 """Environmental 2D layers on the surface grid: soil, water table, streams, canopy, land cover.
 
-Every raster is warped straight from its source (a cloud-optimised GeoTIFF read through /vsicurl, or a
-cached download) onto the domain surface grid, so only the window over the domain is read. Continuous
-layers are block-averaged; categorical layers use the modal class. Each layer carries provenance from
-``configs/sources.yaml``.
+Every raster is warped onto the domain surface grid from a local file: a cached download, or the cached
+window over the domain of a cloud-optimised GeoTIFF read once through /vsicurl (REMOTE_CACHE,
+data/raw/<source>/). Continuous layers are block-averaged; categorical layers use the modal class. Each layer
+carries provenance from ``configs/sources.yaml``.
 """
 
 from __future__ import annotations
@@ -23,10 +23,27 @@ from rainier3d.io.store import provenance
 log = logging.getLogger(__name__)
 
 SOLUS = "/vsicurl/https://storage.googleapis.com/solus100pub/{name}"
+# remote rasters read through /vsicurl whose window over the domain is cached under data/raw/<source>/ on
+# first read (the cache rule of AGENTS.md), so a rebuild does not depend on the server being up or fast
+REMOTE_CACHE = {
+    "storage.googleapis.com/solus100pub/": "solus100",
+    "hydrology.cee.duke.edu/POLARIS/": "polaris",
+}
+
+
+def _cached(dom: Domain, src: str) -> str:
+    """``src`` itself, or the local copy of its window for a remote source of REMOTE_CACHE."""
+    for prefix, sub in REMOTE_CACHE.items():
+        if src.startswith("/vsicurl/") and prefix in src:
+            name = src.rsplit("/", 1)[-1].replace(".vrt", ".tif")
+            return _clip_to_cache(dom, src, dom.path("raw") / sub / name)
+    return src
 
 
 def warp(dom: Domain, src: str, resampling: Resampling = Resampling.average, band: int = 1) -> np.ndarray:
-    """Read ``src`` (path or GDAL URL) warped onto the surface grid; rows run south to north like dom.y."""
+    """Read ``src`` (path or GDAL URL) warped onto the surface grid; rows run south to north like dom.y.
+    Remote sources of REMOTE_CACHE are read from their cached window."""
+    src = _cached(dom, src) if band == 1 else src
     r = dom.surface_res_m
     x0, y0, x1, y1 = dom.bounds
     nx, ny = int((x1 - x0) / r), int((y1 - y0) / r)
