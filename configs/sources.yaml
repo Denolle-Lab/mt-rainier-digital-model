@@ -1122,7 +1122,7 @@ livani_2023_poplain:
   role: comparable model or data set, positioning (Introduction)
 
 wilkinson_2016_fair:
-  title: "DOI 10.1038/sdata.2016.18. Wilkinson et al. 2016, The FAIR Guiding Principles for scientific data management and stewardship, Sci. Data"
+  title: "Wilkinson et al. 2016, The FAIR Guiding Principles for scientific data management and stewardship, Sci. Data"
   doi: 10.1038/sdata.2016.18
   license: article (cited)
   verified: web-2026-10-07 (DOI resolved at doi.org, title, first author and year checked)
