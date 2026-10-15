@@ -1,5 +1,7 @@
 """NonLinLoc helpers of the catalogue relocation (S26): topography grid, observation file, summary parser."""
 
+from datetime import UTC
+
 import numpy as np
 import pandas as pd
 
@@ -48,3 +50,15 @@ END_NLLOC
     assert r.event == "uw123" and r.status == "LOCATED" and r.message == "Location completed."
     assert (r.x_km, r.y_km, r.z_km, r.nphs, r.gap) == (594.5, 5189.4, 3.25, 14, 95.0)
     assert np.isclose(r.z_sd_km, 0.5) and r.h_unc_max_km == 0.26
+
+
+def test_retry_after_accepts_seconds_dates_and_garbage():
+    from datetime import datetime, timedelta
+    from email.utils import format_datetime
+
+    from rainier3d.catalog.fetch import _retry_after_s
+
+    assert _retry_after_s("120") == 120.0
+    assert _retry_after_s(None) == 0.0 and _retry_after_s("soon") == 0.0
+    later = format_datetime(datetime.now(UTC) + timedelta(seconds=90), usegmt=True)
+    assert 60 < _retry_after_s(later) <= 90

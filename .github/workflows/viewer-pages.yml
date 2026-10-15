@@ -1,6 +1,7 @@
-name: Deploy the 3D viewer and the paper to GitHub Pages
+name: Deploy the 3D viewer, the paper and the tomography report to GitHub Pages
 
-# The site serves the viewer at / and the paper (docs/paper/rainier3d_paper.html and .pdf) at /paper/.
+# The site serves the viewer at /, the paper (docs/paper/rainier3d_paper.html and .pdf) at /paper/ and the
+# tomography report (docs/tomography/, from scripts/37_tomography_figures.py --site) at /tomography/.
 # The viewer's map data (terrain, imagery, stations, quakes and the rainier3d model layers) is not in git.
 # It is built with `pixi run viewer-data && pixi run s11 && pixi run viewer-bundle` and published as the
 # release asset viewer-atlas-bundle.tar.gz under the tag named in web/viewer/DATA_RELEASE.
@@ -8,9 +9,9 @@ name: Deploy the 3D viewer and the paper to GitHub Pages
 on:
   push:
     branches: [main]
-    paths: ["web/viewer/**", "docs/paper/rainier3d_paper.*", ".github/workflows/viewer-pages.yml"]
+    paths: ["web/viewer/**", "docs/paper/rainier3d_paper.*", "docs/tomography/**", ".github/workflows/viewer-pages.yml"]
   pull_request:
-    paths: ["web/viewer/**", "docs/paper/rainier3d_paper.*", ".github/workflows/viewer-pages.yml"]
+    paths: ["web/viewer/**", "docs/paper/rainier3d_paper.*", "docs/tomography/**", ".github/workflows/viewer-pages.yml"]
   workflow_dispatch:
 
 permissions:
@@ -51,6 +52,8 @@ jobs:
           mkdir -p web/viewer/site/dist/paper
           cp docs/paper/rainier3d_paper.html web/viewer/site/dist/paper/index.html
           cp docs/paper/rainier3d_paper.pdf web/viewer/site/dist/paper/
+      - name: Add the tomography report at /tomography/
+        run: cp -r docs/tomography web/viewer/site/dist/tomography
       - uses: actions/upload-pages-artifact@v3
         if: github.event_name != 'pull_request'
         with:
