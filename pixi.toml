@@ -99,13 +99,16 @@ s20 = "python scripts/20_publish_products.py"
 # The pipeline in eight families, in dependency order (docs/model_construction.md, README "Pipeline"). Each family
 # runs its stages in order; `pixi run pipeline` runs all eight. The numbered tasks above remain the stages.
 inputs = { depends-on = ["manifest"] }
-surface = { depends-on = ["s1", "s2", "s22", { task = "canopy", environment = "canopy" }, "s19"] }
+# S28 (pixi run -e canopy canopy) fetches the canopy-storage products with credentials and large downloads; it runs by
+# hand, and S19 falls back to the delivered files without it
+surface = { depends-on = ["s1", "s2", "s22", "s19"] }
 model = { depends-on = ["s3", "s4", "s5"] }
 calibrate = { cmd = "python scripts/04_properties.py && python scripts/05_fusion.py", depends-on = ["s13"] }
 validate = { depends-on = ["s6", "s14-published", "s21", "s26"] }
 tomography = "python scripts/37_tomography.py --site docs/tomography"
 applications = { depends-on = ["s17", "s18", "s24", "s30", "s31", "s33", "s34", "s35", "s36", "s29"] }
-deliver = { depends-on = ["s7", "s9", "s10", "bib", { task = "paper", environment = "paper" }, "platform", "s20"] }
+# S20 (product archives) is run by hand with the release tag: pixi run s20 --tag products-vX.Y.Z [--upload]
+deliver = { depends-on = ["s7", "s9", "s10", "bib", { task = "paper", environment = "paper" }, "platform"] }
 pipeline = { depends-on = ["inputs", "surface", "model", "calibrate", "validate", "tomography", "applications", "deliver"] }
 
 # Slim environment for the weekly GNSS refresh on GitHub Actions (.github/workflows/gnss-weekly.yml): only what

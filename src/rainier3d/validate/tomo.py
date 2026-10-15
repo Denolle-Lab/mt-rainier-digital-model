@@ -144,16 +144,17 @@ def kernels(
     return K, dws, n_failed
 
 
-def fields_timed(vel_xyd: np.ndarray, grid: Grid, stations_xyd: np.ndarray, limit_s=None, workers: int = 8):
+def fields_timed(
+    vel_xyd: np.ndarray, grid: Grid, stations_xyd: np.ndarray, limit_s=None, workers: int | None = None
+):
     """``locate.fields`` with a time limit (s) on the whole set: past it the workers are stopped and
     TimeoutError is raised, rather than a stalled solve holding the inversion."""
-    import os
     from concurrent.futures import ProcessPoolExecutor, wait
 
-    from rainier3d.validate.locate import _field_one
+    from rainier3d.validate.locate import _field_one, n_workers
 
     v = np.ascontiguousarray(vel_xyd, dtype=float)
-    ex = ProcessPoolExecutor(max_workers=min(workers, os.cpu_count() or 1))
+    ex = ProcessPoolExecutor(max_workers=n_workers(workers))
     futs = [ex.submit(_field_one, (v, grid.o, grid.dx, tuple(s))) for s in stations_xyd]
     done, pending = wait(futs, timeout=limit_s)
     if pending:

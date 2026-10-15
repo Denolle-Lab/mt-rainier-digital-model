@@ -240,14 +240,15 @@ def travel_times(
         return np.array([tt(rec) for tt in tts])
     if solver != "pykonal":
         raise ValueError(f"unknown solver {solver!r}")
-    import os
     from concurrent.futures import ProcessPoolExecutor
 
     vel_xyd = np.ascontiguousarray(np.transpose(vel, (1, 2, 0)), dtype=float)  # (x, y, depth)
     x0 = (xs[0], ys[0], -zs[0])
     rec = np.array([(x, y, -z) for x, y, z in receivers_xyz])
     jobs = [(vel_xyd, x0, dx, (x, y, -z), rec) for x, y, z in sources_xyz]
-    with ProcessPoolExecutor(max_workers=min(8, os.cpu_count() or 1)) as ex:
+    from rainier3d.validate.locate import n_workers
+
+    with ProcessPoolExecutor(max_workers=n_workers()) as ex:
         return np.array(list(ex.map(_pykonal_one, jobs)))
 
 

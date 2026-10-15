@@ -105,11 +105,20 @@ def _field_one(args):
     return s.traveltime.values.astype(np.float32)
 
 
-def fields(vel_xyd: np.ndarray, grid: Grid, stations_xyd: np.ndarray, workers: int = 8) -> np.ndarray:
+def n_workers(workers: int | None = None) -> int:
+    """Worker processes of the eikonal pools: ``workers``, else the environment variable RAINIER3D_WORKERS,
+    else 8; at most the core count."""
+    w = workers or int(os.environ.get("RAINIER3D_WORKERS", 8))
+    return max(1, min(w, os.cpu_count() or 1))
+
+
+def fields(
+    vel_xyd: np.ndarray, grid: Grid, stations_xyd: np.ndarray, workers: int | None = None
+) -> np.ndarray:
     """(nsta, nx, ny, nd) float32 travel-time fields, one per station (reciprocity)."""
     v = np.ascontiguousarray(vel_xyd, dtype=float)
     jobs = [(v, grid.o, grid.dx, tuple(s)) for s in stations_xyd]
-    with ProcessPoolExecutor(max_workers=min(workers, os.cpu_count() or 1)) as ex:
+    with ProcessPoolExecutor(max_workers=n_workers(workers)) as ex:
         return np.stack(list(ex.map(_field_one, jobs)))
 
 

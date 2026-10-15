@@ -134,15 +134,17 @@ and `pixi run pipeline` runs all eight (`docs/model_construction.md` explains th
 | Family (`pixi run ...`) | Stages | Needs |
 |---|---|---|
 | `inputs` | S0 | – |
-| `surface` | S1, S2, S22, S28 (environment `canopy`), S19 | inputs |
+| `surface` | S1, S2, S22, S19 | inputs |
 | `model` | S3, S4, S5 | surface |
 | `calibrate` | S13, then S4 and S5 again with the new calibration | model |
 | `validate` | S6, S14 (published model), S21, S26 | calibrate |
 | `tomography` | S37, with the report site `docs/tomography/` | calibrate |
 | `applications` | S17, S18, S24, S30, S31, S33, S34, S35, S36, S29 | model |
-| `deliver` | S7, S9, S10, bibliography, paper (environment `paper`), S32 platform, S20 | all of the above |
+| `deliver` | S7, S9, S10, bibliography, paper (environment `paper`), S32 platform | all of the above |
 
-S27 (the Zenodo deposit) runs by hand. The stages:
+S20 (the product archives, `pixi run s20 --tag products-vX.Y.Z`, with `--upload` to publish the release), S27 (the
+Zenodo deposit) and S28 (the canopy-storage downloads, `pixi run -e canopy canopy`, which need NASA Earthdata
+and Sentinel Hub credentials and several GB) run by hand; S19 uses the delivered files when S28 has not run. The stages:
 
 | Stage | Script | Product (`data/processed/`, `outputs/`) |
 |---|---|---|
@@ -193,6 +195,35 @@ pixi run pipeline # the eight families, inputs to delivery
 pixi run test
 pixi run viz      # interactive PyVista window
 ```
+
+### Run time and resources
+
+A full `pixi run pipeline` takes about six hours on a laptop. The times below were measured on 14 October 2026
+on an Apple M1 Max (10 cores: 8 performance, 2 efficiency; 64 GB RAM; macOS 15.7), with the raw cache under
+`data/raw/` already downloaded. They come from that run's logs and the write times of each stage's product.
+
+| Family | Time | Longest stage |
+|---|---|---|
+| `inputs` | 1 min | S0 |
+| `surface` | 80 min | S2, 56 min, streaming POLARIS over the network; S2 now caches it under `data/raw/polaris/`, so later runs read it locally |
+| `model` | 1 min | S4 |
+| `calibrate` | 31 min | S13, 29 min (8 workers) |
+| `validate` | 83 min | S26, about 80 min (NonLinLoc on a single core) |
+| `tomography` | 100–130 min | S37 (8 workers): 100.5 min on 13 October; 132 min on 14 October, when another job made the laptop swap |
+| `applications` | 40 min | S34 and S29, about 10 min each |
+| `deliver` | 6 min | S32 (viewer bundle) |
+
+- **Run families separately:** each family can be run on its own once the families it needs have run, so a long
+  rebuild can be split over several sessions. After a change to the model, `pixi run model && pixi run calibrate &&
+  pixi run validate` is the part that matters for the published numbers.
+- **CPU:** the eikonal pools of S6, S13, S14 and S37 use 8 worker processes, or `RAINIER3D_WORKERS` if set, never
+  more than the core count. Other jobs on the same machine slow them down.
+- **Memory:** S37 reached 19.6 GB summed resident memory across its workers (an upper bound, since forked workers
+  share pages), and `deliver` 7.7 GB (S10); memory was sampled every 30 s during these two families only. Plan on
+  32 GB RAM; with 16 GB, set `RAINIER3D_WORKERS=4`, which lowers the peak and lengthens those stages (not measured).
+- **Disk:** about 13 GB: `data/raw/` 5.8 GB, `data/processed/` 3.5 GB, `outputs/` 3.1 GB.
+- **First download:** filling `data/raw/` from scratch adds the download time of each source and depends on the
+  network. S28 (canopy storage, several GB from NASA Earthdata) is not part of the pipeline.
 
 ## Paper
 
