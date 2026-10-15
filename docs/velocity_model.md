@@ -8,6 +8,9 @@ version to use, and what the model can and cannot tell you. How the model is bui
 Start with `examples/velocity_model_quickstart.py`. It downloads the model and prints a summary, then samples a
 point, plots a profile and a section, reads one critical-zone column, and exports a grid.
 
+For travel times and rays, `examples/pykonal_tutorial.ipynb` runs pykonal in the model for a source and a set of
+stations, and compares the times with the analyst picks of the event (`pixi run jupyter lab` in the repository).
+
 ## 1. Which model to use
 
 | Product | What it is | Use it for |

@@ -18,7 +18,8 @@ geometry numbers are placeholders, marked `m1_placeholder` in `configs/`.
 ## Download the derived products
 
 **Using the velocity model:** start with [`docs/velocity_model.md`](docs/velocity_model.md) (what it contains, which
-version to use, what it resolves) and run `examples/velocity_model_quickstart.py`.
+version to use, what it resolves) and run `examples/velocity_model_quickstart.py`; for travel times and rays with
+pykonal, open `examples/pykonal_tutorial.ipynb`.
 
 The derived products are the assets of the GitHub release
 [`products-v1.0.0`](https://github.com/Denolle-Lab/mt-rainier-digital-model/releases/tag/products-v1.0.0), under
