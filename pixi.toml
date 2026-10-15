@@ -54,7 +54,7 @@ disba = ">=0.7.0, <0.8"
 [tasks]
 test = "pytest -q tests"
 manifest = "python scripts/00_data_manifest.py"
-lint = "ruff check src scripts tests"
+lint = "ruff check src scripts tests examples"
 s1 = "python scripts/01_surface.py"
 s2 = "python scripts/02_surface_layers.py"
 s3 = "python scripts/03_geomodel.py"

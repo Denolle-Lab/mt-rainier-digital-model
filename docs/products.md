@@ -29,7 +29,8 @@ returns the same folder.
 
 | Product | Size | Content | Made by |
 |---|---|---|---|
-| `model` | 110 MB | Fused Vp, Vs, density, Qp, Qs, units and alteration on levels L1–L3, plus the surface layers (xarray DataTree, Zarr v3) | S1–S5, S13, S22 |
+| `model` | 193 MB | Fused Vp, Vs, density, Qp, Qs, units and alteration on levels L1–L3, the critical-zone columns and the surface layers (xarray DataTree, Zarr v3) | S1–S5, S13, S22 |
+| `model_let` | 209 MB | `model` after the S37 local-earthquake tomography, with the update and its node grid `/let` | S37 |
 | `grids` | 55 MB | The model on one uniform grid: CF netCDF (500 m), EMC-style netCDF, NonLinLoc P and S grids | S9 |
 | `strain_3d` | 72 MB | GNSS strain rate carried down and edifice-load strain in the volume, with orientations | S25 |
 | `edifice_load` | 115 MB | Stress from the weight of the edifice on levels L1–L3 | S18 |
@@ -38,6 +39,9 @@ returns the same folder.
 | `gnss` | 4 MB | GNSS velocities with QC flags, strain-rate grid, daily regional strain, download manifest | S17, S18 |
 
 ### `model`: the fused velocity model
+
+What the model contains, which version to use and what it resolves: `docs/velocity_model.md`. The tomography
+model `model_let` has the same layout (`r3.open_model(product="model_let")`).
 
 ```bash
 rainier3d sample --lon -121.76 --lat 46.85 --depth 5000                     # values at one point

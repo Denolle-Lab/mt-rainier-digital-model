@@ -58,6 +58,9 @@ model:
   levels:
     resampled: [vs_unc_regional]        # CRESCENT Gen0 uncertainty, interpolated
 
+model_let:                              # the S37 tomography model: packaged like model, plus its node grid
+  extra_nodes: [let]
+
 mass_movements:
   exclude_files: [faults.gpkg, lahar_zones.gpkg]   # DNR faults and the 1998 lahar zones: copies of their sources
 
@@ -72,6 +75,10 @@ rebuild:
     note: >-
       S5 applies the calibration of configs/velocity_calibration.yaml; `pixi run s13` recomputes it from the PNSN
       picks in data/raw/pnsn (about 26 min on a 10-core laptop).
+  model_let:
+    stages: [s37]          # on model.zarr, about 100 min on a 10-core laptop
+    needs: [model]
+    raw: [pnsn]            # the pick caches of tomography.pick_caches (configs/domain.yaml)
   grids:
     stages: [s9]
     needs: [model]

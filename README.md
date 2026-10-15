@@ -17,6 +17,9 @@ geometry numbers are placeholders, marked `m1_placeholder` in `configs/`.
 
 ## Download the derived products
 
+**Using the velocity model:** start with [`docs/velocity_model.md`](docs/velocity_model.md) (what it contains, which
+version to use, what it resolves) and run `examples/velocity_model_quickstart.py`.
+
 The derived products are the assets of the GitHub release
 [`products-v1.0.0`](https://github.com/Denolle-Lab/mt-rainier-digital-model/releases/tag/products-v1.0.0), under
 CC-BY 4.0. Every archive is listed with its SHA-256 in the release file `SHA256SUMS` and in

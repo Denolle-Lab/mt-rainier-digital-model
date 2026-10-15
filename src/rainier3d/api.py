@@ -85,8 +85,8 @@ def fetch(name: str, url: str | None = None, sha256: str | None = None, force: b
             raise ConnectionError(f"{name}: cannot read the published checksum {p['sha256_url']}")
         if target.exists() and archive.exists() and _sha256(archive) == sha256 and not force:
             return target
-    elif target.exists() and not force:
-        return target
+    elif target.exists() and not force and (sha256 is None or _extracted_from(target) == sha256):
+        return target  # a newer release (another checksum in the catalog) replaces the cached copy
     root.mkdir(parents=True, exist_ok=True)
     scheme = urlparse(url).scheme.lower()
     if scheme not in ("http", "https"):  # a local path (or file:// URL), e.g. a pipeline build
@@ -109,13 +109,21 @@ def fetch(name: str, url: str | None = None, sha256: str | None = None, force: b
         shutil.rmtree(target)
     with zipfile.ZipFile(archive) as z:
         z.extractall(target)
+    target.with_name(target.name + ".sha256").write_text(_sha256(archive) + "\n")
     return target
 
 
-def open_model(path: str | Path | None = None) -> xr.DataTree:
-    """The fused model as an xarray DataTree (/surface, /L1, /L2, /L3). Downloads it when no path is given."""
+def _extracted_from(target: Path) -> str | None:
+    """SHA-256 of the archive the cached folder came from (None for a cache older than this record)."""
+    f = target.with_name(target.name + ".sha256")
+    return f.read_text().strip() if f.exists() else None
+
+
+def open_model(path: str | Path | None = None, product: str = "model") -> xr.DataTree:
+    """The fused model as an xarray DataTree (/surface, /cz, /L1, /L2, /L3), downloaded when no path is given.
+    ``product="model_let"`` opens the model after the S37 tomography instead (docs/velocity_model.md)."""
     if path is None:
-        root = fetch("model")
+        root = fetch(product)
         path = next(root.glob("*.zarr"), root)
     return xr.open_datatree(path, engine="zarr", consolidated=False)
 

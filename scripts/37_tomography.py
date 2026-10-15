@@ -112,11 +112,29 @@ def main():
     ap.add_argument("--model", default=None, help="starting model (default data/processed/model.zarr)")
     ap.add_argument("--figures-only", action="store_true", help="redraw the figures from outputs/tomography/")
     ap.add_argument("--site", default=None, help="also copy the figures and the 3D data to this folder")
+    ap.add_argument(
+        "--model-only",
+        action="store_true",
+        help="rewrite model_let.zarr from outputs/tomography/nodes.nc and the current model (no inversion)",
+    )
     a = ap.parse_args()
     if a.figures_only:
         from rainier3d.report import tomography_figures
 
         tomography_figures.make_all(a.site)
+        return
+    if a.model_only:
+        dom = load_domain()
+        tc, out_dir = dom.cfg["tomography"], dom.path("outputs") / "tomography"
+        node_ds = xr.open_dataset(out_dir / "nodes.nc").load()
+        nodes = TM.Nodes(node_ds.x.values, node_ds.y.values, node_ds.d.values)
+        m = np.concatenate([node_ds.dlnvp.values.ravel(), node_ds.dlnvs.values.ravel()])
+        summary = json.loads((out_dir / "summary.json").read_text())
+        tree = read_tree(a.model or dom.path("processed") / "model.zarr")
+        write_model(
+            tree, node_ds, nodes, m, dom.path("processed") / "model_let.zarr", summary, tc["cz_taper_m"]
+        )
+        logging.info("rewrote model_let.zarr from %s", out_dir / "nodes.nc")
         return
     t_start = time.time()
     dom = load_domain()
@@ -437,6 +455,10 @@ def write_model(tree, node_ds, nodes, m, path, summary, cz_taper_m):
                 ds[f"dln{v}_let"] = (
                     ("z", "y", "x"),
                     np.where(np.isfinite(old), f, np.nan).astype(np.float32),
+                    {
+                        "units": "1",
+                        "long_name": f"ln {v} perturbation of the tomography (S37), 0 in the critical zone",
+                    },
                 )
                 if v == "vp":
                     ratio = nafe_drake_rho_from_vp(ds["vp"].values / 1e3) / nafe_drake_rho_from_vp(old / 1e3)

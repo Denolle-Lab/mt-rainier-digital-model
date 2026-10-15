@@ -53,6 +53,19 @@ def test_fetch_checks_sha256(tmp_path, monkeypatch):
         api.fetch("model", url=str(src), sha256="0" * 64, force=True)
 
 
+def test_fetch_replaces_cache_of_an_older_release(tmp_path, monkeypatch):
+    monkeypatch.setenv("RAINIER3D_DATA", str(tmp_path / "cache"))
+    old, new = tmp_path / "old" / "p.zip", tmp_path / "new" / "p.zip"
+    for f, text in ((old, "v1"), (new, "v2")):
+        f.parent.mkdir()
+        with zipfile.ZipFile(f, "w") as z:
+            z.writestr("version.txt", text)
+    sha = {f: hashlib.sha256(f.read_bytes()).hexdigest() for f in (old, new)}
+    assert (api.fetch("model", url=str(old), sha256=sha[old]) / "version.txt").read_text() == "v1"
+    assert (api.fetch("model", url=str(old), sha256=sha[old]) / "version.txt").read_text() == "v1"  # cached
+    assert (api.fetch("model", url=str(new), sha256=sha[new]) / "version.txt").read_text() == "v2"
+
+
 def test_unpublished_product_raises(monkeypatch):
     monkeypatch.setattr(api, "products", lambda: {"model": {"url": None}})
     with pytest.raises(LookupError):
