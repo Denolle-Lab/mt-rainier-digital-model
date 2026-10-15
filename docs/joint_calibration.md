@@ -11,9 +11,10 @@ bibliography: references.bib
 
 > **Superseded calibration.** This record documents calibration v2 of 24 September 2026, made without the
 > critical zone and kept as `configs/velocity_calibration_v2.yaml`. The published model uses the calibration
-> refitted with the critical zone in every trial model (`configs/velocity_calibration.yaml`, diagnostics in
-> `outputs/joint_calibration_cz/`): V0 ×1.47, P* ×1.79, Vs ×0.961, and on the held-out half after the four
-> fitting-half iterations an RMS of 0.092 s (P) and 0.186 s (S). The paper reports those numbers; the method
+> refitted with the critical zone in every trial model and with the smoothed geology of the fusion
+> (`configs/velocity_calibration.yaml` of 14 October 2026, diagnostics in `outputs/joint_calibration/`): V0 ×1.44,
+> P* ×1.42 (not resolved), Vs ×0.951, and on the held-out half after the three fitting-half iterations an RMS of
+> 0.093 s (P) and 0.188 s (S). The paper reports those numbers, from `outputs/paper/numbers.json`; the method
 > below is unchanged.
 
 **Scripts:** S13 (`scripts/13_joint_calibration.py`), S14 (`scripts/14_relocate.py`) and the calibration figures of S10 (`scripts/10_report.py`, `rainier3d.report.calibration_figures`, formerly S16). The location and inversion code is in `src/rainier3d/validate/locate.py`. The model assembly that S5 and S13 share is in `src/rainier3d/fusion/build.py`.
