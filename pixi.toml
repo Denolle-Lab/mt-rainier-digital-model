@@ -95,9 +95,16 @@ s30 = "python scripts/30_terrain_geometry.py"
 s36 = "python scripts/36_packwood_magnetics.py"
 s19 = "python scripts/19_canopy_layers.py"
 s21 = "python scripts/21_compare_imush.py"
+# the uncalibrated model (data/processed/model_nocal.zarr), S21's baseline: S4 and S5 without the S13 calibration,
+# into their own stores, so properties_geology.zarr, model.zarr and fusion_report.csv stay as calibrated
+nocal = "python scripts/04_properties.py --no-calibration --out properties_geology_nocal.zarr && python scripts/05_fusion.py --no-calibration --properties properties_geology_nocal.zarr --out model_nocal.zarr"
 s26 = "python scripts/26_relocate_catalog.py"
 s37 = "python scripts/37_tomography.py"
 s14-published = "python scripts/14_relocate.py --model data/processed/model.zarr --name fused_joint --skin 1"
+# the comparison rows of the paper's model table that the current inputs rebuild: the PNSN 1D model and the
+# uncalibrated 3D model (the 24 September runs of retired parameterisations are kept as dated history)
+s14-1d = "python scripts/14_relocate.py --model 1d --name pnsn1d --skin 1"
+s14-nocal = "python scripts/14_relocate.py --model data/processed/model_nocal.zarr --name fused_nocal --skin 1"
 s20 = "python scripts/20_publish_products.py"
 
 # The pipeline in eight families, in dependency order (docs/model_construction.md, README "Pipeline"). Each family
@@ -108,7 +115,7 @@ inputs = { depends-on = ["manifest"] }
 surface = { depends-on = ["s1", "s2", "s22", "s19"] }
 model = { depends-on = ["s3", "s4", "s5"] }
 calibrate = { cmd = "python scripts/04_properties.py && python scripts/05_fusion.py", depends-on = ["s13"] }
-validate = { depends-on = ["s6", "s14-published", "s21", "s26"] }
+validate = { depends-on = ["s6", "s14-published", "s14-1d", "nocal", "s14-nocal", "s21", "s26"] }
 tomography = "python scripts/37_tomography.py --site docs/tomography"
 applications = { depends-on = ["s17", "s18", "s24", "s30", "s31", "s33", "s34", "s35", "s36", "s29"] }
 # S20 (product archives) is run by hand with the release tag: pixi run s20 --tag products-vX.Y.Z [--upload]

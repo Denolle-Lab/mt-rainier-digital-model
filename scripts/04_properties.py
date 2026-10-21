@@ -26,6 +26,7 @@ def main():
     ap.add_argument("--profile", default=None)
     ap.add_argument("--no-calibration", action="store_true", help="ignore the S13 geology calibration")
     ap.add_argument("--no-cz", action="store_true", help="without the critical zone (the M1 model)")
+    ap.add_argument("--out", default="properties_geology.zarr", help="store name under data/processed")
     a = ap.parse_args()
     dom = load_domain(a.profile)
     geo = read_tree(dom.path("processed") / "geomodel.zarr")
@@ -45,7 +46,7 @@ def main():
         "geology_calibration": f"configs/velocity_calibration.yaml ({cal['date']})" if geo_cal else "none",
         "critical_zone": "none" if cz is None else "configs/cz.yaml medium (rainier3d.cz.level)",
     }
-    write(tree, dom.path("processed") / "properties_geology.zarr")
+    write(tree, dom.path("processed") / a.out)
     for k, ds in out.items():
         if k == "/cz":
             continue
