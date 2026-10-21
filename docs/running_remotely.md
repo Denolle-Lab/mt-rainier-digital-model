@@ -91,6 +91,29 @@ done
 - **Manual stages:** S20 (products release, `pixi run s20 --tag products-vX.Y.Z --upload`), S27 and S28 run by
   hand.
 
+### What a clean machine needs that a laptop hid
+
+The first server run (21 October 2026) started with an empty `data/processed/` and `outputs/`, and found stages
+that read products no family had built yet. They are fixed in the families:
+
+- **S22 and S3:** S22 read `geomodel.zarr`, which S3 builds from S22's own output; S22 now reads the S1 surface
+  store (`surface.zarr`), which holds the same elevation, ice and map units.
+- **S21 and the model table of the paper:** `validate` now builds the uncalibrated model (`pixi run nocal`:
+  `model_nocal.zarr`, from S4 and S5 without the calibration, into their own stores) and relocates the PNSN 1D
+  and uncalibrated models (`s14-1d`, `s14-nocal`), as well as the published one.
+- **S8 in `applications`:** S18 and S10 read the event catalogue of S8 (`web/atlas/data/events.geojson`, frozen at
+  `as_of`), which no family ran; S8 now opens `applications`.
+- **S29 before S34:** S34 reads the storm that S29 writes (`data/processed/events/`).
+
+Two inputs exist only on the machine where they were made, and the server run goes on without them:
+
+- **Canopy layers of S19** (lidar canopy height and cover, Sentinel-2 LAI, GEDI PAI and biomass): read from
+  `~/Downloads` (`configs/canopy_products.yaml`) and not staged into `data/raw/`. S19 keeps the GEDI canopy height
+  only, and S10 keeps the committed canopy figure instead of remaking it.
+- **The retired calibration snapshots** (`model_vscal_20260924.zarr`, `model_joint_s13.zarr`) and their S14 runs:
+  the dated rows of the paper's model table. S10 leaves their curves out of the calibration figure and their rows
+  out of `docs/joint_calibration/relocation_qc.csv`.
+
 ## 5. Claude Code on the server
 
 Run Claude Code where the files are: either VS Code Remote-SSH with the Claude Code extension in the remote

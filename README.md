@@ -206,16 +206,21 @@ A full `pixi run pipeline` takes about six hours on a laptop. The times below we
 on an Apple M1 Max (10 cores: 8 performance, 2 efficiency; 64 GB RAM; macOS 15.7), with the raw cache under
 `data/raw/` already downloaded. They come from that run's logs and the write times of each stage's product.
 
-| Family | Time | Longest stage |
-|---|---|---|
-| `inputs` | 1 min | S0 |
-| `surface` | 80 min | S2, 56 min, streaming POLARIS over the network; S2 now caches it under `data/raw/polaris/`, so later runs read it locally |
-| `model` | 1 min | S4 |
-| `calibrate` | 31 min | S13, 29 min (8 workers) |
-| `validate` | 83 min | S26, about 80 min (NonLinLoc on a single core) |
-| `tomography` | 100–130 min | S37 (8 workers): 100.5 min on 13 October; 132 min on 14 October, when another job made the laptop swap |
-| `applications` | 40 min | S34 and S29, about 10 min each |
-| `deliver` | 6 min | S32 (viewer bundle) |
+| Family | Time, laptop (14 Oct) | Time, server (21 Oct) | Longest stage |
+|---|---|---|---|
+| `inputs` | 1 min | 0.3 min | S0 |
+| `surface` | 80 min | 1.2 min | S2, 56 min on the laptop, streaming POLARIS over the network; S2 now caches it under `data/raw/polaris/`, so later runs read it locally |
+| `model` | 1 min | 1.8 min | S4 |
+| `calibrate` | 31 min | 34 min | S13: 29 min (8 workers) on the laptop, 32 min (48 workers) on the server |
+| `validate` | 83 min | 10 min | S26: about 80 min on the laptop, about 6 min on the server (NonLinLoc on a single core) |
+| `tomography` | 100–130 min | 79 min | S37: 100.5 min on 13 October and 132 min on 14 October (8 workers; the laptop swapped on 14 October); 78.9 min with 48 workers |
+| `applications` | 40 min | about 47 min | S34 (20 min on the server) and S29 |
+| `deliver` | 6 min | 10 min | S10 and S32 (viewer bundle) |
+
+The server is a Linux x86-64 machine with 48 cores and 376 GB RAM, run with `RAINIER3D_WORKERS=48` and the raw
+cache copied from the laptop (`docs/running_remotely.md`). Its `validate`, `applications` and `deliver` families
+were restarted after fixes for a clean machine; their times are the restarted runs, and `applications` sums the
+stages of two attempts (S8 to S33 in one, S29 and S34 to S36 in the next).
 
 - **Run families separately:** each family can be run on its own once the families it needs have run, so a long
   rebuild can be split over several sessions. After a change to the model, `pixi run model && pixi run calibrate &&
