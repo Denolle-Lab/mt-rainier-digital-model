@@ -112,7 +112,7 @@ def fig_geology():
     d = np.linspace(0, 6000, 200)
     p_mpa = (pp["rho_bulk_kgm3"] - pp["rho_water_kgm3"]) * 9.81 * d / 1e6
     fig, ax = plt.subplots(1, 2, figsize=(9.5, 5.2), sharey=True, constrained_layout=True)
-    colors = {"rainier_andesite": "#c2412d", "ohanapecosh": "#2a78d6", "miocene_intrusive": "#3a9a5b"}
+    colors = {"rainier_volcanics": "#c2412d", "ohanapecosh": "#2a78d6", "miocene_intrusive": "#3a9a5b"}
     for u, c in colors.items():
         r = t.loc[u]
         for cal, ls in (({}, "--"), (g, "-")):

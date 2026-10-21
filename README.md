@@ -299,7 +299,7 @@ positive up. Levels, from `configs/domain.yaml`, profile `m1`:
 Map units are crosswalked to 16 model units and extended to depth by column rules:
 
 - ice thickness, then an unconsolidated deposit layer;
-- Rainier andesite above an interpolated pre-volcanic surface;
+- Rainier volcanics above an interpolated pre-volcanic surface;
 - basement units extruded to −4 km, and plutons to −10 km;
 - middle crust below;
 - a placeholder magma sphere (its anomaly applied to the fused model, with a cosine taper) and the alteration

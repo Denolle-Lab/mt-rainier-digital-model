@@ -371,7 +371,7 @@ with bulk density $\rho_b$ = 2500 kg m⁻³, water density $\rho_w$ = 1000 kg m�
 | Glacial drift | 1.60 | 2.40 | 5 | 2.50 | 1.95 |
 | Alluvium, colluvium | 1.50 | 2.20 | 5 | 2.80 | 1.90 |
 | Lahar deposits | 1.80 | 2.80 | 8 | 2.30 | 2.00 |
-| Rainier andesite | 2.80 | 5.60 | 30 | Brocher | Nafe–Drake |
+| Rainier volcanics | 2.80 | 5.60 | 30 | Brocher | Nafe–Drake |
 | Young volcanic rocks | 3.00 | 5.60 | 30 | Brocher | Nafe–Drake |
 | Miocene intrusive rocks | 4.50 | 6.20 | 40 | Brocher | Nafe–Drake |
 | Miocene volcanic rocks | 3.20 | 5.80 | 40 | Brocher | Nafe–Drake |
@@ -382,7 +382,7 @@ with bulk density $\rho_b$ = 2500 kg m⁻³, water density $\rho_w$ = 1000 kg m�
 | Russell Ranch Formation | 4.00 | 6.00 | 40 | Brocher | Nafe–Drake |
 | Middle crust | 6.00 | 6.50 | 50 | Brocher | Nafe–Drake |
 
-: Unit parameters of the crack-closure law (`configs/petrophysics.csv`). For the rock units (Rainier andesite to middle crust, and the magma body), the calibration multiplies V₀ by 1.44 (capped at 0.98 V∞), P* by 1.42 and Vs by 0.951. Ice and the unconsolidated deposits keep their table values. {#tbl:units}
+: Unit parameters of the crack-closure law (`configs/petrophysics.csv`). For the rock units (the Rainier volcanics to the middle crust, and the magma body), the calibration multiplies V₀ by 1.44 (capped at 0.98 V∞), P* by 1.42 and Vs by 0.951. Ice and the unconsolidated deposits keep their table values. {#tbl:units}
 
 ### Granular and partly saturated media {#sec:granular}
 
@@ -472,7 +472,7 @@ to be replaced by calibration:
 - glaciation: $f$ = 0 under present ice, where the column starts with fractured rock at the bed; young glacial
   drift and alluvium have $f$ = 0.5 and lahar deposits 0.3, since deposition restarts the weathering clock
   [@wang_2020_cz];
-- lithology: consolidated rock at the surface (Rainier andesite, the other volcanic rocks, the plutons and the
+- lithology: consolidated rock at the surface (the Rainier volcanics, the other volcanic rocks, the plutons and the
   supracrustal units) has $f$ = 0.5, because the SoilGrids prior is trained largely on deeply weathered profiles;
 - forest: $f$ is multiplied by 1.2 under canopy taller than 20 m, for root-driven weathering.
 
@@ -523,14 +523,14 @@ Units are extended to depth by explicit column rules, in the manner of the San F
 | $d < 0$ | air |
 | $d <$ ice thickness (IceBoost v2 [@iceboost_v2]) | ice |
 | $d <$ ice + deposit thickness (from the map unit description where it states one; else water 5 m, glacial drift 15 m, alluvium and colluvium 10 m, lahar deposits 15 m) | mapped surface deposit, beneath any ice |
-| inside the edifice footprint, above the edifice base | Rainier andesite |
-| young volcanic rocks, or andesite outside the footprint, within 300 m below the base of the ice and deposits | that cap unit |
+| inside the edifice footprint, above the edifice base | Rainier volcanics |
+| young volcanic rocks, or Rainier volcanics outside the footprint, within 300 m below the base of the ice and deposits | that cap unit |
 | above the base of the bedrock unit (−4 km NAVD88 for supracrustal units, −10 km NAVD88 for the Miocene plutons) | bedrock unit (mapped, or nearest mapped basement unit) |
 | otherwise (below −4 or −10 km NAVD88) | middle crust |
 
 : Column rules for the 3D units (S3; `configs/units.yaml`). {#tbl:rules}
 
-- **Edifice.** The edifice footprint is the Rainier andesite and ice mapped within 12 km of the summit (Columbia Crest, `configs/domain.yaml`) on the 100 m surface grid, closed morphologically over 500 m (a 5 × 5 cell element) with holes filled, keeping the connected region that contains the summit (S3, `rainier3d.geomodel.rules.edifice_footprint`; `geometry.edifice` in `configs/units.yaml`, `m1_placeholder` values). Its base is the pre-volcanic surface: the DEM elevations of the plutonic and supracrustal outcrops in a two-cell (200 m) ring around the footprint, interpolated linearly across it (nearest value where the linear interpolant is undefined) and kept at or below the glacier bed. The base lies at 804–2234 m NAVD88 over a 252 km² footprint (`/surface` node of `data/processed/geomodel.zarr`).
+- **Edifice.** The edifice footprint covers the Rainier volcanics and ice mapped within 12 km of the summit (Columbia Crest, `configs/domain.yaml`) on the 100 m surface grid, closed morphologically over 500 m (a 5 × 5 cell element) with holes filled, keeping the connected region that contains the summit (S3, `rainier3d.geomodel.rules.edifice_footprint`; `geometry.edifice` in `configs/units.yaml`, `m1_placeholder` values). Its base is the pre-volcanic surface: the DEM elevations of the plutonic and supracrustal outcrops in a two-cell (200 m) ring around the footprint, interpolated linearly across it (nearest value where the linear interpolant is undefined) and kept at or below the glacier bed. The base lies at 804–2234 m NAVD88 over a 252 km² footprint (`/surface` node of `data/processed/geomodel.zarr`).
 - **Basement.** Beneath the deposits and the edifice, the basement unit is taken from the nearest outcrop: every map cell takes the plutonic or supracrustal unit mapped there, or else that of the nearest such outcrop on the 100 m surface grid (nearest-neighbour fill, `rainier3d.geomodel.rules.bedrock_units`, S3). Map symbols of the 1:100,000 state geologic map [@dnr_gems_100k] reach the model units only through the ordered regular-expression rules of `configs/units.yaml` (`crosswalk_rules`).
     - The supracrustal units (the Ohanapecosh, Fifes Peak and Stevens Ridge formations, the Eocene volcanic rocks and the Puget Group, and also the pre-Tertiary Russell Ranch Formation) extend to 4 km below sea level (`supracrustal_base_z` = −4000 m NAVD88 in `configs/units.yaml`, an `m1_placeholder`); the middle crust fills the column below.
     - The Miocene plutons (Tatoosh, White River, Carbon River and Nisqually; map symbols starting `Mi`, `MOi`, `PLOi`, `PLMi`) extend to 10 km below sea level (`pluton_base_z` = −10000 m NAVD88 in `configs/units.yaml`, an `m1_placeholder`). They therefore continue through L2 into the top four 1 km layers of L3, where they cover about 700 km² in plan view (2,706 L3 cells).
@@ -666,7 +666,7 @@ where $s$ is slowness, $\phi_k$ the linear interpolation weight of knot $k$ at d
 
 The fit is resolved as follows ([@tbl:multipliers], [@tbl:bias], [@fig:calibration], [@fig:law]).
 
-- **V₀.** It is the parameter the data require: ×1.44 ± 0.04 (×1.31 without the critical zone). The table rock is too slow near the surface, and the slower critical zone above it raises the multiplier further. With it, the zero-pressure Vp of the rock law is 4.0 km s⁻¹ for Rainier andesite and 4.9 km s⁻¹ for the Ohanapecosh Formation. Because the multiplier is global, the Miocene plutons reach the cap of 0.98 V∞ = 6.08 km s⁻¹ at zero pressure (4.5 × 1.44 = 6.5), so their rock law starts at the cap; the velocity drop toward the surface comes from the critical zone alone.
+- **V₀.** It is the parameter the data require: ×1.44 ± 0.04 (×1.31 without the critical zone). The table rock is too slow near the surface, and the slower critical zone above it raises the multiplier further. With it, the zero-pressure Vp of the rock law is 4.0 km s⁻¹ for the Rainier volcanics and 4.9 km s⁻¹ for the Ohanapecosh Formation. Because the multiplier is global, the Miocene plutons reach the cap of 0.98 V∞ = 6.08 km s⁻¹ at zero pressure (4.5 × 1.44 = 6.5), so their rock law starts at the cap; the velocity drop toward the surface comes from the critical zone alone.
 - **P\*.** It is not resolved: its log-multiplier ranged from −0.28 to +0.52 across the iterations (final ×1.42, posterior s.d. 0.19 in ln) while the held-out RMS changed by less than 1 ms after the second iteration, and it trades off against the regional correction at 2 km.
 - **Rock Vs.** It falls by 4.9 ± 1.2% (ln multiplier −0.050 with posterior s.d. 0.013, against a prior s.d. of 0.1). Because it acts at fixed Vp, it raises the Vp/Vs of every rock unit by about 5%.
 - **Regional correction.** It changes Vp by less than 4% at every depth. It makes Vs 5–8% faster at 2–7 km and 4–8% slower at 16–25 km; with the rock multipliers, the median Vp/Vs at 2–4 km below the ground falls from 1.83 in the regional model to 1.74 in the fused model.

@@ -16,7 +16,7 @@ geology:
     ln_pstar: 0.7
     ln_vs: 0.1
   units:
-  - rainier_andesite
+  - rainier_volcanics
   - young_volcanics
   - miocene_intrusive
   - miocene_volcanics

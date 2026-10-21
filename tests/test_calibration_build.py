@@ -11,7 +11,7 @@ from rainier3d.properties.assign import assign
 def _level():
     names = {v: k for k, v in unit_names().items()}
     units = np.array(
-        [names["rainier_andesite"], names["miocene_intrusive"], names["glacial_drift"], names["ice"]]
+        [names["rainier_volcanics"], names["miocene_intrusive"], names["glacial_drift"], names["ice"]]
     )
     u = np.broadcast_to(units[None, None, :], (3, 1, 4)).astype(np.uint8)
     depth = np.broadcast_to(np.array([100.0, 1000.0, 3000.0])[:, None, None], u.shape)

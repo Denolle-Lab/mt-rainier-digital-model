@@ -23,7 +23,7 @@ The model is built in four layers of evidence, from the most local to the most c
 - **Surface layers (S2).** Soil thickness, texture, bulk density and hydraulics (SOLUS100, POLARIS), depth to bedrock
   (SoilGrids 2017), water table (Fan et al. 2017), canopy height.
 - **Column rules (S3, `rainier3d.geomodel.rules`).** Below each surface cell, top down: ice, the deposit layer,
-  Rainier andesite above an interpolated pre-volcanic surface (the edifice base), the young-volcanic cap to 300 m
+  Rainier volcanics above an interpolated pre-volcanic surface (the edifice base), the young-volcanic cap to 300 m
   below the bedrock top, basement units extended to −4 km and plutons to −10 km, middle crust below. A magma body is
   a sphere of radius 6.5 km centred 11.5 km below sea level, spanning the 5–18 km range of Moran et al. (1999), with
   a 2 km cosine taper of its anomaly (`magma_weight`).

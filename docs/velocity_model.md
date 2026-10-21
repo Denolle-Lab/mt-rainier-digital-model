@@ -110,7 +110,7 @@ thickness `cz_thickness`.
 | 0 | `air` | – |
 | 1 | `ice` | ice |
 | 2–5 | `water`, `glacial_drift`, `alluvium_colluvium`, `lahar_deposits` | unconsolidated deposits |
-| 6 | `rainier_andesite` | edifice |
+| 6 | `rainier_volcanics` | edifice |
 | 7 | `young_volcanics` | cap (Quaternary–Pliocene volcanics) |
 | 8 | `miocene_intrusive` | plutons (Tatoosh, White River, Carbon River, Nisqually) |
 | 9–14 | `miocene_volcanics`, `ohanapecosh`, `eocene_volcanics`, `eocene_sedimentary`, `miocene_sedimentary`, `pre_tertiary` | supracrustal units |

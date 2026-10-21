@@ -4,7 +4,7 @@ water,1.50,2.20,5,2.80,1.90,treated as saturated alluvium below the free surface
 glacial_drift,1.60,2.40,5,2.50,1.95,till and outwash; Vp/Vs set because Brocher 2005 is invalid below Vp 1.5 km/s,m1_placeholder
 alluvium_colluvium,1.50,2.20,5,2.80,1.90,saturated alluvium and mass-wasting deposits,m1_placeholder
 lahar_deposits,1.80,2.80,8,2.30,2.00,clay-rich debris-flow deposits (Osceola; Electron),m1_placeholder
-rainier_andesite,2.80,5.60,30,,,fractured lava flows and breccia; Vs and rho from Brocher 2005,m1_placeholder
+rainier_volcanics,2.80,5.60,30,,,fractured lava flows and breccia; Vs and rho from Brocher 2005,m1_placeholder
 young_volcanics,3.00,5.60,30,,,Quaternary-Pliocene lava flows,m1_placeholder
 miocene_intrusive,4.50,6.20,40,,,granodiorite and quartz diorite plutons,m1_placeholder
 miocene_volcanics,3.20,5.80,40,,,Fifes Peak and Stevens Ridge andesite flows and tuffs,m1_placeholder

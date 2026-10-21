@@ -4,7 +4,7 @@ import { formatValue, groups, rampTicks, sampleValue } from "./modelLayers.js";
 const box = { west: -122, east: -121, south: 46, north: 47 };
 const cont = { kind: "continuous", units: "m", values: { width: 2, height: 2, scale: 0.5, offset: 1, nodata: 65535 } };
 const cat = { kind: "categorical", units: "", values: { width: 2, height: 2, scale: 1, offset: 0, nodata: 65535 },
-  legend: { classes: [{ value: 6, label: "Mount Rainier andesite", color: "#e07a5f" }] } };
+  legend: { classes: [{ value: 6, label: "Mount Rainier volcanics", color: "#e07a5f" }] } };
 
 describe("model layers", () => {
   it("samples rows north to south and decodes scale/offset", () => {
@@ -18,7 +18,7 @@ describe("model layers", () => {
   it("formats values and classes", () => {
     expect(formatValue(cont, 1.234)).toBe("1.23 m");
     expect(formatValue(cont, 123.4)).toBe("123 m");
-    expect(formatValue(cat, 6)).toBe("Mount Rainier andesite");
+    expect(formatValue(cat, 6)).toBe("Mount Rainier volcanics");
     expect(formatValue(cont, null)).toBe("no data");
   });
   it("puts log-ramp middle tick at the geometric mean", () => {

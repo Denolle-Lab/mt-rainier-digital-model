@@ -140,7 +140,7 @@ Events alternate between a fitting half and a held-out half in origin-time order
 | P* | −0.099 | ×0.91 | 0.098 | 0.7 | weakly: it wandered from +0.40 to −0.10 while the misfit changed by less than 1 ms |
 | Vs (rock) | −0.024 | ×0.976 | 0.012 | 0.1 | marginally (2σ) |
 
-V0 is the parameter the data require. The placeholder rock is too slow near the surface. With V0 raised 31%, surface Vp becomes 3.7 km/s for Rainier andesite and 4.5 km/s for the Ohanapecosh Formation (Figure 4). P* trades off against the regional bias at 2 km and is not resolved; its placeholder value is kept within the uncertainty.
+V0 is the parameter the data require. The placeholder rock is too slow near the surface. With V0 raised 31%, surface Vp becomes 3.7 km/s for the Rainier volcanics and 4.5 km/s for the Ohanapecosh Formation (Figure 4). P* trades off against the regional bias at 2 km and is not resolved; its placeholder value is kept within the uncertainty.
 
 The multiplier is global, and that causes one visible problem. The Miocene plutons start at 4.5 km/s, so ×1.31 gives 5.90 km/s at the surface, just under the 0.98 V∞ cap (6.08 km/s), and 6.07 km/s at 2 km (L1 medians of `properties_geology.zarr`): nearly uniform from the surface down. Fractured near-surface granodiorite is likely slower than that. Separate multipliers for volcanic, sedimentary and plutonic rocks need more stations on each; this is the first refinement to test with the 2025 node array.
 

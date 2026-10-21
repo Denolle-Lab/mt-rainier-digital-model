@@ -5,8 +5,8 @@ Column rule, top down, for a cell at elevation z with depth d = DEM - z below th
   d < 0                                    air
   d < H_ice                                ice
   d < H_ice + T_unconsolidated             surface deposit (drift, alluvium, lahar, water)
-  inside the edifice footprint, z > base   rainier_andesite
-  young_volcanics / distal andesite cap    that unit, to cap_thickness below the bedrock top
+  inside the edifice footprint, z > base   rainier_volcanics
+  young_volcanics / distal rainier_volcanics  that unit, to cap_thickness below the bedrock top
   z > base of the bedrock unit             bedrock unit (map unit, or nearest mapped basement unit)
   otherwise                                middle_crust
 then the magma_mush sphere overrides whatever it contains. Its velocity anomaly is not a unit property: S5
