@@ -90,7 +90,7 @@ Levels L1, L2 and L3 (`rainier3d.io.attrs.LEVEL`):
 | `vp`, `vs`, `rho` | m/s, m/s, kg/m³ | the fused model: the values to use |
 | `qp`, `qs` | 1 | quality factors from a rule on Vs (`q` block of `configs/perturbations.yaml`) |
 | `vp_geology`, `vs_geology` | m/s | the geology model before the fusion (S4) |
-| `vp_regional`, `vs_regional` | m/s | the corrected regional model (USGS Cascadia CVM v1.7 to 9.9 km below the ground, CRESCENT Gen0 below) |
+| `vp_regional`, `vs_regional` | m/s | the corrected regional model (USGS Cascadia CVM v1.7 to 9.9 km below the ground, CRESCENT Gen0 below; the jump between them spread over 8–16 km) |
 | `unit` | 1 | model unit, table below; `flag_values` and `flag_meanings` in its attributes |
 | `alteration` | 1 | hydrothermal alteration intensity, 0 fresh to 1 altered (helicopter EM survey, S22) |
 | `magma_weight` | 1 | weight of the magma-body anomaly, 1 in its core to 0 outside |

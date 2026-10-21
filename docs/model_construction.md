@@ -51,15 +51,19 @@ The model is built in four layers of evidence, from the most local to the most c
 
 ## 3 Fusion with earlier models and calibration (S5, S13)
 
-- **Regional models.** USGS Cascadia CVM v1.7 to 9.9 km below the ground, CRESCENT Gen0 below
-  (`rainier3d.fusion.regional`).
+- **Regional models.** USGS Cascadia CVM v1.7 to 9.9 km below the ground (the base of its data), CRESCENT Gen0
+  below (`rainier3d.fusion.regional`). The jump between them at 9.9 km (median 6% in Vs, CRESCENT faster) is
+  spread with a raised cosine over 8–16 km below the ground (`fusion.regional_blend_m`, `m1_placeholder`): CVM
+  plus W times the jump above 9.9 km, CRESCENT minus (1 − W) times the jump below, so each model is used only
+  where it has data.
 - **Fusion in ln V (`rainier3d.fusion.blend`).** Vs and Vp/Vs of the fused model are the long wavelengths of the
   regional model plus the short wavelengths of the geology model: LP(regional) + [geology − LP(geology)], with a
   horizontal Gaussian whose cutoff grows from 6 km at the surface to 20 km at depth; alternating projections keep
   every cell between its two inputs. The top 300 m is the geology model alone, tapering to the fused model by 1 km.
 - **Smoothing of the rule contacts (`blend.smooth_geology`).** Below the 150 m critical-zone columns the geology is
-  low-passed in the vertical (cutoff growing to 1 km) and horizontally (cutoff growing as depth below 150 m, to
-  2 km), before fusion. The critical zone itself is not smoothed and is not smoothed into the cells below.
+  low-passed in the vertical (cutoff growing to 1 km) and horizontally (cutoff starting at 750 m just below the
+  critical zone and growing with depth below 150 m, to 2 km; `lambda_h_start_m`), before fusion. The critical
+  zone itself is not smoothed and is not smoothed into the cells below.
   Effect in L1: vertical jumps across unit contacts (median |Δ ln Vs|) 0.192 → 0.033; lateral jumps across unit
   boundaries at 1–2 km depth 0.041 → 0.007.
 - **Magma body.** Its anomaly (−10% Vp, −15% Vs, −3% density, `configs/perturbations.yaml`, placeholders) is applied

@@ -27,7 +27,7 @@ LEVEL = {
     "vs_geology": ("m/s", "S-wave speed of the geology model (S4), before the fusion"),
     "vp_regional": (
         "m/s",
-        "P-wave speed of the corrected regional model (CVM v1.7 to 9.9 km depth, then CRESCENT)",
+        "P-wave speed of the corrected regional model (CVM v1.7, CRESCENT below, blended 8-16 km deep)",
     ),
     "vs_regional": ("m/s", "S-wave speed of the corrected regional model"),
     "vs_unc_regional": ("m/s", "Vs uncertainty of CRESCENT Gen0, interpolated (not in the released product)"),

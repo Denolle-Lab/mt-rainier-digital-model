@@ -75,7 +75,7 @@ cvm17:
     z is depth below the ground surface in L01 (verified in gwl-space-time-smooth from the median
     top-sample Vs of ~206 m/s). L2 is taken as the same convention: at the summit Vs runs
     2841 m/s at z=1200 (L01) and 2870 m/s at z=1500 (L2), which is continuous; checked 2026-09-23.
-  role: regional Vp, Vs to 9.9 km depth; long wavelengths in S5
+  role: regional Vp, Vs to 9.9 km depth (blended into CRESCENT over 8-16 km); long wavelengths in S5
 
 crescent_gen0:
   title: He et al. 2026, The CRESCENT Generation 0 Cascadia Community Velocity Model, JGR Solid Earth
@@ -83,7 +83,7 @@ crescent_gen0:
   data_doi: 10.6084/m9.figshare.31902061
   verified: web-2026-09-23 (citation); local file ~/GitHub/cascadia_obs_ensemble/data/tomography/CRESCENT_Gen0.nc
   note: depth coordinate -4 to 100 km, negative above sea level (taken as km below sea level)
-  role: regional Vs and Vs uncertainty below the CVM L2 base (9.9 km)
+  role: regional Vs and Vs uncertainty below the CVM L2 base (9.9 km; blended over 8-16 km)
 
 pnsn_1d_wa:
   title: PNSN 1D velocity model, western Washington, as tabulated in cascadia_obs_ensemble/data/vel_pnsn_wa.csv

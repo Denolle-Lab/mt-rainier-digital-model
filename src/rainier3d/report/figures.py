@@ -272,7 +272,7 @@ def fig_fusion(tree, dom, path, at_y, zmin=-12000):
         ("vs_geology", "vs_regional", "vs"),
         (
             "a  Geology-driven model (rock physics on the 3D units)",
-            "b  Regional model (CVM v1.7 to 9.9 km, CRESCENT Gen0 below)",
+            "b  Regional model (CVM v1.7, CRESCENT Gen0 below, blended 8-16 km)",
             "c  Fused model: long wavelengths of b, short wavelengths of a",
         ),
         strict=True,
