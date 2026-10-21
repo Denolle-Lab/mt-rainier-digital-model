@@ -65,3 +65,76 @@ data/processed/model.zarr`, model of 14 October 2026:
    at about −9 km.
 5. **Products release:** do not publish it. `products-v1.1.0` (S20) is a public release, and Marine decides
    when it goes out.
+
+## Outcome (rebuild of 21 October 2026)
+
+Run on the Linux server (48 cores, `RAINIER3D_WORKERS=48`), all eight families from the cached inputs
+(`pixi run manifest -- --check`: 6213 of 6213 files identical). Log: `outputs/logs/rebuild_20261021.log`.
+`pixi run test`: 153 passed, none skipped; no tolerance changed.
+
+**Roughness.** Same metric before and after (`rainier3d.report.roughness`, uniform 250 m grid). "Before" is the
+model built here from the code and calibration of 14 October (it reproduces the baseline table above exactly);
+"after" is the published model, recalibrated. The CVM-to-CRESCENT measure is now the largest step per column
+6–16.5 km below the ground (one step at 9.9 km would miss a blend, whose slope is zero at its ends).
+
+| \|Δ ln Vs\| between neighbouring 250 m cells | before (median, p95, p99) | after |
+|---|---|---|
+| L2/L3 level boundary, −6 km | 0.0048, 0.013 | 0.0030, 0.0043 |
+| CVM v1.7 to CRESCENT, largest step per column, 6–16.5 km below the ground | 0.012, 0.0185 | 0.0037, 0.0062 |
+| reference: same statistic 16.5–20.5 km below the ground (CRESCENT only) | 0.0007, 0.0015 | 0.0011, 0.0020 |
+| ordinary vertical step, 7–9 km below the ground | 0.0005, 0.0026 | 0.0028, 0.0038 |
+| lateral, 150–1000 m below the ground | 0.0029, 0.054, 0.199 | 0.0045, 0.047, 0.109 |
+| lateral, 1000–2000 m below the ground | 0.0028, 0.015, 0.036 | 0.0034, 0.014, 0.023 |
+
+The 7–9 km band is no longer a clean reference: the recalibrated regional correction is steeper between its
+4, 7 and 11 km knots, and the blend window starts at 8 km.
+
+**Tasks.**
+1. **CVM to CRESCENT: done, with a different formulation.** The jump at 9.9 km is 0.062 in ln Vs at the median
+   column (p05–p95 0.017–0.085). A raised cosine of width W spreads it to about 0.024/W per 250 m, and a window
+   that ends at the 9.9 km base of the CVM data cannot be wide enough. So the jump Δ of each column is spread
+   instead: CVM + WΔ above 9.9 km, CRESCENT − (1 − W)Δ below, W over 8–16 km (`fusion.regional_blend_m`,
+   `m1_placeholder`). Each model is used only where it has data. Target partly met: 0.012 → 0.0037, still about
+   three times the deep reference. A wider window would smooth more but shifts CRESCENT further.
+2. **L2/L3: done, cause found first.** The levels agree: across −6 km the median change of ln Vs is +0.0046
+   against +0.0040 predicted by L2's own gradient (residual 0.0005; 0.0000 in `vs_geology`). The step came from
+   `export.grids.uniform`, which clamped each level to its own centres and put the change over the 625 m between
+   them into one cell; it now interpolates across the gap. The stored model is unchanged by this fix; the eikonal
+   grids (nearest cell per level) were not affected.
+3. **Walls below the critical zone: done.** The lateral cutoff starts at 750 m (`lambda_h_start_m`,
+   `m1_placeholder`) just below the 150 m base and grows to 2 km. With the old calibration, no cell above 175
+   m changed (array comparison); the recalibration then changes all rock cells. p99 of `lateral_150_1000m`
+   0.199 → 0.109. Contacts remain visible in Figures 16 and 17; the −9 km band of Figure 17 is gone.
+4. **Rename: done.** `rainier_volcanics`, "Rainier volcanics", code 6. The archived calibration files v1 and v2
+   keep the old name.
+
+**Calibration changed.** V₀ ×1.44 → ×1.32, P* ×1.42 → ×0.56 (ln −0.58 ± 0.12; it moved from +0.24 to −0.58
+over the iterates, with the regional Vp factor at 2 km rising from 1.016 to 1.066), rock Vs ×0.951 → ×0.960.
+Held-out RMS 0.093 s (P) and 0.188 s (S), as before. S37 kept three steps (two before); held-out RMS
+0.0908 → 0.0722 s (P), 0.1800 → 0.1204 s (S).
+
+**Notebook.** `examples/pykonal_tutorial.ipynb` run on the old and new `model.zarr`: in the old model the long
+rays run flat along about −9.5 km; in the new one they curve smoothly. The bend near −5 km close to the source
+is in both (geology).
+
+**Clean-machine fixes found on the way** (the laptop always had the stores these stages expected):
+S22 read `geomodel.zarr` while S3 reads S22's output (now reads the S1 surface); S21 needed `model_nocal.zarr`,
+which no family built (new `nocal` task); the PNSN 1D and uncalibrated rows of the model table are rebuilt by
+`s14-1d` and `s14-nocal`; S18 and S10 read S8's event catalogue (S8 now first in `applications`); S34 read
+S29's storm before S29 ran (reordered).
+
+**Still open.**
+- Machine-local inputs not on the server: the canopy layers of S19 (`~/Downloads/MtRainier_gridded_products*`;
+  S10 now keeps the committed canopy figure) and the retired calibration snapshots `model_vscal_20260924.zarr`,
+  `model_joint_s13.zarr` with their S14 runs (Figure 10 (b) and `relocation_qc.csv` now leave them out).
+  Copying them from the laptop restores both; staging the canopy files into `data/raw/` closes review item R4.
+- `gh` is not logged in on the server (`gh auth login`), so PR #43's description was not read or updated.
+- The paper environment warns that pandoc-crossref was compiled for pandoc 3.11 and runs under 3.9.
+- Products release `products-v1.1.0` (S20) not built or published: Marine decides.
+- Claims to look at, from the text update:
+  - S13's smoothing weight λs is now 0.01, at the edge of its scan, with a negligible score difference from 0.1.
+  - The critical-zone base mismatch grew to 2.3% (p90 6.0%; was 0.5%): 1.6% from the smaller P*, the rest from
+    the lateral filter that now starts just below the columns.
+  - One S26 event sits 7 m above the ground in rainier3d; "no event above ground" no longer holds.
+  - Vp/Vs at 4–8 km is 0.07 below iMUSH (was 0.05), which sharpens review item S-DI.6.
+  - The "1–30 microstrain" load shear is not reproduced by `numbers.json` (p5–p95 0.98–13.7) and was left as is.
