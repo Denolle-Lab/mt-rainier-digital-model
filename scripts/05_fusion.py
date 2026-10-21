@@ -60,7 +60,7 @@ def main():
         nodes["/soil"] = read(soil)
     for name, lev in dom.levels.items():
         g, p = geo[name].to_dataset(), props[name].to_dataset()
-        reg = build.regional_level(lev, g["depth"].values, cvm, cres, cal)
+        reg = build.regional_level(lev, g["depth"].values, cvm, cres, cal, fc)
         out, rows = build.fuse_level(g, p, reg, lev, fc, q, name, magma=pert["magma_mush"])
         report += rows
         if cal is not None:

@@ -47,9 +47,11 @@ def apply_bias(reg: dict, depth: np.ndarray, cal: dict | None) -> dict:
     return out
 
 
-def regional_level(lev, depth, cvm, cres, cal: dict | None) -> dict:
-    """Regional Vp, Vs (m/s) on a level with the calibration's static bias and Vp/Vs floor applied."""
-    return apply_bias(regional.regional_on_level(lev, depth, cvm, cres), depth, cal)
+def regional_level(lev, depth, cvm, cres, cal: dict | None, fc: dict) -> dict:
+    """Regional Vp, Vs (m/s) on a level with the calibration's static bias and Vp/Vs floor applied; ``fc`` is
+    the fusion block of configs/domain.yaml (its CVM-to-CRESCENT window)."""
+    reg = regional.regional_on_level(lev, depth, cvm, cres, fc["regional_blend_m"])
+    return apply_bias(reg, depth, cal)
 
 
 def smoothing(fc: dict) -> dict:
@@ -59,6 +61,7 @@ def smoothing(fc: dict) -> dict:
         "lambda_z": fc.get("lambda_z_m", 0.0),
         "lambda_h": fc.get("lambda_h_m", 0.0),
         "growth_h": fc.get("lambda_h_growth", 1.0),
+        "lambda_h0": fc.get("lambda_h_start_m", 0.0),
     }
 
 

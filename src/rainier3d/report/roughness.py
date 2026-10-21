@@ -1,8 +1,11 @@
 """Roughness of the velocity model: steps of ln Vs between neighbouring cells of a uniform 250 m grid.
 
 Measures the interfaces that are not geology: the L2/L3 level boundary at -6 km, the change from CVM v1.7 to
-CRESCENT at 9.9 km below the ground (rainier3d.fusion.regional.CVM_MAX_DEPTH), and the lateral steps of
-extruded map units 150-2000 m below the ground, against the ordinary vertical step at 7-9 km below the ground.
+CRESCENT (a switch at 9.9 km below the ground, or the blend window of rainier3d.fusion.regional), and the
+lateral steps of extruded map units 150-2000 m below the ground, against the ordinary vertical step at 7-9 km
+below the ground. The CVM-to-CRESCENT measure is, per column, the largest step 6-16.5 km below the ground, so
+that it sees the steepest part of a blend and not only the 9.9 km point; its reference is the same statistic
+16.5-20.5 km below the ground (within the model's -20 km base), where CRESCENT alone is used.
 S10 records it in outputs/paper/numbers.json (model.roughness).
 
     pixi run python -m rainier3d.report.roughness data/processed/model.zarr
@@ -21,7 +24,7 @@ import rainier3d.api as r3
 def roughness(store) -> dict:
     """Median and upper percentiles of |d ln Vs| at each interface (see the module docstring)."""
     tree = r3.open_model(store)
-    g = r3.grid(tree, dx=250, dz=250, zmin=-15000, variables=("vs",))
+    g = r3.grid(tree, dx=250, dz=250, zmin=-20000, variables=("vs",))
     ok = g.air.values == 0
     lv = np.log(g.vs.values)
     z = g.z.values  # descending, cell centres
@@ -36,11 +39,12 @@ def roughness(store) -> dict:
         "median": float(np.median(dz[k][both[k]])),
         "p95": float(np.percentile(dz[k][both[k]], 95)),
     }
-    # CVM -> CRESCENT at 9.9 km below the ground: per column, the step across the interface
+    # CVM -> CRESCENT: per column, the largest step 6-16.5 km below the ground; reference 16.5-20.5 km
     dbg = elev[None] - zmid[:, None, None]
-    kk = np.argmin(np.abs(dbg - 9900), axis=0)
-    st = np.take_along_axis(dz, kk[None], 0)[0]
-    out["cvm_crescent_step"] = {"median": float(np.median(st)), "p95": float(np.percentile(st, 95))}
+    for name, (a, b) in {"cvm_crescent_step": (6000, 16500), "column_max_16_20km_bg": (16500, 20500)}.items():
+        st = np.where((dbg > a) & (dbg < b) & both, dz, 0.0).max(axis=0)
+        st = st[st > 0]
+        out[name] = {"median": float(np.median(st)), "p95": float(np.percentile(st, 95))}
     # reference: typical vertical step away from interfaces, 7-9 km below the ground
     ref = dz[(dbg > 7000) & (dbg < 9000) & both]
     out["vertical_step_7_9km_bg"] = {"median": float(np.median(ref)), "p95": float(np.percentile(ref, 95))}

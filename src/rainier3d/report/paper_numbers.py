@@ -180,7 +180,7 @@ def calibration():
     # calibrated zero-pressure Vp of three units, with the cap 0.98 Vinf of eq:crack
     pt = pd.read_csv(REPO / "configs/petrophysics.csv").set_index("unit")
     v0 = {}
-    for u in ("rainier_andesite", "ohanapecosh", "miocene_intrusive"):
+    for u in ("rainier_volcanics", "ohanapecosh", "miocene_intrusive"):
         raw = pt.loc[u, "vp0_kms"] * g["factor_v0"]
         v0[u] = {
             "scaled": raw,
@@ -529,7 +529,7 @@ def invariant_without_magma(g):
     pert, out = perturbations(), {}
     for name in ("L2", "L3"):
         lev = dom.levels[name]
-        reg = build.regional_level(lev, g[name]["depth"].values, cvm, cres, cal)
+        reg = build.regional_level(lev, g[name]["depth"].values, cvm, cres, cal, dom.cfg["fusion"])
         _, rows = build.fuse_level(
             g[name], props[name].to_dataset(), reg, lev, dom.cfg["fusion"], pert["q"], name
         )
@@ -564,7 +564,7 @@ def uncalibrated(g, m, bins):
     for name, lev in dom.levels.items():
         gl = g[name]
         p = assign(gl, table, pert, None, cz)  # as S4: the critical-zone context on every level
-        reg = build.regional_level(lev, gl["depth"].values, cvm, cres, None)
+        reg = build.regional_level(lev, gl["depth"].values, cvm, cres, None, fc)
         out, rows = build.fuse_level(gl, p, reg, lev, fc, pert["q"], name, magma=pert["magma_mush"])
         inv[name] = {r["var"]: r["lowpass_rms_lnV"] for r in rows}
         u, d = gl.unit.values, gl.depth.values

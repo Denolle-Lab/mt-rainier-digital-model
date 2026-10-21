@@ -58,3 +58,21 @@ def test_vertical_lowpass_spreads_a_flat_contact_below_the_geology_only_depth():
     # a contact at 600 m, inside the fusion taper, is smoothed too, and the smoothing starts without a step
     geo2 = np.where((depth < 600) & body, 2000.0, 4000.0)
     assert jump(blend.fuse(geo2, reg, depth, mask, TABLE, 250.0, 300, 1000, **kw)) < 0.1
+
+
+def test_lateral_lowpass_starts_at_a_finite_cutoff_below_the_critical_zone():
+    # a vertical wall between two map units, 250 m cells; the critical zone (above 150 m) stays as built, the
+    # first cell below it is already smoothed when lambda_h0 > 0, and the smoothing widens with depth
+    nz, dz, dx, n = 20, 50.0, 250.0, 40
+    depth = np.broadcast_to((25 + dz * np.arange(nz))[:, None, None], (nz, n, n)).copy()
+    mask = np.ones(depth.shape, bool)
+    lg = np.log(np.where(np.arange(n)[None, None, :] < n // 2, 3000.0, 4500.0) * np.ones(depth.shape))
+    kw = {"z_smooth": 150.0, "lambda_h": 2000.0, "growth_h": 1.0}
+    step = lambda f, k: np.abs(np.diff(f[k, n // 2])).max()  # noqa: E731
+    zero = blend.smooth_geology(lg, mask, depth, dx, dz, **kw)
+    finite = blend.smooth_geology(lg, mask, depth, dx, dz, lambda_h0=750.0, **kw)
+    k0 = int(np.argmax(depth[:, 0, 0] - dz / 2 >= 150))  # first cell entirely below the critical zone
+    assert np.allclose(finite[:k0], lg[:k0])  # the critical zone untouched
+    assert step(zero, k0) > 0.99 * step(lg, k0)  # cutoff 0 at the base: the wall stays
+    assert step(finite, k0) < 0.8 * step(lg, k0)
+    assert all(step(finite, k) >= step(finite, k + 1) - 1e-12 for k in range(k0, nz - 1))  # widens with depth

@@ -85,7 +85,9 @@ def main():
     q = pert["q"]
     cvm, cres = regional.load_cvm(dom), regional.load_crescent(dom)
     reg0 = {
-        n: regional.regional_on_level(lev, geo[n].to_dataset()["depth"].values, cvm, cres)
+        n: regional.regional_on_level(
+            lev, geo[n].to_dataset()["depth"].values, cvm, cres, fc["regional_blend_m"]
+        )
         for n, lev in dom.levels.items()
     }
     surf = geo["surface"].to_dataset()
