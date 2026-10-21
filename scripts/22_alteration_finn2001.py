@@ -24,7 +24,7 @@ import xarray as xr
 from rainier3d.alteration import aerogeophysics as A
 from rainier3d.alteration import finn2001 as F
 from rainier3d.config.domain import REPO, load_domain
-from rainier3d.io.store import read_tree, write
+from rainier3d.io.store import read, write
 from rainier3d.petro.table import units_config
 
 DZ_3D = 10.0  # m, vertical spacing of the standalone 3D product
@@ -36,8 +36,9 @@ def main():
     dom = load_domain()
     cfg = units_config()["geometry"]["alteration"]["finn_2001"]
     raw = A.fetch(dom.path("raw") / "rainier_aerogeophysics")
-    geo = read_tree(dom.path("processed") / "geomodel.zarr")
-    s = geo["surface"].to_dataset()
+    # the S1 surface (elevation, ice, map units), which S3 passes to geomodel.zarr unchanged: S3 reads this
+    # stage's output, so reading geomodel.zarr here would make the two stages depend on each other
+    s = read(dom.path("processed") / "surface.zarr")
 
     # the survey footprint on the model surface grid
     em = A.read_grid(raw, "33k")
