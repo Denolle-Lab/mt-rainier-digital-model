@@ -117,7 +117,8 @@ model = { depends-on = ["s3", "s4", "s5"] }
 calibrate = { cmd = "python scripts/04_properties.py && python scripts/05_fusion.py", depends-on = ["s13"] }
 validate = { depends-on = ["s6", "s14-published", "s14-1d", "nocal", "s14-nocal", "s21", "s26"] }
 tomography = "python scripts/37_tomography.py --site docs/tomography"
-applications = { depends-on = ["s17", "s18", "s24", "s30", "s31", "s33", "s34", "s35", "s36", "s29"] }
+# S8 first: S18 and S10 read the event catalogue it writes (web/atlas/data/events.geojson, frozen at as_of)
+applications = { depends-on = ["s8", "s17", "s18", "s24", "s30", "s31", "s33", "s34", "s35", "s36", "s29"] }
 # S20 (product archives) is run by hand with the release tag: pixi run s20 --tag products-vX.Y.Z [--upload]
 deliver = { depends-on = ["s7", "s9", "s10", "bib", { task = "paper", environment = "paper" }, "platform"] }
 pipeline = { depends-on = ["inputs", "surface", "model", "calibrate", "validate", "tomography", "applications", "deliver"] }
