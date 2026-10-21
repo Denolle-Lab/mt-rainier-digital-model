@@ -2,7 +2,9 @@
 
 The model is stored on three stacked levels with different spacing (L1/L2/L3). Ray tracers want
 one regular grid, so :func:`uniform` resamples all three onto a single (z, y, x) grid by linear
-interpolation within each level. Cells above the DEM ("air") are filled with the value of the
+interpolation within each level, and between the bottom cell centre of one level and the top cell centre of
+the next across their boundary (clamping each level to its own centres would put the whole change over that
+gap, 625 m at L2/L3, into one cell). Cells above the DEM ("air") are filled with the value of the
 first rock cell below them, so that receivers at the surface sit in rock; an ``air`` mask keeps
 track of them.
 
@@ -48,6 +50,7 @@ def uniform(
     ys = np.arange(y0 + dx / 2, y1, dx)
     zs = np.arange(z_top - dz / 2, z_bot, -dz)
     out = {v: np.full((zs.size, ys.size, xs.size), np.nan, np.float32) for v in variables}
+    above = None  # (bottom cell centre, its values on the output columns) of the level above
     for lev in ("L1", "L2", "L3"):
         ds = tree[lev].to_dataset()
         half = ds.attrs["dz"] / 2
@@ -62,6 +65,20 @@ def uniform(
         sub = ds[list(variables)].interp(z=zq, y=yq, x=xq, method="linear")
         for v in variables:
             out[v][sel] = sub[v].transpose("z", "y", "x").values
+        top = ds[list(variables)].isel(z=0).interp(y=yq, x=xq, method="linear")
+        if above is not None:
+            # between the bottom centre of the level above and the top centre of this one: linear in z, each
+            # side standing in for the other where it is NaN (air)
+            z_hi, vals_hi = above
+            z_lo = float(ds.z.max())
+            gap = (zs < z_hi) & (zs > z_lo)
+            w = ((z_hi - zs[gap]) / (z_hi - z_lo))[:, None, None]
+            for v in variables:
+                hi, lo = vals_hi[v], top[v].transpose("y", "x").values
+                hi, lo = np.where(np.isnan(hi), lo, hi), np.where(np.isnan(lo), hi, lo)
+                out[v][gap] = ((1 - w) * hi[None] + w * lo[None]).astype(np.float32)
+        bot = ds[list(variables)].isel(z=-1).interp(y=yq, x=xq, method="linear")
+        above = (float(ds.z.min()), {v: bot[v].transpose("y", "x").values for v in variables})
     # air (and interpolation holes just under the surface): fill downward from the first rock cell
     air = np.isnan(out[variables[0]])
     for v in variables:
