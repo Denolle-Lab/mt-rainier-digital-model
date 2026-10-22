@@ -50,6 +50,7 @@ def uniform(
     ys = np.arange(y0 + dx / 2, y1, dx)
     zs = np.arange(z_top - dz / 2, z_bot, -dz)
     out = {v: np.full((zs.size, ys.size, xs.size), np.nan, np.float32) for v in variables}
+    elev = s["elevation"].interp(x=xs, y=ys, method="linear").values
     above = None  # (bottom cell centre, its values on the output columns) of the level above
     for lev in ("L1", "L2", "L3"):
         ds = tree[lev].to_dataset()
@@ -68,15 +69,17 @@ def uniform(
         top = ds[list(variables)].isel(z=0).interp(y=yq, x=xq, method="linear")
         if above is not None:
             # between the bottom centre of the level above and the top centre of this one: linear in z, each
-            # side standing in for the other where it is NaN (air)
+            # side standing in for the other where it is NaN (air); cells above the ground stay NaN, so that
+            # the air mask below finds them
             z_hi, vals_hi = above
             z_lo = float(ds.z.max())
             gap = (zs < z_hi) & (zs > z_lo)
             w = ((z_hi - zs[gap]) / (z_hi - z_lo))[:, None, None]
+            sky = zs[gap][:, None, None] > elev[None]
             for v in variables:
                 hi, lo = vals_hi[v], top[v].transpose("y", "x").values
                 hi, lo = np.where(np.isnan(hi), lo, hi), np.where(np.isnan(lo), hi, lo)
-                out[v][gap] = ((1 - w) * hi[None] + w * lo[None]).astype(np.float32)
+                out[v][gap] = np.where(sky, np.nan, (1 - w) * hi[None] + w * lo[None]).astype(np.float32)
         bot = ds[list(variables)].isel(z=-1).interp(y=yq, x=xq, method="linear")
         above = (float(ds.z.min()), {v: bot[v].transpose("y", "x").values for v in variables})
     # air (and interpolation holes just under the surface): fill downward from the first rock cell
@@ -85,7 +88,6 @@ def uniform(
         a = out[v]
         for k in range(a.shape[0] - 2, -1, -1):
             a[k] = np.where(np.isnan(a[k]), a[k + 1], a[k])
-    elev = s["elevation"].interp(x=xs, y=ys, method="linear").values
     air = air & (zs[:, None, None] > elev[None])
     ds = xr.Dataset(
         {v: (("z", "y", "x"), out[v], {"units": UNITS[v], "long_name": LONG[v]}) for v in variables},

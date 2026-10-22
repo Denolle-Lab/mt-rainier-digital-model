@@ -62,6 +62,7 @@ def smoothing(fc: dict) -> dict:
         "lambda_h": fc.get("lambda_h_m", 0.0),
         "growth_h": fc.get("lambda_h_growth", 1.0),
         "lambda_h0": fc.get("lambda_h_start_m", 0.0),
+        "ramp_h": fc.get("lambda_h_ramp", np.inf),
     }
 
 

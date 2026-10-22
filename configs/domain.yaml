@@ -48,8 +48,13 @@ fusion:
   # vertical walls; the cutoff starts at lambda_h_start_m just below the critical-zone base (the critical zone
   # stays as built) and grows as lambda_h_growth x depth below that base, to lambda_h_m (m1_placeholder: 2 km
   # at about 1.25 km below the base, below the node spacing of the S37 tomography, which then sets the
-  # contrasts it resolves).
+  # contrasts it resolves). The cutoff is capped by lambda_h_ramp x depth below the base (m1_placeholder): it
+  # reaches 750 m 150 m below the base instead of in the first cell, which with the unsmoothed critical zone above
+  # put a vertical step there next to every wall (p95 of |d ln Vs| at the base 0.045 -> 0.081 in L1). With 6 the
+  # step stays at 0.047 and the p99 of lateral steps 150-1000 m below the ground is 0.15 (0.26 unsmoothed,
+  # 0.12 without the ramp); 4, the rate of the vertical cutoff, gives 0.18.
   lambda_h_start_m: 750
+  lambda_h_ramp: 6
   lambda_h_m: 2000
   lambda_h_growth: 1.0
   # CVM v1.7 to CRESCENT Gen0 (rainier3d.fusion.regional): the jump of ln V at the base of the CVM data (9.9

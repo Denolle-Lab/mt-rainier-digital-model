@@ -3,9 +3,14 @@
 Measures the interfaces that are not geology: the L2/L3 level boundary at -6 km, the change from CVM v1.7 to
 CRESCENT (a switch at 9.9 km below the ground, or the blend window of rainier3d.fusion.regional), and the
 lateral steps of extruded map units 150-2000 m below the ground, against the ordinary vertical step at 7-9 km
-below the ground. The CVM-to-CRESCENT measure is, per column, the largest step 6-16.5 km below the ground, so
-that it sees the steepest part of a blend and not only the 9.9 km point; its reference is the same statistic
-16.5-20.5 km below the ground (within the model's -20 km base), where CRESCENT alone is used.
+below the ground. The CVM-to-CRESCENT measure takes the steps inside the blend window of configs/domain.yaml
+(``fusion.regional_blend_m``, 8-16 km below the ground), without the pair of cells across a level boundary
+(the L2/L3 step has its own measure), so that it sees the steepest part of a blend and a switch at 9.9 km
+alike. It is given as percentiles of all steps in the window, whose reference is the same percentiles
+16.5-20.5 km below the ground (within the model's -20 km base), where CRESCENT alone is used, and as the
+largest step per column.
+The largest step per column has no reference of the same length: the maximum of n steps grows with n, and the
+window has 32 cells against the reference's 16.
 S10 records it in outputs/paper/numbers.json (model.roughness).
 
     pixi run python -m rainier3d.report.roughness data/processed/model.zarr
@@ -19,6 +24,7 @@ import sys
 import numpy as np
 
 import rainier3d.api as r3
+from rainier3d.config.domain import load_domain
 
 
 def roughness(store) -> dict:
@@ -39,12 +45,20 @@ def roughness(store) -> dict:
         "median": float(np.median(dz[k][both[k]])),
         "p95": float(np.percentile(dz[k][both[k]], 95)),
     }
-    # CVM -> CRESCENT: per column, the largest step 6-16.5 km below the ground; reference 16.5-20.5 km
+    # CVM -> CRESCENT: the steps in the blend window, without a pair of cells across a level boundary;
+    # reference 16.5-20.5 km below the ground
+    dom = load_domain()
+    a, b = dom.cfg["fusion"]["regional_blend_m"]
+    edges = [lev.z_bot for lev in dom.levels.values()][:-1]
+    inner = np.all([np.abs(zmid - e) > np.abs(z[1] - z[0]) / 2 for e in edges], axis=0)[:, None, None]
     dbg = elev[None] - zmid[:, None, None]
-    for name, (a, b) in {"cvm_crescent_step": (6000, 16500), "column_max_16_20km_bg": (16500, 20500)}.items():
-        st = np.where((dbg > a) & (dbg < b) & both, dz, 0.0).max(axis=0)
-        st = st[st > 0]
-        out[name] = {"median": float(np.median(st)), "p95": float(np.percentile(st, 95))}
+    for name, (lo, hi) in {"cvm_crescent_step": (a, b), "vertical_step_16_20km_bg": (16500, 20500)}.items():
+        win = (dbg > lo) & (dbg < hi) & both & inner
+        d = dz[win]
+        out[name] = {k: float(np.percentile(d, q)) for k, q in (("median", 50), ("p95", 95), ("p99", 99))}
+    st = np.where((dbg > a) & (dbg < b) & both & inner, dz, 0.0).max(axis=0)
+    st = st[st > 0]
+    out["cvm_crescent_column_max"] = {"median": float(np.median(st)), "p95": float(np.percentile(st, 95))}
     # reference: typical vertical step away from interfaces, 7-9 km below the ground
     ref = dz[(dbg > 7000) & (dbg < 9000) & both]
     out["vertical_step_7_9km_bg"] = {"median": float(np.median(ref)), "p95": float(np.percentile(ref, 95))}

@@ -60,9 +60,10 @@ def test_vertical_lowpass_spreads_a_flat_contact_below_the_geology_only_depth():
     assert jump(blend.fuse(geo2, reg, depth, mask, TABLE, 250.0, 300, 1000, **kw)) < 0.1
 
 
-def test_lateral_lowpass_starts_at_a_finite_cutoff_below_the_critical_zone():
+def test_lateral_lowpass_ramps_to_a_finite_cutoff_below_the_critical_zone():
     # a vertical wall between two map units, 250 m cells; the critical zone (above 150 m) stays as built, the
-    # first cell below it is already smoothed when lambda_h0 > 0, and the smoothing widens with depth
+    # cutoff ramps up over a few cells below it to lambda_h0 (no vertical step at the base next to the wall)
+    # and the smoothing widens with depth
     nz, dz, dx, n = 20, 50.0, 250.0, 40
     depth = np.broadcast_to((25 + dz * np.arange(nz))[:, None, None], (nz, n, n)).copy()
     mask = np.ones(depth.shape, bool)
@@ -70,9 +71,18 @@ def test_lateral_lowpass_starts_at_a_finite_cutoff_below_the_critical_zone():
     kw = {"z_smooth": 150.0, "lambda_h": 2000.0, "growth_h": 1.0}
     step = lambda f, k: np.abs(np.diff(f[k, n // 2])).max()  # noqa: E731
     zero = blend.smooth_geology(lg, mask, depth, dx, dz, **kw)
-    finite = blend.smooth_geology(lg, mask, depth, dx, dz, lambda_h0=750.0, **kw)
+    jump = blend.smooth_geology(lg, mask, depth, dx, dz, lambda_h0=750.0, **kw)
+    ramp = blend.smooth_geology(lg, mask, depth, dx, dz, lambda_h0=750.0, ramp_h=6.0, **kw)
     k0 = int(np.argmax(depth[:, 0, 0] - dz / 2 >= 150))  # first cell entirely below the critical zone
-    assert np.allclose(finite[:k0], lg[:k0])  # the critical zone untouched
+    assert np.allclose(ramp[:k0], lg[:k0])  # the critical zone untouched
     assert step(zero, k0) > 0.99 * step(lg, k0)  # cutoff 0 at the base: the wall stays
-    assert step(finite, k0) < 0.8 * step(lg, k0)
-    assert all(step(finite, k) >= step(finite, k + 1) - 1e-12 for k in range(k0, nz - 1))  # widens with depth
+    # vertical step at the base, in the cell next to the wall
+    vstep = lambda f: np.abs(f[k0, 0, n // 2] - f[k0 - 1, 0, n // 2])  # noqa: E731
+    assert vstep(jump) > 0.1 * step(lg, k0)  # a finite cutoff in the first cell: a step at the base
+    assert vstep(ramp) < 0.3 * vstep(jump)
+    # the change is spread over the ramp: the largest vertical step below the base is smaller too
+    vmax = lambda f: np.abs(np.diff(f[k0 - 1 :, 0, n // 2])).max()  # noqa: E731
+    assert vmax(ramp) < 0.75 * vmax(jump)
+    k1 = int(np.argmax(depth[:, 0, 0] >= 400))  # 250 m below the base, past the ramp
+    assert step(ramp, k1) < 0.9 * step(zero, k1)
+    assert all(step(ramp, k) >= step(ramp, k + 1) - 1e-12 for k in range(k0, nz - 1))  # widens with depth

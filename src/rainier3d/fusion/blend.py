@@ -23,8 +23,11 @@ The geology also extends each map unit straight down, so unit boundaries are ver
 the basement units at -4 km). With ``lambda_h`` > 0 the same cells are then low-passed horizontally, among
 themselves at each elevation, with a cutoff min(lambda_h0 + growth_h (d - z_smooth), lambda_h): the walls
 start with a finite width lambda_h0 just below the critical zone, which stays as built, and widen with depth,
-where the extrusion rule is least constrained. Both filters are ``smooth_geology``, which the invariant tests
-reuse.
+where the extrusion rule is least constrained. The cutoff is also capped by ramp_h (d - z_smooth), so that it
+reaches lambda_h0 over a few cells instead of in the first one: a finite cutoff in the first cell below the
+unsmoothed critical zone puts a vertical step there next to every wall (twice the p99 of the unsmoothed
+geology's step at that base in L1, model of 21 October 2026). Both filters are ``smooth_geology``, which the
+invariant tests reuse.
 
 Density follows Vp: rho_fused = rho_geology * rho_ND(Vp_fused) / rho_ND(Vp_geology), with rho_ND
 the Nafe-Drake fit, so that unit contrasts in density survive. Ice keeps its density.
@@ -73,14 +76,15 @@ def lowpass_v_growing(f, below, depth, z0, lam_m, dz, n=5):
     return (1 - w) * lo + w * hi
 
 
-def lowpass_h_growing(f, below, depth, z0, lam_m, dx, growth, n=5, lam0=0.0):
-    """``lowpass_h`` among the cells ``below`` with the cutoff min(lam0 + growth (depth - z0), lam_m),
-    interpolated cell by cell between n cutoffs; NaN outside ``below``."""
-    if lam0 >= lam_m:
+def lowpass_h_growing(f, below, depth, z0, lam_m, dx, growth, n=5, lam0=0.0, ramp=np.inf):
+    """``lowpass_h`` among the cells ``below`` with the cutoff
+    min(ramp (depth - z0), lam0 + growth (depth - z0), lam_m), interpolated cell by cell between n cutoffs;
+    NaN outside ``below``."""
+    if lam0 >= lam_m and np.isinf(ramp):
         return lowpass_h(f, below, lam_m, dx)
-    lams = np.linspace(lam0, lam_m, n)
+    lams = np.linspace(lam0 if np.isinf(ramp) else 0.0, lam_m, n)
     stack = np.stack([np.where(below, f, np.nan) if lm == 0 else lowpass_h(f, below, lm, dx) for lm in lams])
-    lam = np.clip(lam0 + growth * (depth - z0), lams[0], lam_m)
+    lam = np.clip(np.minimum(ramp * (depth - z0), lam0 + growth * (depth - z0)), lams[0], lam_m)
     i = np.clip(np.searchsorted(lams, lam) - 1, 0, n - 2)
     w = (lam - lams[i]) / (lams[i + 1] - lams[i])
     lo = np.take_along_axis(stack, i[None], 0)[0]
@@ -89,7 +93,17 @@ def lowpass_h_growing(f, below, depth, z0, lam_m, dx, growth, n=5, lam0=0.0):
 
 
 def smooth_geology(
-    lg, mask, depth, dx, dz, z_smooth=0.0, lambda_z=0.0, lambda_h=0.0, growth_h=1.0, lambda_h0=0.0
+    lg,
+    mask,
+    depth,
+    dx,
+    dz,
+    z_smooth=0.0,
+    lambda_z=0.0,
+    lambda_h=0.0,
+    growth_h=1.0,
+    lambda_h0=0.0,
+    ramp_h=np.inf,
 ):
     """ln V of the geology low-passed in the vertical, then horizontally, in the cells entirely below
     z_smooth (see the module docstring); other cells unchanged."""
@@ -98,7 +112,9 @@ def smooth_geology(
         lg = np.where(vm, lowpass_v_growing(lg, vm, depth, z_smooth, lambda_z, dz), lg)
     if lambda_h > 0:
         lg = np.where(
-            vm, lowpass_h_growing(lg, vm, depth, z_smooth, lambda_h, dx, growth_h, lam0=lambda_h0), lg
+            vm,
+            lowpass_h_growing(lg, vm, depth, z_smooth, lambda_h, dx, growth_h, lam0=lambda_h0, ramp=ramp_h),
+            lg,
         )
     return lg
 
@@ -120,8 +136,8 @@ def lowpass_depth_varying(f, mask, depth, table, dx):
 
 
 def fuse(v_geo, v_reg, depth, mask, table, dx, d_geo, d_taper, n_iter=6, dz=None, **smooth):
-    """Fused V; ``smooth`` (z_smooth, lambda_z, lambda_h, growth_h, lambda_h0) are the geology filters of
-    ``smooth_geology``."""
+    """Fused V; ``smooth`` (z_smooth, lambda_z, lambda_h, growth_h, lambda_h0, ramp_h) are the geology filters
+    of ``smooth_geology``."""
     lg, lr = np.log(v_geo), np.log(v_reg)
     if smooth.get("lambda_z", 0) > 0 or smooth.get("lambda_h", 0) > 0:
         lg = smooth_geology(lg, mask, depth, dx, dz, **smooth)
