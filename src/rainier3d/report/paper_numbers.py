@@ -8,6 +8,8 @@ group reads only finished outputs and is skipped (with a note) when they are mis
 - validation: outputs/pnsn_*.csv (S6); relocation: outputs/relocation/<model>/stats.json (S14);
 - imush: outputs/model_comparison/ulberg2020_by_depth.csv (S21);
 - model: data/processed/model.zarr, properties_geology.zarr and geomodel.zarr (S3-S5), with fusion_report.csv;
+- uncalibrated: data/processed/model_nocal.zarr and outputs/fusion_report_model_nocal.csv (pixi run nocal, in
+  the validate family), with model.zarr;
 - catalog: outputs/catalog/summary.json and catalog_relocated.csv (S26);
 - tomography: outputs/tomography/summary.json, history.json and picks_*.csv (S37);
 - applications: data/processed/edifice_load.zarr (S18), outputs/gnss/strain_3d_summary.json (S18 volume),
@@ -28,6 +30,7 @@ from rainier3d.config.domain import REPO, load_domain
 
 OUT = REPO / "outputs" / "paper" / "numbers.json"
 NUM: dict = {}
+DEPTH_BINS = [(0, 300), (300, 1000), (1000, 2000), (2000, 4000)]  # m below the ground
 
 
 def put(key, value, what, source):
@@ -321,7 +324,7 @@ def model():
     )
 
     # depth-binned mean ln(geology/regional) over L1-L3 without ice, and in the top 300 m
-    bins = [(0, 300), (300, 1000), (1000, 2000), (2000, 4000)]
+    bins = DEPTH_BINS
     agree = {}
     for ph in ("vp", "vs"):
         acc = {b: [] for b in bins}
@@ -532,7 +535,6 @@ def model():
         "ln(V_CRESCENT / V_CVM) at 9.9 km below the ground, per column of L3 (the jump the blend spreads)",
         "rainier3d.fusion.regional.cvm_crescent_jump",
     )
-    uncalibrated(m, bins)
     invariant_without_magma(g)
 
 
@@ -562,7 +564,7 @@ def invariant_without_magma(g):
     )
 
 
-def uncalibrated(m, bins):
+def uncalibrated():
     """The model at theta = 0 (no geology multipliers, no regional correction) that the validate family builds
     (``pixi run nocal``: S4 and S5 with the critical zone and without the calibration, model_nocal.zarr):
     geology against regional by depth, the fusion invariant, and the Vp/Vs at 2-4 km below ground before and
@@ -570,6 +572,8 @@ def uncalibrated(m, bins):
     from rainier3d.geomodel.rules import AIR, ICE
 
     n, _ = _levels("model_nocal.zarr")
+    m, _ = _levels("model.zarr")
+    bins = DEPTH_BINS
     src = "data/processed/model_nocal.zarr (pixi run nocal)"
     acc = {ph: {b: [] for b in bins} for ph in ("vp", "vs")}
     vpvs = {"uncalibrated_regional": [], "calibrated_fused": []}
@@ -583,7 +587,10 @@ def uncalibrated(m, bins):
                 acc[ph][b].append(lr[k])
         k = ok & (d >= 2000) & (d < 4000)
         vpvs["uncalibrated_regional"].append((ds.vp_regional.values / ds.vs_regional.values)[k])
-        vpvs["calibrated_fused"].append((m[name].vp.values / m[name].vs.values)[k])
+        c = m[name]  # its own cells: the two stores need not come from the same S3 run
+        u, d = c.unit.values, c.depth.values
+        k = (u != AIR) & (u != ICE) & (d >= 2000) & (d < 4000)
+        vpvs["calibrated_fused"].append((c.vp.values / c.vs.values)[k])
     put(
         "uncal.ln_geology_over_regional",
         {ph: {f"{a}-{b}": float(np.mean(np.concatenate(acc[ph][(a, b)]))) for a, b in bins} for ph in acc},
@@ -798,6 +805,7 @@ GROUPS = {
     "relocation": relocation,
     "imush": imush,
     "model": model,
+    "uncalibrated": uncalibrated,
     "catalog": catalog,
     "tomography": tomography,
     "applications": applications,

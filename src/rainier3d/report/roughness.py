@@ -83,10 +83,16 @@ def level_continuity(store) -> dict:
     between the two cell centres; a residual near zero means the levels agree, and a step on a uniform grid
     comes from the resampling."""
     tree = r3.open_model(store)
-    l2, l3 = tree["L2"].to_dataset(), tree["L3"].to_dataset()
+    return continuity(tree["L2"].to_dataset(), tree["L3"].to_dataset())
+
+
+def continuity(l2, l3, variables=("vs", "vs_geology", "vs_regional")) -> dict:
+    """``level_continuity`` on two level datasets, l2 above l3, each with z descending."""
+    if not (l2.z[0] > l2.z[-1] and l2.z[-1] > l3.z[0]):
+        raise ValueError("continuity needs z descending, with l2 above l3")
     z2, z2b, z3 = float(l2.z[-1]), float(l2.z[-2]), float(l3.z[0])
     out = {"gap_m": z2 - z3}
-    for v in ("vs", "vs_geology", "vs_regional"):
+    for v in variables:
         a = np.log(l2[v].isel(z=[-2, -1]).interp(x=l3.x, y=l3.y).values)
         change = np.log(l3[v].isel(z=0).values) - a[1]
         pred = (a[1] - a[0]) / (z2b - z2) * (z2 - z3)
