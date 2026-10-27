@@ -32,8 +32,8 @@ products).
 | `alteration`, `mass_movements` | Repackaged; this rebuild did not change their method. |
 
 `model` and `model_let` no longer carry third-party fields that are only resampled onto the grid (`vs30`, the
-SOLUS100 and SoilGrids soil depths, land cover, canopy height, water-table depths, stream order and the regional Vs
-uncertainty). Each archive lists them in `excluded_variables`, and their stage rebuilds them from the original
+SOLUS100 and SoilGrids soil depths, land cover, canopy height, water-table depths, stream order, the IceBoost
+ice-thickness error and the regional Vs uncertainty). Each archive lists them in `excluded_variables`, and their stage rebuilds them from the original
 data (`REBUILD.md`, `inputs.csv`).
 
 ## What changed in the model
