@@ -1,6 +1,6 @@
 # How the rainier3d subsurface model is built
 
-Status: 2026-10-21, branch `paper-review-fixes` (rebuild of 21 October 2026 on a Linux server). This document records, stage by stage, how the seismic and
+Status: 2026-10-27, branch `paper-review-fixes` (rebuild of 27 October 2026 on a Linux server). This document records, stage by stage, how the seismic and
 hydraulic model of the subsurface is assembled, what each stage changes and what it leaves alone, so that the
 construction can be disclosed in the paper (paragraph at the end). Numbers come from reruns of the stages named;
 the stage scripts are `scripts/NN_*.py`, the parameters `configs/*.yaml`, and every value without a published
@@ -41,8 +41,8 @@ The model is built in four layers of evidence, from the most local to the most c
   zone) blends a granular frame (Hertz–Mindlin with the soft-sand bound, Gassmann with a Brie fluid, suction stress
   above the water table) with the rock law at the same effective stress, by a Hill average of the moduli. Where W =
   0 the medium is the rock law, so the critical zone joins the rock below without a step: at the 150 m base, Vs is
-  0.97–1.00 times the L1 cell below (median 0.989; model of 14 October 2026, before the lateral smoothing started
-  at 750 m below the critical zone, not recomputed).
+  within a median 0.5% (90th percentile 1.5%) of the L1 cell below (`cz.base_continuity` in
+  `outputs/paper/numbers.json`).
 - **Coupling to the model grid.** L1 cells (50 m) that reach into the columns take their travel-time average; the
   top rock cell of each column averages from the ground (or bed) to its base. Invariant
   `test_l1_keeps_the_travel_time_of_the_critical_zone`: the vertical S time through the top two rock cells equals
@@ -62,19 +62,21 @@ The model is built in four layers of evidence, from the most local to the most c
   horizontal Gaussian whose cutoff grows from 6 km at the surface to 20 km at depth; alternating projections keep
   every cell between its two inputs. The top 300 m is the geology model alone, tapering to the fused model by 1 km.
 - **Smoothing of the rule contacts (`blend.smooth_geology`).** Below the 150 m critical-zone columns the geology is
-  low-passed in the vertical (cutoff growing to 1 km) and horizontally (cutoff starting at 750 m just below the
-  critical zone and growing with depth below 150 m, to 2 km; `lambda_h_start_m`), before fusion. The critical
-  zone itself is not smoothed and is not smoothed into the cells below.
-  Effect in L1 (fused Vs with the calibration of 21 October, without and with the smoothing): vertical jumps
-  across unit contacts below 150 m (median |Δ ln Vs|) 0.146 → 0.031; lateral jumps across unit boundaries at
-  1–2 km depth 0.019 → 0.006. Roughness of the whole model: `rainier3d.report.roughness`
+  low-passed in the vertical (cutoff growing to 1 km) and horizontally (cutoff growing from zero at 150 m to
+  750 m 150 m deeper, then with depth, to 2 km; `lambda_h_ramp`, `lambda_h_start_m`), before fusion. The critical
+  zone itself is not smoothed and is not smoothed into the cells below; the horizontal cutoff starts from zero so
+  that the unsmoothed critical zone does not meet smoothed rock in a step at its base.
+  Effect in L1 (fused Vs with the calibration of 21 October, without and with the smoothing; measured on the run
+  of 21 October 2026, with the lateral cutoff starting at 750 m, not recomputed): vertical jumps across unit
+  contacts below 150 m (median |Δ ln Vs|) 0.146 → 0.031; lateral jumps across unit boundaries at 1–2 km depth
+  0.019 → 0.006. Roughness of the whole model: `rainier3d.report.roughness`
   (`model.roughness` in `outputs/paper/numbers.json`).
 - **Magma body.** Its anomaly (−10% Vp, −15% Vs, −3% density, `configs/perturbations.yaml`, placeholders) is applied
   to the fused model, so the fusion does not remove it.
 - **Calibration (S13, `configs/velocity_calibration.yaml`).** Three global factors of the rock law and a
   depth-dependent bias of the regional model, fitted to PNSN P and S arrivals of 88 events with 3D relocation;
-  held-out RMS 0.0936 s (P), 0.1878 s (S) after the fitting half, 0.0928 and 0.1878 s for the final model
-  (refit of 21 October 2026 on the blended and smoothed model; V₀ ×1.32, P* ×0.56, Vs ×0.960).
+  held-out RMS 0.0937 s (P), 0.1877 s (S) after the fitting half, 0.0926 and 0.1880 s for the final model
+  (refit of 27 October 2026 on the blended and smoothed model; V₀ ×1.45, P* ×1.36, Vs ×0.958).
 
 ## 4 Tomography (S37)
 
@@ -92,15 +94,15 @@ The model is built in four layers of evidence, from the most local to the most c
   weight and decide when to stop: a step is kept only if it lowers their misfit after relocation by more than 0.5%.
 - **What it does to discontinuities.** The tomography adjusts structure of about 12 km and larger; it does not
   sharpen or smooth contacts at the kilometre scale, which stage 3 sets.
-- **Result (run of 2026-10-21 on the blended, smoothed and recalibrated model, 78.9 min on a 48-core server).**
-  Three steps kept (two on 14 October), smoothing weight 0.3 chosen on the held-out events. Held-out RMS 0.0908 →
-  0.0722 s (P, −20%) and 0.1800 → 0.1204 s (S, −33%); RMS of held-out station means 0.052 → 0.023 s (P) and
-  0.152 → 0.066 s (S), without station terms. Checkerboard: 12 km cells recovered with correlation 0.68–0.75 and
-  45–61% of the amplitude between sea level and 6 km depth, 6 km cells with 0.35–0.43 in the top 2 km; nothing
+- **Result (run of 2026-10-27 on the blended, smoothed and recalibrated model, 127.1 min on a 48-core server).**
+  Three steps kept (two on 14 October), smoothing weight 0.3 chosen on the held-out events. Held-out RMS 0.0904 →
+  0.0722 s (P, −20%) and 0.1802 → 0.1206 s (S, −33%); RMS of held-out station means 0.052 → 0.023 s (P) and
+  0.152 → 0.066 s (S), without station terms. Checkerboard: 12 km cells recovered with correlation 0.66–0.74 and
+  45–54% of the amplitude between sea level and 6 km depth, 6 km cells with 0.37–0.43 in the top 2 km; nothing
   above sea level and little below 12 km. Ray kernels checked against finite differences through the eikonal
-  solver (slope 0.997, correlation 0.9993). On the sampled nodes the update has a mean of +0.1% (Vp) and −0.5%
-  (Vs) and an RMS of 4.7% and 5.5%.
-- **The critical zone after the tomography.** Unchanged in the 150 m columns; at most 2.1% (Vp) and 3.0% (Vs) in the
+  solver (slope 0.9995, correlation 0.9993). On the sampled nodes the update has a mean of +0.1% (Vp) and −0.5%
+  (Vs) and an RMS of 4.7% and 5.7%.
+- **The critical zone after the tomography.** Unchanged in the 150 m columns; at most 2.3% (Vp) and 3.0% (Vs) in the
   L1 cells that straddle the 150 m base. All 10 invariants of `tests/test_invariants.py` pass on `model_let.zarr`
   (`RAINIER3D_MODEL=data/processed/model_let.zarr pixi run pytest tests/test_invariants.py`), including the
   critical-zone travel time. Without the taper the same inversion changed Vs by more than 5% in 30% of the
@@ -120,7 +122,7 @@ same law blended with a granular frame at the same effective stress, so that the
 consistent with the rock beneath it. Third, the geology-based model is fused in ln V with the USGS Cascadia
 community velocity model and CRESCENT Gen0, blended over 8–16 km below the ground, which supply wavelengths longer
 than 6–20 km; before fusion the rule contacts below the critical zone are low-passed with cutoffs that grow with
-depth (to 1 km vertically, and horizontally from 750 m just below the critical zone to 2 km), and a small number
+depth (to 1 km vertically, and horizontally from zero at the base of the critical zone to 2 km), and a small number
 of global factors are calibrated against PNSN travel times. Fourth, a
 local-earthquake tomography of PNSN P and S arrivals, with relocation in every model and earthquakes held out by
 region to choose the regularisation and the number of iterations, perturbs the fused model at wavelengths of about

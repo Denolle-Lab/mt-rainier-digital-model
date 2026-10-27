@@ -12,10 +12,11 @@ bibliography: references.bib
 > **Superseded calibration.** This record documents calibration v2 of 24 September 2026, made without the
 > critical zone and kept as `configs/velocity_calibration_v2.yaml`. The published model uses the calibration
 > refitted with the critical zone in every trial model and with the smoothed geology of the fusion
-> (`configs/velocity_calibration.yaml` of 14 October 2026, diagnostics in `outputs/joint_calibration/`): V0 ×1.44,
-> P* ×1.42 (not resolved), Vs ×0.951, and on the held-out half after the three fitting-half iterations an RMS of
-> 0.093 s (P) and 0.188 s (S). The paper reports those numbers, from `outputs/paper/numbers.json`; the method
-> below is unchanged.
+> (`configs/velocity_calibration.yaml` of 27 October 2026, diagnostics in `outputs/joint_calibration/`): V0 ×1.45,
+> P* ×1.36 (not resolved), Vs ×0.958, and on the held-out half after the three fitting-half iterations an RMS of
+> 0.094 s (P) and 0.188 s (S). The paper reports those numbers, from `outputs/paper/numbers.json`; the method
+> below is unchanged. Figures 1–5 and `docs/joint_calibration/relocation_qc.csv` are remade by every pipeline run
+> from the current models (PNSN 1D, uncalibrated, published); the tables keep the runs of 24 September.
 
 **Scripts:** S13 (`scripts/13_joint_calibration.py`), S14 (`scripts/14_relocate.py`) and the calibration figures of S10 (`scripts/10_report.py`, `rainier3d.report.calibration_figures`, formerly S16). The location and inversion code is in `src/rainier3d/validate/locate.py`. The model assembly that S5 and S13 share is in `src/rainier3d/fusion/build.py`.
 **Result:** `configs/velocity_calibration.yaml`, version 2, dated 2026-09-24. S4 applies its `geology` block and S5 its `regional_bias` block. It supersedes the Vs-only calibration of S12 (`configs/vs_calibration.yaml`) and the first S13 run, which used depth factors (`configs/velocity_calibration_v1.yaml`).
@@ -179,7 +180,7 @@ Between 0.3 and 4 km, the two models now agree to within 3.5%. Below 4 km, the f
 
 ### 4.4 Fit after relocation
 
-**Table 5.** Every model scored the same way: all 88 events relocated in that model by S14, with topography and the ground bound (`outputs/relocation/<name>/stats.json`). Depth shift is relocated minus ComCat, positive deeper; σ_z is the median formal depth uncertainty.
+**Table 5.** Runs of 24 September 2026. Every model scored the same way: all 88 events relocated in that model by S14, with topography and the ground bound (`outputs/relocation/<name>/stats.json`). Depth shift is relocated minus ComCat, positive deeper; σ_z is the median formal depth uncertainty.
 
 | Model | P RMS (s) | S RMS (s) | Epicentre shift, median (m) | Depth shift, median (m) | σ_z (m) |
 |---|---|---|---|---|---|
@@ -195,11 +196,11 @@ The v1 and v2 models fit equally well. They differ in where the correction sits:
 
 With the catalogue hypocentres fixed (S6, `outputs/pnsn_report.txt`), the v2 model gives event-demeaned RMS of 0.132 s for P and 0.227 s for S. The PNSN 1D model gives 0.159 and 0.287 s. The station correlation between the 3D − 1D delay and the mean 1D residual is 0.67 for both phases. S6 scores a model with hypocentres located in another model, so Table 5 is the fair comparison.
 
-![Figure 2. Residuals after relocation for the five models (S14).](joint_calibration/fig2_residuals.png)
+![Figure 2. Residuals after relocation (S14) for the models of the current run: PNSN 1D, uncalibrated and published. The runs of the retired models of Table 5 exist only on the machine where they were made, and are left out.](joint_calibration/fig2_residuals.png)
 
 ### 4.5 Hypocentres and topography
 
-**Table 6.** Relocation quality control (`docs/joint_calibration/relocation_qc.csv`, S10). "Above ground" counts events above the DEM interpolated at the epicentre; the location tolerates 50 m.
+**Table 6.** Relocation quality control, runs of 24 September 2026. "Above ground" counts events above the DEM interpolated at the epicentre; the location tolerates 50 m. S10 remakes `docs/joint_calibration/relocation_qc.csv` from the current runs: on 27 October 2026, above ground / depth change > 5 km were 10 / 6 (PNSN 1D), 2 / 2 (uncalibrated) and 1 / 2 (published), none at the grid top.
 
 | Model | Events above ground | At grid top | Depth change > 5 km |
 |---|---|---|---|

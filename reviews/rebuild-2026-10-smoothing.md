@@ -138,3 +138,56 @@ S29's storm before S29 ran (reordered).
   - One S26 event sits 7 m above the ground in rainier3d; "no event above ground" no longer holds.
   - Vp/Vs at 4–8 km is 0.07 below iMUSH (was 0.05), which sharpens review item S-DI.6.
   - The "1–30 microstrain" load shear is not reproduced by `numbers.json` (p5–p95 0.98–13.7) and was left as is.
+
+## Follow-up rebuild (27 October 2026)
+
+**Review of the 21 October run.** Three findings, all fixed before the rebuild:
+- A step at the base of the critical zone: the lateral cutoff of 750 m started in the first cell below the
+  unsmoothed columns, so they met smoothed rock next to every unit boundary (base continuity median 2.3%, p90
+  6.0%). The cutoff now ramps from zero at the base to 750 m 150 m deeper (`lambda_h_ramp: 6` in
+  `configs/domain.yaml`).
+- The CVM-to-CRESCENT measure was biased: the largest step per column over 6–16.5 km was compared with the same
+  statistic over a window half as long. It is now measured on all steps 8–16 km below the ground, without the pair
+  across a level boundary, against all steps 16.5–20.5 km (percentiles); the largest step per column is kept
+  without a reference.
+- The air mask in the gap between levels: fixed, no effect on the numbers.
+
+**Rebuild.** Linux server, 06:12–10:21, the six families model, calibrate, validate, tomography, applications and
+deliver from the cached inputs. Log: `outputs/logs/rebuild_20261027.log`. `pixi run test`: 155 passed; no
+tolerance changed.
+
+**Calibration changed.** V₀ ×1.32 → ×1.45, P* ×0.56 → ×1.36 (ln +0.305 ± 0.146; over the iterates after the
+first it ranged from −0.29 to +0.31 and was still rising, together with ln V₀), rock Vs ×0.960 → ×0.958. The
+Miocene plutons are at the cap of 0.98 V∞ again. Held-out RMS 0.093 s (P) and 0.188 s (S), as before. S37 kept
+three steps; held-out RMS 0.0904 → 0.0722 s (P), 0.1802 → 0.1206 s (S).
+
+**Roughness after** (`model.roughness` in `outputs/paper/numbers.json`; median, p95, p99):
+
+| \|Δ ln Vs\| between neighbouring 250 m cells | after |
+|---|---|
+| L2/L3 level boundary, −6 km | 0.0030, 0.0043 |
+| CVM v1.7 to CRESCENT, all steps 8–16 km below the ground | 0.0013, 0.0034, 0.0054 |
+| same, largest step per column | 0.0032, 0.0057 |
+| reference: all steps 16.5–20.5 km below the ground (CRESCENT only) | 0.0007, 0.0017, 0.0021 |
+| ordinary vertical step, 7–9 km below the ground | 0.0028, 0.0038 |
+| lateral, 150–1000 m below the ground | 0.0032, 0.043, 0.115 |
+| lateral, 1000–2000 m below the ground | 0.0032, 0.014, 0.024 |
+
+**Still open, re-evaluated.**
+- Machine-local inputs: still missing on the server. The log reports the canopy figure not remade (S19 layers
+  missing) and `model_vscal_20260924.zarr` and `model_joint_s13.zarr` left out of the calibration figure.
+- `gh` login: fixed (fine-grained token for Denolle-Lab with Contents and Pull requests read and write); the
+  branch is pushed and the follow-up PR is #46 (#43 was merged before these commits).
+- pandoc-crossref: the warning (compiled for 3.11, run under 3.9.0.2) is still printed.
+- Products release `products-v1.1.0`: not built or published.
+- Claims from the text update:
+  - λs of S13 is still 0.01, the smallest value of the scan (score 0.713 against 0.714 at 0.1). The paper now
+    says the score does not resolve the weight below 0.1. Open: widen the scan or fix the weight.
+  - Critical-zone base mismatch: closed. Median 0.48%, p90 1.5% (`cz.base_continuity`); the explanation from
+    the smaller P* is gone from the paper.
+  - S26: two events end above the ground in rainier3d, by 7 m (uw62188477, grade B) and 27 m (uw61989406, grade
+    A), on the flanks at 2.5–2.6 km elevation. NonLinLoc's mask and the measure read the same 100 m surface
+    grid but interpolate it differently; the ground varies by 65 and 94 m within 100 m of the two epicentres,
+    more than the excess. The paper says so.
+  - Vp/Vs at 4–8 km: 1.69 against 1.76 in iMUSH, 0.06–0.07 below. Still sharpens review item S-DI.6.
+  - Load shear: closed. The paper now gives 1–14 microstrain (p5–p95 0.99–13.6, median 3.7) from `numbers.json`.
