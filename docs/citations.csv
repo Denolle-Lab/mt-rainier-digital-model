@@ -154,7 +154,7 @@ esec_v3,10.5066/p90vgcsk,doi,web-2026-09-25 (DataCite),cached,configs/sources.ya
 aagaard2021,10.5066/p98ca3d5,doi,web-2026-09-25 (DOI resolved),cached,configs/sources.yaml; docs/paper/rainier3d_paper.md
 nshm23_fsd,10.5066/p9awinwz,doi,"web-2026-09-25 (DataCite; NSHM23_FSD_v3.geojson read; no fault section in the model box, nearest Olympia 17 km and Tacoma 28 km outside it)",cached,configs/sources.yaml; docs/data_inventory.md; docs/mass_movements.md; docs/paper/rainier3d_paper.md
 dewitz2023,10.5066/p9jz7ao3,doi,,cached,docs/data_inventory.md
-blakely_2024,10.5066/p9ujhqu1,doi,"web-2026-10-01 (DataCite; grid, flight lines, metadata and data dictionary downloaded; registration checked against topography)",cached,configs/magnetics.yaml; configs/sources.yaml; docs/data_inventory.md; docs/packwood_magnetics.md; scripts/36_packwood_magnetics.py; src/rainier3d/alteration/packwood.py
+blakely_2024,10.5066/p9ujhqu1,doi,"web-2026-10-01 (DataCite; grid, flight lines, metadata and data dictionary downloaded; registration checked against topography)",cached,configs/magnetics.yaml; configs/sources.yaml; docs/data_inventory.md; docs/packwood_magnetics.md; docs/paper/rainier3d_paper.md; scripts/36_packwood_magnetics.py; src/rainier3d/alteration/packwood.py
 rgiconsortium2023,10.5067/f6jmovy5navz,doi,,cached,docs/data_inventory.md
 gedi_l2b,10.5067/gedi/gedi02_b.002,doi,web-2026-09-24 (DOI resolved),cached,configs/canopy_products.yaml; configs/sources.yaml; docs/canopy_pipeline.md; docs/paper/rainier3d_paper.md; scripts/28_canopy_pipeline.py
 opentopography2005,10.5069/g9cc0xmc,doi,,cached,docs/data_inventory.md

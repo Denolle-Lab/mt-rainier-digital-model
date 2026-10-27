@@ -2,15 +2,15 @@ version: 2
 description: 'S13: geology multipliers (S4, rock units) and a static bias of the regional
   model (S5, before fusion), fitted to PNSN P and S arrivals with 3D relocation.'
 geology:
-  ln_v0: 0.27851
-  ln_pstar: -0.57832
-  ln_vs: -0.04055
-  factor_v0: 1.3212
-  factor_pstar: 0.5608
-  factor_vs: 0.9603
-  sd_ln_v0: 0.0309
-  sd_ln_pstar: 0.1234
-  sd_ln_vs: 0.0202
+  ln_v0: 0.37338
+  ln_pstar: 0.30533
+  ln_vs: -0.04277
+  factor_v0: 1.4526
+  factor_pstar: 1.3571
+  factor_vs: 0.9581
+  sd_ln_v0: 0.0232
+  sd_ln_pstar: 0.1462
+  sd_ln_vs: 0.0174
   prior_sd:
     ln_v0: 0.3
     ln_pstar: 0.7
@@ -41,40 +41,40 @@ regional_bias:
     log_factor:
     - 0.0
     - 0.0
-    - 0.06379
-    - -0.00019
-    - -0.0491
-    - -0.01624
-    - 0.00488
-    - -0.01676
+    - 0.06692
+    - 0.00078
+    - -0.04952
+    - -0.0163
+    - 0.00288
+    - -0.0198
     factor:
     - 1.0
     - 1.0
-    - 1.0659
-    - 0.9998
-    - 0.9521
-    - 0.9839
-    - 1.0049
-    - 0.9834
+    - 1.0692
+    - 1.0008
+    - 0.9517
+    - 0.9838
+    - 1.0029
+    - 0.9804
   vs:
     log_factor:
     - 0.0
     - 0.0
-    - 0.07359
-    - 0.08468
-    - 0.05282
-    - 0.02517
-    - -0.02866
-    - -0.07677
+    - 0.07137
+    - 0.08418
+    - 0.05154
+    - 0.02409
+    - -0.03013
+    - -0.07774
     factor:
     - 1.0
     - 1.0
-    - 1.0764
-    - 1.0884
-    - 1.0542
-    - 1.0255
-    - 0.9717
-    - 0.9261
+    - 1.074
+    - 1.0878
+    - 1.0529
+    - 1.0244
+    - 0.9703
+    - 0.9252
   sd_log_factor:
     free_knots_m:
     - 2000.0
@@ -84,19 +84,19 @@ regional_bias:
     - 16000.0
     - 25000.0
     vp:
-    - 0.0074
-    - 0.0067
     - 0.0075
-    - 0.0057
-    - 0.0109
-    - 0.0228
+    - 0.0065
+    - 0.0074
+    - 0.0058
+    - 0.011
+    - 0.0229
     vs:
-    - 0.0103
+    - 0.0101
     - 0.0059
     - 0.0047
-    - 0.0053
-    - 0.0084
-    - 0.0216
+    - 0.0054
+    - 0.0085
+    - 0.0217
 vpvs_floor: 1.6
 vpvs_floor_source: christensen_1996
 source_keys:
@@ -135,69 +135,69 @@ held_out:
   before:
     P:
       n: 948
-      rms_s: 0.12543386322812577
-      median_abs_s: 0.07799561800824462
+      rms_s: 0.12546468608288228
+      median_abs_s: 0.07815405147045018
       rejected: 1
     S:
       n: 654
-      rms_s: 0.3550787660954374
-      median_abs_s: 0.20794758437419814
+      rms_s: 0.35482562273435625
+      median_abs_s: 0.20828947369510875
       rejected: 1
   after:
     P:
       n: 949
-      rms_s: 0.09361073581090434
-      median_abs_s: 0.05326706647284318
+      rms_s: 0.09372415024984122
+      median_abs_s: 0.05387598908035418
       rejected: 0
     S:
       n: 655
-      rms_s: 0.1878247401294056
-      median_abs_s: 0.12425775269852934
+      rms_s: 0.18765036345375932
+      median_abs_s: 0.12368936804792341
       rejected: 0
 all_events:
   before:
     P:
       n: 1819
-      rms_s: 0.12737216807701543
-      median_abs_s: 0.07681517613747024
+      rms_s: 0.1274023444690523
+      median_abs_s: 0.07695061620184962
       rejected: 4
     S:
       n: 1278
-      rms_s: 0.3532443447289229
-      median_abs_s: 0.2137051918847307
+      rms_s: 0.35303615877648203
+      median_abs_s: 0.21506179440239093
       rejected: 2
   after:
     P:
       n: 1820
-      rms_s: 0.09285015792926558
-      median_abs_s: 0.05360108320232615
+      rms_s: 0.09265046887763415
+      median_abs_s: 0.051986514461422995
       rejected: 3
     S:
       n: 1280
-      rms_s: 0.1904177417114112
-      median_abs_s: 0.12118248405549936
+      rms_s: 0.19056766864750327
+      median_abs_s: 0.12088525009869056
       rejected: 0
 vpvs_1_10km:
   before:
-    median: 1.840317695240893
-    p05: 1.7681803266786305
+    median: 1.8403185127911716
+    p05: 1.7681782797102348
   after:
-    median: 1.7125461243876348
-    p05: 1.649319243925046
+    median: 1.71493459099259
+    p05: 1.6514076383237648
 above_ground_gt_50m: 1
 fd_check_regional:
   parameter: regional Vs bias at 4000 m
   n_picks: 1280
-  slope_ray_on_fd: 0.8091021218245029
-  corr: 0.9673547665636615
+  slope_ray_on_fd: 0.8082075091980587
+  corr: 0.9673303177704394
 lam_scan:
 - lam_s: 0.01
-  held_out_linear_nrms: 0.7118793138061041
+  held_out_linear_nrms: 0.7128468235556301
 - lam_s: 0.1
-  held_out_linear_nrms: 0.7123869126354502
+  held_out_linear_nrms: 0.7137326161283684
 - lam_s: 1.0
-  held_out_linear_nrms: 0.7216433454273419
+  held_out_linear_nrms: 0.7232457704855111
 - lam_s: 10.0
-  held_out_linear_nrms: 0.7574151692683639
-runtime_min: 32.2
-date: '2026-10-21'
+  held_out_linear_nrms: 0.7597710115350815
+runtime_min: 39.9
+date: '2026-10-27'
