@@ -8,6 +8,9 @@ version to use, and what the model can and cannot tell you. How the model is bui
 Start with `examples/velocity_model_quickstart.py`. It downloads the model and prints a summary, then samples a
 point, plots a profile and a section, reads one critical-zone column, and exports a grid.
 
+For travel times and rays, `examples/pykonal_tutorial.ipynb` runs pykonal in the model for a source and a set of
+stations, and compares the times with the analyst picks of the event (`pixi run jupyter lab` in the repository).
+
 ## 1. Which model to use
 
 | Product | What it is | Use it for |
@@ -87,7 +90,7 @@ Levels L1, L2 and L3 (`rainier3d.io.attrs.LEVEL`):
 | `vp`, `vs`, `rho` | m/s, m/s, kg/m³ | the fused model: the values to use |
 | `qp`, `qs` | 1 | quality factors from a rule on Vs (`q` block of `configs/perturbations.yaml`) |
 | `vp_geology`, `vs_geology` | m/s | the geology model before the fusion (S4) |
-| `vp_regional`, `vs_regional` | m/s | the corrected regional model (USGS Cascadia CVM v1.7 to 9.9 km below the ground, CRESCENT Gen0 below) |
+| `vp_regional`, `vs_regional` | m/s | the corrected regional model (USGS Cascadia CVM v1.7 to 9.9 km below the ground, CRESCENT Gen0 below; the jump between them spread over 8–16 km) |
 | `unit` | 1 | model unit, table below; `flag_values` and `flag_meanings` in its attributes |
 | `alteration` | 1 | hydrothermal alteration intensity, 0 fresh to 1 altered (helicopter EM survey, S22) |
 | `magma_weight` | 1 | weight of the magma-body anomaly, 1 in its core to 0 outside |
@@ -107,7 +110,7 @@ thickness `cz_thickness`.
 | 0 | `air` | – |
 | 1 | `ice` | ice |
 | 2–5 | `water`, `glacial_drift`, `alluvium_colluvium`, `lahar_deposits` | unconsolidated deposits |
-| 6 | `rainier_andesite` | edifice |
+| 6 | `rainier_volcanics` | edifice |
 | 7 | `young_volcanics` | cap (Quaternary–Pliocene volcanics) |
 | 8 | `miocene_intrusive` | plutons (Tatoosh, White River, Carbon River, Nisqually) |
 | 9–14 | `miocene_volcanics`, `ohanapecosh`, `eocene_volcanics`, `eocene_sedimentary`, `miocene_sedimentary`, `pre_tertiary` | supracrustal units |

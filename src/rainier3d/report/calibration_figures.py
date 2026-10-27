@@ -11,6 +11,8 @@ Run by S10 (scripts/10_report.py), formerly S16.
 
 from __future__ import annotations
 
+import logging
+
 import matplotlib
 
 matplotlib.use("Agg")
@@ -89,6 +91,9 @@ def fig_factors():
     )
     ax[0].legend(frameon=False, fontsize=8, loc="lower right")
     for name in ("fused_nocal", "fused_vscal", "fused_v1", "fused_joint"):
+        if not (REPO / MODELS[name][1]).exists():  # the retired snapshots exist only where they were made
+            logging.warning("calibration figure: %s missing, its Vp/Vs curve left out", MODELS[name][1])
+            continue
         zc, med, band = vpvs_profile(MODELS[name][1])
         ax[1].plot(med, zc / 1e3, "-o", ms=3, color=COLORS[name], label=MODELS[name][0])
         if name in ("fused_nocal", "fused_joint"):
@@ -112,7 +117,7 @@ def fig_geology():
     d = np.linspace(0, 6000, 200)
     p_mpa = (pp["rho_bulk_kgm3"] - pp["rho_water_kgm3"]) * 9.81 * d / 1e6
     fig, ax = plt.subplots(1, 2, figsize=(9.5, 5.2), sharey=True, constrained_layout=True)
-    colors = {"rainier_andesite": "#c2412d", "ohanapecosh": "#2a78d6", "miocene_intrusive": "#3a9a5b"}
+    colors = {"rainier_volcanics": "#c2412d", "ohanapecosh": "#2a78d6", "miocene_intrusive": "#3a9a5b"}
     for u, c in colors.items():
         r = t.loc[u]
         for cal, ls in (({}, "--"), (g, "-")):
@@ -242,7 +247,11 @@ def relocation_qc():
     surf = read_tree(dom.path("processed") / "model.zarr")["surface"].to_dataset()["elevation"]
     rows = []
     for name, (lab, _) in MODELS.items():
-        c = pd.read_csv(REPO / "outputs" / "relocation" / name / "catalog.csv")
+        f = REPO / "outputs" / "relocation" / name / "catalog.csv"
+        if not f.exists():  # a retired model's run, made on another machine
+            logging.warning("relocation_qc: %s missing", f)
+            continue
+        c = pd.read_csv(f)
         g = surf.interp(x=("e", c.x.values), y=("e", c.y.values)).values
         dz = (c.d - c.d_catalog).abs()
         rows.append(

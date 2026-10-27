@@ -8,6 +8,8 @@ group reads only finished outputs and is skipped (with a note) when they are mis
 - validation: outputs/pnsn_*.csv (S6); relocation: outputs/relocation/<model>/stats.json (S14);
 - imush: outputs/model_comparison/ulberg2020_by_depth.csv (S21);
 - model: data/processed/model.zarr, properties_geology.zarr and geomodel.zarr (S3-S5), with fusion_report.csv;
+- uncalibrated: data/processed/model_nocal.zarr and outputs/fusion_report_model_nocal.csv (pixi run nocal, in
+  the validate family), with model.zarr;
 - catalog: outputs/catalog/summary.json and catalog_relocated.csv (S26);
 - tomography: outputs/tomography/summary.json, history.json and picks_*.csv (S37);
 - applications: data/processed/edifice_load.zarr (S18), outputs/gnss/strain_3d_summary.json (S18 volume),
@@ -28,6 +30,7 @@ from rainier3d.config.domain import REPO, load_domain
 
 OUT = REPO / "outputs" / "paper" / "numbers.json"
 NUM: dict = {}
+DEPTH_BINS = [(0, 300), (300, 1000), (1000, 2000), (2000, 4000)]  # m below the ground
 
 
 def put(key, value, what, source):
@@ -180,7 +183,7 @@ def calibration():
     # calibrated zero-pressure Vp of three units, with the cap 0.98 Vinf of eq:crack
     pt = pd.read_csv(REPO / "configs/petrophysics.csv").set_index("unit")
     v0 = {}
-    for u in ("rainier_andesite", "ohanapecosh", "miocene_intrusive"):
+    for u in ("rainier_volcanics", "ohanapecosh", "miocene_intrusive"):
         raw = pt.loc[u, "vp0_kms"] * g["factor_v0"]
         v0[u] = {
             "scaled": raw,
@@ -321,7 +324,7 @@ def model():
     )
 
     # depth-binned mean ln(geology/regional) over L1-L3 without ice, and in the top 300 m
-    bins = [(0, 300), (300, 1000), (1000, 2000), (2000, 4000)]
+    bins = DEPTH_BINS
     agree = {}
     for ph in ("vp", "vs"):
         acc = {b: [] for b in bins}
@@ -504,7 +507,34 @@ def model():
         "with/without the CZ in the top 50 m of L1; top-cell Vp/Vs > 3",
         "model.zarr, properties_geology.zarr",
     )
-    uncalibrated(g, m, bins)
+    from rainier3d.fusion import regional
+    from rainier3d.report.roughness import level_continuity, roughness
+
+    dom = load_domain()
+    put(
+        "model.roughness",
+        roughness(dom.path("processed") / "model.zarr"),
+        "|d ln Vs| between neighbouring 250 m cells at level and regional-model interfaces, and laterally",
+        "rainier3d.report.roughness",
+    )
+    put(
+        "model.l2_l3_continuity",
+        level_continuity(dom.path("processed") / "model.zarr"),
+        "median change of ln V from L2's bottom cell to L3's top cell against L2's gradient over the gap",
+        "rainier3d.report.roughness.level_continuity",
+    )
+    jump = regional.cvm_crescent_jump(
+        dom.levels["L3"], g["L3"]["depth"].values, regional.load_cvm(dom), regional.load_crescent(dom)
+    )
+    put(
+        "regional.cvm_crescent_jump",
+        {
+            v: {k: float(np.percentile(j, q)) for k, q in (("p05", 5), ("median", 50), ("p95", 95))}
+            for v, j in jump.items()
+        },
+        "ln(V_CRESCENT / V_CVM) at 9.9 km below the ground, per column of L3 (the jump the blend spreads)",
+        "rainier3d.fusion.regional.cvm_crescent_jump",
+    )
     invariant_without_magma(g)
 
 
@@ -521,7 +551,7 @@ def invariant_without_magma(g):
     pert, out = perturbations(), {}
     for name in ("L2", "L3"):
         lev = dom.levels[name]
-        reg = build.regional_level(lev, g[name]["depth"].values, cvm, cres, cal)
+        reg = build.regional_level(lev, g[name]["depth"].values, cvm, cres, cal, dom.cfg["fusion"])
         _, rows = build.fuse_level(
             g[name], props[name].to_dataset(), reg, lev, dom.cfg["fusion"], pert["q"], name
         )
@@ -534,53 +564,52 @@ def invariant_without_magma(g):
     )
 
 
-def uncalibrated(g, m, bins):
-    """The model at theta = 0 (no geology multipliers, no regional correction), built in memory by the S4 and
-    S5 code with the critical zone, as the S13 forward problem does: geology against regional by depth, the
-    fusion invariant, and the Vp/Vs at 2-4 km below ground before and after the calibration."""
-    from rainier3d.cz.level import context_from_disk
-    from rainier3d.fusion import build, regional
+def uncalibrated():
+    """The model at theta = 0 (no geology multipliers, no regional correction) that the validate family builds
+    (``pixi run nocal``: S4 and S5 with the critical zone and without the calibration, model_nocal.zarr):
+    geology against regional by depth, the fusion invariant, and the Vp/Vs at 2-4 km below ground before and
+    after the calibration."""
     from rainier3d.geomodel.rules import AIR, ICE
-    from rainier3d.io.store import read_tree
-    from rainier3d.petro.table import perturbations, petro_table
-    from rainier3d.properties.assign import assign
 
-    dom = load_domain()
-    geo = read_tree(dom.path("processed") / "geomodel.zarr")
-    table, pert = petro_table(), perturbations()
-    cz = context_from_disk(dom, geo)
-    cvm, cres = regional.load_cvm(dom), regional.load_crescent(dom)
-    fc = dom.cfg["fusion"]
+    n, _ = _levels("model_nocal.zarr")
+    m, _ = _levels("model.zarr")
+    bins = DEPTH_BINS
+    src = "data/processed/model_nocal.zarr (pixi run nocal)"
     acc = {ph: {b: [] for b in bins} for ph in ("vp", "vs")}
-    inv, vpvs = {}, {"uncalibrated_regional": [], "calibrated_fused": []}
-    for name, lev in dom.levels.items():
-        gl = g[name]
-        p = assign(gl, table, pert, None, cz)  # as S4: the critical-zone context on every level
-        reg = build.regional_level(lev, gl["depth"].values, cvm, cres, None)
-        out, rows = build.fuse_level(gl, p, reg, lev, fc, pert["q"], name, magma=pert["magma_mush"])
-        inv[name] = {r["var"]: r["lowpass_rms_lnV"] for r in rows}
-        u, d = gl.unit.values, gl.depth.values
+    vpvs = {"uncalibrated_regional": [], "calibrated_fused": []}
+    for name, ds in n.items():
+        u, d = ds.unit.values, ds.depth.values
         ok = (u != AIR) & (u != ICE)
         for ph in ("vp", "vs"):
-            lr = np.log(p[ph].values / reg[ph])
+            lr = np.log(ds[f"{ph}_geology"].values / ds[f"{ph}_regional"].values)
             for b in bins:
                 k = ok & (d >= b[0]) & (d < b[1]) & np.isfinite(lr)
                 acc[ph][b].append(lr[k])
         k = ok & (d >= 2000) & (d < 4000)
-        vpvs["uncalibrated_regional"].append((reg["vp"] / reg["vs"])[k])
-        vpvs["calibrated_fused"].append((m[name].vp.values / m[name].vs.values)[k])
+        vpvs["uncalibrated_regional"].append((ds.vp_regional.values / ds.vs_regional.values)[k])
+        c = m[name]  # its own cells: the two stores need not come from the same S3 run
+        u, d = c.unit.values, c.depth.values
+        k = (u != AIR) & (u != ICE) & (d >= 2000) & (d < 4000)
+        vpvs["calibrated_fused"].append((c.vp.values / c.vs.values)[k])
     put(
         "uncal.ln_geology_over_regional",
         {ph: {f"{a}-{b}": float(np.mean(np.concatenate(acc[ph][(a, b)]))) for a, b in bins} for ph in acc},
         "uncalibrated: mean ln(V_geology/V_regional) by depth below ground (m), L1-L3 without air and ice",
-        "in memory: S4 + S5 code with the critical zone, no calibration",
+        src,
     )
-    put("uncal.invariant", inv, "uncalibrated: fusion low-pass departure by level", "in memory, as above")
+    fr = pd.read_csv(REPO / "outputs" / "fusion_report_model_nocal.csv")
+    inv = {lv: dict(zip(r["var"], r["lowpass_rms_lnV"], strict=True)) for lv, r in fr.groupby("level")}
+    put(
+        "uncal.invariant",
+        inv,
+        "uncalibrated: fusion low-pass departure by level",
+        "outputs/fusion_report_model_nocal.csv (pixi run nocal)",
+    )
     put(
         "cal.vpvs_2_4km",
         {k: float(np.median(np.concatenate(v))) for k, v in vpvs.items()},
-        "median Vp/Vs at 2-4 km below ground: regional as distributed against the calibrated fused model",
-        "in memory (uncalibrated regional), model.zarr (fused)",
+        "median Vp/Vs at 2-4 km below ground: uncalibrated regional against the calibrated fused model",
+        f"{src} (regional), model.zarr (fused)",
     )
 
 
@@ -776,6 +805,7 @@ GROUPS = {
     "relocation": relocation,
     "imush": imush,
     "model": model,
+    "uncalibrated": uncalibrated,
     "catalog": catalog,
     "tomography": tomography,
     "applications": applications,

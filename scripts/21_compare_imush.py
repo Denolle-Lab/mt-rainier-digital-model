@@ -3,7 +3,8 @@
 
 A test of the S13 static bias on CVM v1.7 / CRESCENT: at every Ulberg node inside the domain that the EMC
 file leaves unmasked (checkerboard recovery for 20 km features), sample
-  regional      CVM v1.7 / CRESCENT as distributed        (vp_regional, vs_regional of model_nocal.zarr)
+  regional      CVM v1.7 / CRESCENT, the CVM-to-CRESCENT jump spread over fusion.regional_blend_m (8-16 km
+                below the ground), with no calibration          (vp_regional, vs_regional of model_nocal.zarr)
   regional_bias the same with the S13 static bias          (vp_regional, vs_regional of model.zarr)
   fused_uncal   the fused model before calibration          (vp, vs of model_nocal.zarr)
   fused_v2      the fused model after S13 (critical zone)   (vp, vs of model.zarr)
@@ -106,8 +107,10 @@ def summarize(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def figure(tab: pd.DataFrame, path):
+    a, b = (v / 1e3 for v in load_domain().cfg["fusion"]["regional_blend_m"])
+    reg_lab = f"CVM v1.7 / CRESCENT, blended {a:g}-{b:g} km"
     styles = {
-        "regional": ("#d98c2b", "CVM v1.7 / CRESCENT"),
+        "regional": ("#d98c2b", reg_lab),
         "regional_bias": ("#8a5cc2", "same + S13 static bias"),
         "fused_v2": ("#2a78d6", "rainier3d"),
     }
@@ -132,7 +135,7 @@ def figure(tab: pd.DataFrame, path):
         ax[2].plot(
             t.vpvs_ulberg_matched, z, ls, color="k", marker="o", ms=3, label=f"Ulberg 2020, matched{sfx}"
         )
-        ax[2].plot(t.vpvs_regional, z, ls, color="#d98c2b", label=f"CVM v1.7 / CRESCENT{sfx}")
+        ax[2].plot(t.vpvs_regional, z, ls, color="#d98c2b", label=f"{reg_lab}{sfx}")
         ax[2].plot(t.vpvs_fused_v2, z, ls, color="#2a78d6", marker="o", ms=3, label=f"rainier3d{sfx}")
     ax[2].set(xlabel="Vp/Vs (median, matched nodes)", title="(c) Vp/Vs")
     ax[0].set_ylabel("depth below ground (km)")

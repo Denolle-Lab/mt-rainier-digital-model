@@ -18,7 +18,8 @@ geometry numbers are placeholders, marked `m1_placeholder` in `configs/`.
 ## Download the derived products
 
 **Using the velocity model:** start with [`docs/velocity_model.md`](docs/velocity_model.md) (what it contains, which
-version to use, what it resolves) and run `examples/velocity_model_quickstart.py`.
+version to use, what it resolves) and run `examples/velocity_model_quickstart.py`; for travel times and rays with
+pykonal, open `examples/pykonal_tutorial.ipynb`.
 
 The derived products are the assets of the GitHub release
 [`products-v1.0.0`](https://github.com/Denolle-Lab/mt-rainier-digital-model/releases/tag/products-v1.0.0), under
@@ -205,16 +206,21 @@ A full `pixi run pipeline` takes about six hours on a laptop. The times below we
 on an Apple M1 Max (10 cores: 8 performance, 2 efficiency; 64 GB RAM; macOS 15.7), with the raw cache under
 `data/raw/` already downloaded. They come from that run's logs and the write times of each stage's product.
 
-| Family | Time | Longest stage |
-|---|---|---|
-| `inputs` | 1 min | S0 |
-| `surface` | 80 min | S2, 56 min, streaming POLARIS over the network; S2 now caches it under `data/raw/polaris/`, so later runs read it locally |
-| `model` | 1 min | S4 |
-| `calibrate` | 31 min | S13, 29 min (8 workers) |
-| `validate` | 83 min | S26, about 80 min (NonLinLoc on a single core) |
-| `tomography` | 100–130 min | S37 (8 workers): 100.5 min on 13 October; 132 min on 14 October, when another job made the laptop swap |
-| `applications` | 40 min | S34 and S29, about 10 min each |
-| `deliver` | 6 min | S32 (viewer bundle) |
+| Family | Time, laptop (14 Oct) | Time, server (21 Oct) | Longest stage |
+|---|---|---|---|
+| `inputs` | 1 min | 0.3 min | S0 |
+| `surface` | 80 min | 1.2 min | S2, 56 min on the laptop, streaming POLARIS over the network; S2 now caches it under `data/raw/polaris/`, so later runs read it locally |
+| `model` | 1 min | 1.8 min | S4 |
+| `calibrate` | 31 min | 34 min | S13: 29 min (8 workers) on the laptop, 32 min (48 workers) on the server |
+| `validate` | 83 min | 10 min | S26: about 80 min on the laptop, about 6 min on the server (NonLinLoc on a single core) |
+| `tomography` | 100–130 min | 79 min | S37: 100.5 min on 13 October and 132 min on 14 October (8 workers; the laptop swapped on 14 October); 78.9 min with 48 workers |
+| `applications` | 40 min | about 47 min | S34 (20 min on the server) and S29 |
+| `deliver` | 6 min | 10 min | S10 and S32 (viewer bundle) |
+
+The server is a Linux x86-64 machine with 48 cores and 376 GB RAM, run with `RAINIER3D_WORKERS=48` and the raw
+cache copied from the laptop (`docs/running_remotely.md`). Its `validate`, `applications` and `deliver` families
+were restarted after fixes for a clean machine; their times are the restarted runs, and `applications` sums the
+stages of two attempts (S8 to S33 in one, S29 and S34 to S36 in the next).
 
 - **Run families separately:** each family can be run on its own once the families it needs have run, so a long
   rebuild can be split over several sessions. After a change to the model, `pixi run model && pixi run calibrate &&
@@ -298,7 +304,7 @@ positive up. Levels, from `configs/domain.yaml`, profile `m1`:
 Map units are crosswalked to 16 model units and extended to depth by column rules:
 
 - ice thickness, then an unconsolidated deposit layer;
-- Rainier andesite above an interpolated pre-volcanic surface;
+- Rainier volcanics above an interpolated pre-volcanic surface;
 - basement units extruded to −4 km, and plutons to −10 km;
 - middle crust below;
 - a placeholder magma sphere (its anomaly applied to the fused model, with a cosine taper) and the alteration
@@ -326,6 +332,8 @@ model is USGS Cascadia CVM v1.7 to 9.9 km below ground, and CRESCENT Gen0 below.
 - `~/GitHub/cascadia_obs_ensemble/data/tomography/CRESCENT_Gen0.nc`
 - `~/GitHub/cascadia_obs_ensemble/data/vel_pnsn_wa.csv`: PNSN 1D model; which PNSN model this
   is remains unconfirmed.
+- S5 and S6 read staged copies of CRESCENT Gen0 and the PNSN 1D table from `data/raw/regional/` when present
+  (checksummed in `docs/data_manifest.csv`), so a server needs only `data/raw/` (`docs/running_remotely.md`).
 - The DAS channel table, the two KMZ overlays and the Synoptic station catalogue are copied once into `data/raw/`
   by `pixi run platform` (`local_inputs` in `configs/platform.yaml`); after that, no step reads them from
   `~/Downloads` or `~/GitHub`.

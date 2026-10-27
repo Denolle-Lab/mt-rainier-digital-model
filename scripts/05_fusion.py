@@ -36,6 +36,8 @@ def main():
         action="store_true",
         help="ignore the velocity calibration (to build the base model of S12/S13)",
     )
+    ap.add_argument("--properties", default="properties_geology.zarr", help="S4 store under data/processed")
+    ap.add_argument("--out", default="model.zarr", help="store name under data/processed")
     a = ap.parse_args()
     dom = load_domain(a.profile)
     fc = dom.cfg["fusion"]
@@ -43,7 +45,7 @@ def main():
     cal_path = next((p for p in cal_files if p.exists()), None)
     cal = None if a.no_calibration or cal_path is None else yaml.safe_load(cal_path.read_text())
     geo = read_tree(dom.path("processed") / "geomodel.zarr")
-    props = read_tree(dom.path("processed") / "properties_geology.zarr")
+    props = read_tree(dom.path("processed") / a.properties)
     cvm, cres = regional.load_cvm(dom), regional.load_crescent(dom)
     pert = perturbations()
     q = pert["q"]
@@ -60,7 +62,7 @@ def main():
         nodes["/soil"] = read(soil)
     for name, lev in dom.levels.items():
         g, p = geo[name].to_dataset(), props[name].to_dataset()
-        reg = build.regional_level(lev, g["depth"].values, cvm, cres, cal)
+        reg = build.regional_level(lev, g["depth"].values, cvm, cres, cal, fc)
         out, rows = build.fuse_level(g, p, reg, lev, fc, q, name, magma=pert["magma_mush"])
         report += rows
         if cal is not None:
@@ -81,9 +83,12 @@ def main():
         "domain": dom.name,
         "method": "M1: rule-based geology + petrophysics, fused with CVM v1.7 / CRESCENT Gen0",
     }
-    write(tree, dom.path("processed") / "model.zarr")
+    write(tree, dom.path("processed") / a.out)
     rep = pd.DataFrame(report)
-    rep.to_csv(dom.path("outputs") / "fusion_report.csv", index=False)
+    stem = (
+        "" if a.out == "model.zarr" else "_" + a.out.removesuffix(".zarr")
+    )  # the invariant reads the default
+    rep.to_csv(dom.path("outputs") / f"fusion_report{stem}.csv", index=False)
     logging.info("\n%s", rep.to_string(index=False, float_format=lambda v: f"{v:.4f}"))
 
 

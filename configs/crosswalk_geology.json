@@ -581,7 +581,7 @@
  },
  "Qian(mr)": {
   "unit_id": 6,
-  "unit": "rainier_andesite",
+  "unit": "rainier_volcanics",
   "dmu": "Pleistocene | Mount Rainier, plugs and dikes of"
  },
  "Qian(os)": {
@@ -641,12 +641,12 @@
  },
  "Qva(mo)": {
   "unit_id": 6,
-  "unit": "rainier_andesite",
+  "unit": "rainier_volcanics",
   "dmu": "Pleistocene | Mt Rainier, andesite of, Observation and Echo Rocks andesites"
  },
  "Qva(mr)": {
   "unit_id": 6,
-  "unit": "rainier_andesite",
+  "unit": "rainier_volcanics",
   "dmu": "Pleistocene | Mount Rainier, andesite of"
  },
  "Qva(os)": {

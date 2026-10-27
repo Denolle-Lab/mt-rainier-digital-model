@@ -20,7 +20,7 @@ in.
 | Noise tomography around Rainier | Calkins et al. 2011, JGR, 10.1029/2010JB007657 | V | shallow Vs check |
 | Cascadia CVM v1.7 | Wirth et al. 2025, OFR 2025-1045; data 10.5066/P14HJ3IC | V | S5 regional model (in use) |
 | Cascadia CVM v1.6 | Stephenson et al. 2017, OFR 2017-1152 | V | method |
-| CRESCENT Gen0 CVM | He et al. 2026, JGR, 10.1029/2025JB033216 | V | S5 below 9.9 km (in use) |
+| CRESCENT Gen0 CVM | He et al. 2026, JGR, 10.1029/2025JB033216 | V | S5 below 9.9 km, blended over 8–16 km (in use) |
 | CRESCENT CVM viewer/downloads | Zenodo 15015095 | V | other regional models |
 | Cascades noise tomography | Gao & Shen 2014, EPSL (EMC file) | V/M | comparison |
 | Forearc/arc Vs | Delph et al. 2018, GRL, 10.1029/2018GL079518 | V | comparison |

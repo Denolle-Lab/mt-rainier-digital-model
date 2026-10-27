@@ -8,6 +8,7 @@ validated reference palette in fixed order.
 from __future__ import annotations
 
 import json
+import logging
 
 import matplotlib
 
@@ -272,7 +273,7 @@ def fig_fusion(tree, dom, path, at_y, zmin=-12000):
         ("vs_geology", "vs_regional", "vs"),
         (
             "a  Geology-driven model (rock physics on the 3D units)",
-            "b  Regional model (CVM v1.7 to 9.9 km, CRESCENT Gen0 below)",
+            "b  Regional model (CVM v1.7, CRESCENT Gen0 below, blended 8-16 km)",
             "c  Fused model: long wavelengths of b, short wavelengths of a",
         ),
         strict=True,
@@ -799,6 +800,10 @@ def fig_canopy(canopy, tree, dom, path):
         ("gedi_canopy_height", "(e) Canopy height, GEDI L3 (m)", cmc.bamako_r, (0, 60)),
         ("gedi_biomass", "(f) Aboveground biomass, GEDI L4B (Mg/ha)", cmc.bamako_r, (0, 600)),
     ]
+    missing = [v for v, *_ in panels if v not in canopy]
+    if missing:  # machine-local inputs of S19 (configs/canopy_products.yaml); the committed figure is kept
+        logging.warning("canopy figure not remade, layers missing from S19: %s", ", ".join(missing))
+        return path
     fig, axs = plt.subplots(2, 3, figsize=(7.2, 6.4), constrained_layout=True, sharex=True, sharey=True)
     for ax, (var, title, cmap, lim) in zip(axs.flat, panels, strict=True):
         ax.imshow(hs, cmap="gray", origin="lower", extent=ext, vmin=0, vmax=1.2)

@@ -37,7 +37,7 @@ UNIT_LABELS = {
     3: "Glacial drift",
     4: "Alluvium and colluvium",
     5: "Lahar deposits",
-    6: "Mount Rainier andesite",
+    6: "Mount Rainier volcanics",
     7: "Younger volcanic rocks",
     8: "Miocene intrusive rocks",
     9: "Miocene volcanic rocks",

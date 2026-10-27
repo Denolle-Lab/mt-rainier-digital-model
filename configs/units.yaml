@@ -10,7 +10,7 @@ units:
   3:  {name: glacial_drift,       kind: unconsolidated}
   4:  {name: alluvium_colluvium,  kind: unconsolidated}
   5:  {name: lahar_deposits,      kind: unconsolidated}
-  6:  {name: rainier_andesite,    kind: edifice}
+  6:  {name: rainier_volcanics,   kind: edifice}       # the edifice, lavas and breccia (not only andesite)
   7:  {name: young_volcanics,     kind: cap}          # other Quaternary-Pliocene volcanics
   8:  {name: miocene_intrusive,   kind: pluton}       # Tatoosh, White River, Carbon River, Nisqually
   9:  {name: miocene_volcanics,   kind: supracrustal} # Fifes Peak, Stevens Ridge
@@ -56,7 +56,7 @@ geometry:
     Qvl(e):  {thickness_m: 4.0,  range_m: [0, 7.9],  dmu: "a few millimeters to at least 26 ft"}    # Electron Mudflow
     Qvl(lc): {thickness_m: 41.6, range_m: [0, 83.2], dmu: "maximum known thickness is 273 ft"}      # Lily Creek mudflows
     Qvl(o):  {thickness_m: 11.4, range_m: [0, 22.9], dmu: "as much as 75 ft"}                       # Osceola Mudflow
-  cap_thickness_m: 300            # young_volcanics, and rainier_andesite outside the edifice footprint
+  cap_thickness_m: 300            # young_volcanics, and rainier_volcanics outside the edifice footprint
   supracrustal_base_z: -4000      # m NAVD88; base of mapped basement units
   pluton_base_z: -10000           # m NAVD88; base of the Miocene plutons
   edifice:

@@ -43,8 +43,8 @@ def test_crosswalk_rules_on_known_symbols():
     )
     got = {s: v["unit"] for s, v in cw.items()}
     assert got == {
-        "Qva(mr)": "rainier_andesite",
-        "Qian(mr)": "rainier_andesite",
+        "Qva(mr)": "rainier_volcanics",
+        "Qian(mr)": "rainier_volcanics",
         "Qvl(o)": "lahar_deposits",
         "Migd(t)": "miocene_intrusive",
         "Miv(sx)": "miocene_volcanics",
