@@ -126,19 +126,29 @@ def regional_on_level(lev: Level, depth: np.ndarray, cvm: xr.Dataset, cres: xr.D
     unc_r = _vertical_interp(r["Uncert_Vs"].values, rd, zb)
     vp_r = brocher_vp_from_vs(vs_r / 1000.0) * 1000.0
 
-    # the jump of each column at CVM_MAX_DEPTH below its ground (ground = z + depth)
-    ground = lev.z[0] + depth[0]
+    jump = _jump(lev.z[0] + depth[0], c, r)
+    w = crescent_weight(d, window)
+    deep = d > CVM_MAX_DEPTH
+    out = {}
+    for v, shallow, deep_v in (("vp", vp_c, vp_r), ("vs", vs_c, vs_r)):
+        out[v] = np.where(deep, deep_v * np.exp(-(1 - w) * jump[v]), shallow * np.exp(w * jump[v]))
+    return {**out, "vs_unc": unc_r, "crescent_weight": w}
+
+
+def _jump(ground: np.ndarray, c: xr.Dataset, r: xr.Dataset) -> dict:
+    """ln(V_CRESCENT / V_CVM) of each column at CVM_MAX_DEPTH below its ground; c, r on a level's columns."""
+    cd, rd = c["depth"].values.astype(float), r["depth_bsl"].values.astype(float)
     base_c = np.full((1, *ground.shape), CVM_MAX_DEPTH)
     vs_cb = _vertical_interp(c["vs"].values, cd, base_c)[0]
     vp_cb = _vertical_interp(c["vp"].values, cd, base_c)[0]
     vs_rb = _vertical_interp(r["Vs"].values, rd, (CVM_MAX_DEPTH - ground)[None])[0]
     vp_rb = brocher_vp_from_vs(vs_rb / 1000.0) * 1000.0
-    w = crescent_weight(d, window)
-    deep = d > CVM_MAX_DEPTH
-    out = {}
-    for v, shallow, deep_v, jump in (
-        ("vp", vp_c, vp_r, np.log(vp_rb / vp_cb)),
-        ("vs", vs_c, vs_r, np.log(vs_rb / vs_cb)),
-    ):
-        out[v] = np.where(deep, deep_v * np.exp(-(1 - w) * jump), shallow * np.exp(w * jump))
-    return {**out, "vs_unc": unc_r, "crescent_weight": w}
+    return {"vp": np.log(vp_rb / vp_cb), "vs": np.log(vs_rb / vs_cb)}
+
+
+def cvm_crescent_jump(lev: Level, depth: np.ndarray, cvm: xr.Dataset, cres: xr.Dataset) -> dict:
+    """The jump that regional_on_level spreads, per column of a level: {"vp", "vs"} of ln(V_CRESCENT / V_CVM)
+    at CVM_MAX_DEPTH below the ground (depth: the level's depth below the ground, (z, y, x))."""
+    c = cvm.interp(x=lev.x, y=lev.y, method="linear")
+    r = cres.interp(x=lev.x, y=lev.y, method="linear")
+    return _jump(lev.z[0] + depth[0], c, r)

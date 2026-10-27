@@ -53,10 +53,10 @@ The model is built in four layers of evidence, from the most local to the most c
 ## 3 Fusion with earlier models and calibration (S5, S13)
 
 - **Regional models.** USGS Cascadia CVM v1.7 to 9.9 km below the ground (the base of its data), CRESCENT Gen0
-  below (`rainier3d.fusion.regional`). The jump between them at 9.9 km (median 6% in Vs, CRESCENT faster) is
-  spread with a raised cosine over 8–16 km below the ground (`fusion.regional_blend_m`, `m1_placeholder`): CVM
-  plus W times the jump above 9.9 km, CRESCENT minus (1 − W) times the jump below, so each model is used only
-  where it has data.
+  below (`rainier3d.fusion.regional`). The jump between them at 9.9 km (median 6% in Vs, CRESCENT faster;
+  `regional.cvm_crescent_jump` in `outputs/paper/numbers.json`) is spread with a raised cosine over 8–16 km
+  below the ground (`fusion.regional_blend_m`, `m1_placeholder`): CVM plus W times the jump above 9.9 km,
+  CRESCENT minus (1 − W) times the jump below, so each model is used only where it has data.
 - **Fusion in ln V (`rainier3d.fusion.blend`).** Vs and Vp/Vs of the fused model are the long wavelengths of the
   regional model plus the short wavelengths of the geology model: LP(regional) + [geology − LP(geology)], with a
   horizontal Gaussian whose cutoff grows from 6 km at the surface to 20 km at depth; alternating projections keep

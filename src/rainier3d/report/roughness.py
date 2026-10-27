@@ -77,5 +77,27 @@ def roughness(store) -> dict:
     return out
 
 
+def level_continuity(store) -> dict:
+    """Per variable (vs, vs_geology, vs_regional): the median change of ln V from the bottom cell of L2 to the
+    top cell of L3 at L3's columns, against what the gradient of L2's two bottom cells predicts over the gap
+    between the two cell centres; a residual near zero means the levels agree, and a step on a uniform grid
+    comes from the resampling."""
+    tree = r3.open_model(store)
+    l2, l3 = tree["L2"].to_dataset(), tree["L3"].to_dataset()
+    z2, z2b, z3 = float(l2.z[-1]), float(l2.z[-2]), float(l3.z[0])
+    out = {"gap_m": z2 - z3}
+    for v in ("vs", "vs_geology", "vs_regional"):
+        a = np.log(l2[v].isel(z=[-2, -1]).interp(x=l3.x, y=l3.y).values)
+        change = np.log(l3[v].isel(z=0).values) - a[1]
+        pred = (a[1] - a[0]) / (z2b - z2) * (z2 - z3)
+        ok = np.isfinite(change) & np.isfinite(pred)
+        out[v] = {
+            "change_median": float(np.median(change[ok])),
+            "predicted_median": float(np.median(pred[ok])),
+            "residual_median": float(np.median((change - pred)[ok])),
+        }
+    return out
+
+
 if __name__ == "__main__":
     print(json.dumps(roughness(sys.argv[1]), indent=1))
