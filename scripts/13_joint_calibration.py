@@ -84,10 +84,8 @@ def main():
     table, pert = petro_table(), perturbations()
     q = pert["q"]
     cvm, cres = regional.load_cvm(dom), regional.load_crescent(dom)
-    reg0 = {
-        n: regional.regional_on_level(
-            lev, geo[n].to_dataset()["depth"].values, cvm, cres, fc["regional_blend_m"]
-        )
+    reg0 = {  # without a calibration: the static bias is fitted here
+        n: build.regional_level(lev, geo[n].to_dataset()["depth"].values, cvm, cres, None, fc)
         for n, lev in dom.levels.items()
     }
     surf = geo["surface"].to_dataset()
