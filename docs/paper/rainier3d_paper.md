@@ -1258,7 +1258,7 @@ Below the ground it shows Vs, Vp, Vp/Vs, density, units, alteration and the stra
     - the geodetic strain rate at depth is assigned (depth-invariant horizontal rate, plane stress), not inverted from sources;
     - the edifice-load stress is that of a uniform half-space with a flat surface, converted to strain with the local stiffness, with a confined-overburden approximation inside the cone.
 - **Hydrology.** The model has no hydrological state beyond the critical-zone columns ([@sec:hydro], [@sec:cz]), and no process of the model responds to precipitation.
-- **Mass-movement catalogue.** Events from reports and papers are not yet digitised, the Exotic Seismic Events Catalog v3 has no scripted download, one landslide crown sits on the 30 m DEM.
+- **Mass-movement catalogue.** Events from reports and papers are not yet digitised, the Exotic Seismic Events Catalog v3 has no scripted download, and one landslide crown sits on the 30 m DEM.
 - **Vegetation layers.** Only the GEDI L3 canopy height is rebuilt by script (S28). The 10 m lidar grids were made in QGIS, and the GEDI L2B plant area index, L4B biomass and the soil map are read from delivered files.
 - **Licences.** The lidar canopy layers (Washington DNR Lidar Portal terms not confirmed) and the soil-map image (source undocumented) are shown in the viewer but not published. The licences of CRESCENT Gen0, IceBoost v2, RGI 6.0, GlaThiDa, the Synoptic station catalogue and SoilGrids 2017 are not yet recorded in the registry.
 
