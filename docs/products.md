@@ -91,7 +91,15 @@ vp = g.vp.where(g.air == 0)                                    # rock only; air 
 ```
 
 In NonLinLoc, point `GTFILES` at `grids/nll/rainier3d`, and give stations and search grids in the same UTM 10N
-kilometre frame (`TRANS NONE`), with depth positive down. Paper Sect. 9 gives the full recipe.
+kilometre frame (`TRANS NONE`), with depth positive down. Paper Sect. 9 gives the full recipe. The grids are
+140 × 150 × 49 cells of 500 m, from 4.25 km above sea level to 19.75 km depth. The same grids of `model_let`
+are exported from the downloaded store:
+
+```bash
+rainier3d fetch model_let
+rainier3d export model --model ~/.cache/rainier3d/model_let/extracted/model_let.zarr \
+    --format nll --dx 500 --dz 500 --out nll_let/rainier3d_let
+```
 
 ### `strain_3d`: strain in the volume
 
