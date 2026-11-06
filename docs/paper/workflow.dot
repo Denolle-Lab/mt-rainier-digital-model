@@ -1,24 +1,25 @@
 // rainier3d workflow. scripts/23_paper.py renders it to docs/paper/figures/fig0_workflow.{svg,pdf}.
 // Top: original archives; middle: model chain; right: calibration loop; bottom: checks and products.
+// Sized for print: at most 6.5 in (468 pt) wide with 11 pt text, so it prints at 11 pt or more on US letter.
 digraph rainier3d {
-  graph [rankdir=TB, fontname="Helvetica", fontsize=12, nodesep=0.22, ranksep=0.34, pad=0.1, newrank=true];
-  node  [shape=box, style="rounded,filled", fontname="Helvetica", fontsize=12, color="#5c5b57", fillcolor="#f7f6f2",
-         margin="0.10,0.05", penwidth=0.8];
+  graph [rankdir=TB, fontname="Helvetica", fontsize=11, nodesep=0.15, ranksep=0.3, pad=0.1, newrank=true];
+  node  [shape=box, style="rounded,filled", fontname="Helvetica", fontsize=11, color="#5c5b57", fillcolor="#f7f6f2",
+         margin="0.06,0.04", penwidth=0.8];
   edge  [color="#5c5b57", arrowsize=0.6, penwidth=0.8, fontname="Helvetica", fontsize=11];
 
   // original archives
-  dem   [label="Elevation, geology,\nglacier thickness"];
-  em    [label="Helicopter EM and\nmagnetic survey"];
-  env   [label="Soil, water, streams,\ncanopy, imagery"];
-  reg   [label="Regional models\nCVM v1.7, CRESCENT"];
-  pnsn  [label="PNSN P and S picks\n88 events"];
-  gnss  [label="GNSS daily positions\nPANGA, UNR"];
-  { rank=same; dem; em; env; reg; pnsn; gnss; }
+  dem   [label="Elevation,\ngeology, ice"];
+  em    [label="Helicopter EM,\nmagnetics"];
+  env   [label="Soil, water,\ncanopy, imagery"];
+  reg   [label="CVM v1.7,\nCRESCENT"];
+  pnsn  [label="PNSN picks,\n88 events"];
+  gnss  [label="GNSS, PANGA\nand UNR"];
+  { rank=same; dem; em; env; }
 
   // model chain
-  s1  [label="S1 surface grid"];
-  s22 [label="S22 alteration field"];
-  s2  [label="S2, S19 surface layers"];
+  s1  [label="S1 surface"];
+  s22 [label="S22 alteration"];
+  s2  [label="S2, S19\nlayers"];
   s3  [label="S3 3D geology"];
   s4  [label="S4 rock physics\nVp, Vs, ρ, Q", fillcolor="#e8f0fb"];
   s5  [label="S5 fusion in ln V", fillcolor="#e8f0fb"];
@@ -26,15 +27,16 @@ digraph rainier3d {
   { rank=same; s1; s22; s2; }
 
   // calibration loop
-  s14 [label="S14 relocate every event\nin the trial model", fillcolor="#e8f0fb"];
-  s13 [label="S13 Gauss–Newton update\nfrom P, S, S−P residuals", fillcolor="#e8f0fb"];
+  s14 [label="S14 relocate\nevery event", fillcolor="#e8f0fb"];
+  s13 [label="S13 Gauss–Newton\nP, S, S−P", fillcolor="#e8f0fb"];
   { rank=same; s4; s14; }
   { rank=same; s5; s13; }
+  s5 -> s13 [style=invis, minlen=3];
 
   // checks and products
-  s21 [label="S21 iMUSH check"];
-  s17 [label="S17, S18 strain rate,\nedifice-load stress"];
-  out [label="S9, S20 grids, products\nS11 viewer, report", shape=box3d, fillcolor="#ffffff"];
+  s21 [label="S21 iMUSH\ncheck"];
+  s17 [label="S17, S18 strain,\nload stress"];
+  out [label="S9, S20 products\nS11 viewer", shape=box3d, fillcolor="#ffffff"];
   { rank=same; s21; s17; out; }
 
   dem -> s1; em -> s22; env -> s2;
@@ -42,6 +44,6 @@ digraph rainier3d {
   pnsn -> s14; mdl -> s14 [constraint=false];
   s14 -> s13;
   s13 -> s4 [label="V0, P*, Vs", color="#2a78d6", fontcolor="#2a78d6", constraint=false];
-  s13 -> s5 [label="regional bias", color="#2a78d6", fontcolor="#2a78d6", constraint=false];
+  s13 -> s5 [xlabel="regional\nbias", color="#2a78d6", fontcolor="#2a78d6", constraint=false];
   mdl -> s21; mdl -> s17; mdl -> out; gnss -> s17; s17 -> out;
 }

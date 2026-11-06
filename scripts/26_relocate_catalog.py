@@ -206,6 +206,15 @@ def figures(dom, out):
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
 
+    from rainier3d.report import style
+
+    # printed at the text width (6.5 in) with every text at 11 pt
+    rc = {"font.size": 11, "axes.titlesize": 11, "axes.titleweight": "bold", "savefig.bbox": "standard"}
+    with plt.rc_context(rc):
+        _figures(dom, out, plt, style)
+
+
+def _figures(dom, out, plt, style):
     cat = pd.read_csv(out / "catalog_relocated.csv", index_col=0)
     q = cat[cat.quality.isin(["A", "B"])]
     tree = read_tree(dom.path("processed") / "model.zarr")
@@ -213,65 +222,61 @@ def figures(dom, out):
     sx, sy = dom.summit_xy
     x0, y0 = dom.bounds[0], dom.bounds[1]
     km = lambda v, o: (v - o) / 1e3  # noqa: E731
-    styles = {"cc": ("ComCat (PNSN)", "#7a7a7a"), "pnsn1d": ("NonLinLoc, PNSN 1D", "#d98c2b"),
-              "rainier3d": ("NonLinLoc, rainier3d 3D", "#2a78d6")}  # fmt: skip
+    styles = {"cc": ("ComCat", "#7a7a7a"), "pnsn1d": ("NonLinLoc, PNSN 1D", "#d98c2b"),
+              "rainier3d": ("NonLinLoc, rainier3d", "#2a78d6")}  # fmt: skip
+    ticks = [0, 20, 40, 60]
+    size = 2 + 1.5 * q.mag  # marker area grows with magnitude
 
     fig, ax = plt.subplots(
-        2, 3, figsize=(16, 10), constrained_layout=True, gridspec_kw={"height_ratios": [1.6, 1]}
-    )
+        2, 3, figsize=(style.PAGE_WIDTH_IN, 5.4), sharex=True, sharey="row", layout="constrained",
+        gridspec_kw={"height_ratios": [1.1, 1]},
+    )  # fmt: skip
     el = s["elevation"]
     for j, (k, (lab, c)) in enumerate(styles.items()):
         a = ax[0, j]
         a.contour(km(el.x.values, x0), km(el.y.values, y0), el.values, levels=np.arange(500, 4400, 500),
-                  colors="0.75", linewidths=0.4)  # fmt: skip
-        a.scatter(km(q[f"x_{k}"], x0), km(q[f"y_{k}"], y0), s=6 + 4 * q.mag, c=c, alpha=0.7, lw=0)
-        a.plot(km(sx, x0), km(sy, y0), "k^", ms=9)
-        a.set(aspect="equal", title=f"{lab} ({len(q)} events, A+B)", xlabel="easting (km)")
+                  colors="0.8", linewidths=0.3)  # fmt: skip
+        a.scatter(km(q[f"x_{k}"], x0), km(q[f"y_{k}"], y0), s=size, c=c, alpha=0.7, lw=0)
+        a.plot(km(sx, x0), km(sy, y0), "k^", ms=6)
+        a.set(aspect="equal", title=lab, xticks=ticks, yticks=ticks)
         # W-E section through the summit, +-5 km
         b = ax[1, j]
         band = np.abs(q[f"y_{k}"] - sy) < 5000
         b.scatter(
-            km(q.loc[band, f"x_{k}"], x0),
-            q.loc[band, f"z_{k}"] / 1e3,
-            s=6 + 4 * q.mag[band],
-            c=c,
-            alpha=0.7,
-            lw=0,
+            km(q.loc[band, f"x_{k}"], x0), q.loc[band, f"z_{k}"] / 1e3, s=size[band], c=c, alpha=0.7, lw=0
         )
         prof = el.sel(y=sy, method="nearest")
         b.plot(km(prof.x.values, x0), prof.values / 1e3, "k", lw=1)
         above = (q.loc[band, f"above_ground_m_{k}"] > 0).sum()
-        b.set(
-            xlabel="easting (km)", ylim=(-20, 4.6), title=f"W-E section, summit +-5 km: {above} above ground"
-        )
+        b.text(0.97, 0.04, f"{above} above\nground", transform=b.transAxes, ha="right", va="bottom")
+        b.set(xlabel="easting (km)", ylim=(-20, 5), yticks=[-20, -10, 0])
     ax[0, 0].set_ylabel("northing (km)")
     ax[1, 0].set_ylabel("elevation (km)")
-    fig.savefig(out / "fig_catalogs.png", dpi=130)
-    fig.savefig(PAPER_FIG / "fig19_relocated_catalogs.png", dpi=130)
+    style.save(fig, out / "fig_catalogs.png", dpi=200)
+    style.save(fig, PAPER_FIG / "fig19_relocated_catalogs.png", dpi=200)
+    plt.close(fig)
 
-    fig, ax = plt.subplots(1, 2, figsize=(13, 5), constrained_layout=True)
+    fig, ax = plt.subplots(1, 2, figsize=(style.PAGE_WIDTH_IN, 3.9), layout="constrained")
     dz = -(q.z_rainier3d - q.z_pnsn1d) / 1e3
     dzc = -(q.z_rainier3d - q.z_cc) / 1e3
     b = np.arange(-6, 6.01, 0.25)
-    ax[0].hist(
-        dz, bins=b, color="#2a78d6", alpha=0.7, label=f"3D - 1D (NonLinLoc), median {dz.median():+.2f} km"
-    )
+    ax[0].hist(dz, bins=b, color="#2a78d6", alpha=0.7, label=f"3D - 1D, median {dz.median():+.2f} km")
     ax[0].hist(dzc, bins=b, histtype="step", color="k", label=f"3D - ComCat, median {dzc.median():+.2f} km")
-    ax[0].set(xlabel="depth change (km, positive = deeper in 3D)", ylabel="events", title="Depth change")
-    ax[0].legend(frameon=False)
+    ax[0].set(xlabel="deeper in 3D (km)", ylabel="events", title="(a) Depth change", xticks=[-6, -3, 0, 3, 6])
+    ax[0].legend(frameon=False, loc="upper center", bbox_to_anchor=(0.5, -0.2))
     a = ax[1]
     a.contour(km(el.x.values, x0), km(el.y.values, y0), el.values, levels=np.arange(500, 4400, 500),
-              colors="0.8", linewidths=0.4)  # fmt: skip
+              colors="0.8", linewidths=0.3)  # fmt: skip
     for r in q.itertuples():
         a.plot([km(r.x_pnsn1d, x0), km(r.x_rainier3d, x0)], [km(r.y_pnsn1d, y0), km(r.y_rainier3d, y0)], "-",
-               color="#2a78d6", lw=0.7)  # fmt: skip
-    a.scatter(km(q.x_rainier3d, x0), km(q.y_rainier3d, y0), s=5, c="#2a78d6")
-    a.plot(km(sx, x0), km(sy, y0), "k^", ms=9)
-    a.set(aspect="equal", title="Epicentre shift, 1D -> 3D (lines end at the 3D location)",
-          xlabel="easting (km)",
-          ylabel="northing (km)")  # fmt: skip
-    fig.savefig(out / "fig_shifts.png", dpi=130)
-    fig.savefig(PAPER_FIG / "fig20_relocated_shifts.png", dpi=130)
+               color="#2a78d6", lw=0.6)  # fmt: skip
+    a.scatter(km(q.x_rainier3d, x0), km(q.y_rainier3d, y0), s=3, c="#2a78d6")
+    a.plot(km(sx, x0), km(sy, y0), "k^", ms=6)
+    a.set(aspect="equal", title="(b) Epicentre shift, 1D to 3D", xlabel="easting (km)",
+          ylabel="northing (km)", xticks=ticks, yticks=ticks)  # fmt: skip
+    style.save(fig, out / "fig_shifts.png", dpi=200)
+    style.save(fig, PAPER_FIG / "fig20_relocated_shifts.png", dpi=200)
+    plt.close(fig)
 
 
 if __name__ == "__main__":

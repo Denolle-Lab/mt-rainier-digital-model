@@ -6,15 +6,18 @@ Survey: Rystrom, Finn & Deszcz-Pan (2000), USGS OFR 00-027, downloaded to data/r
 Method: rainier3d.alteration.finn2001; thresholds in configs/units.yaml (geometry.alteration.finn_2001).
 Then rerun S3, S4, S5 (and S9, S11) to carry the field into the velocity model, the exports and the viewer.
 
-Usage: pixi run s22
+Usage: pixi run s22 [-- --figures-only]   (redraw the figures from the stored zarr and NetCDF products)
 """
 
 from __future__ import annotations
 
+import argparse
 import json
 import logging
+import shutil
 
 import matplotlib
+import matplotlib.ticker
 
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
@@ -26,6 +29,7 @@ from rainier3d.alteration import finn2001 as F
 from rainier3d.config.domain import REPO, load_domain
 from rainier3d.io.store import read, write
 from rainier3d.petro.table import units_config
+from rainier3d.report import style
 
 DZ_3D = 10.0  # m, vertical spacing of the standalone 3D product
 D_MAX_3D = 200.0  # m below the bedrock surface
@@ -33,7 +37,15 @@ D_MAX_3D = 200.0  # m below the bedrock surface
 
 def main():
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
+    ap = argparse.ArgumentParser()
+    ap.add_argument(
+        "--figures-only", action="store_true", help="redraw from alteration_finn2001.zarr and the 3D NetCDF"
+    )
+    a = ap.parse_args()
     dom = load_domain()
+    if a.figures_only:
+        redraw(dom)
+        return
     cfg = units_config()["geometry"]["alteration"]["finn_2001"]
     raw = A.fetch(dom.path("raw") / "rainier_aerogeophysics")
     # the S1 surface (elevation, ice, map units), which S3 passes to geomodel.zarr unchanged: S3 reads this
@@ -167,29 +179,60 @@ def main():
     logging.info("\n%s", json.dumps(summary, indent=1))
 
 
+def redraw(dom):
+    """The figures from the stored products: the survey grids of the zarr store on the grid of the NetCDF."""
+    prod = xr.open_dataset(dom.path("outputs") / "grids" / "rainier3d_alteration_finn2001.nc")
+    x, y = prod.x.values, prod.y.values
+    ds = read(dom.path("processed") / "alteration_finn2001.zarr").sel(x=x, y=y)
+    sel = read(dom.path("processed") / "surface.zarr").sel(x=x, y=y)
+    a3 = prod["alteration"].values
+    figures(ds, sel, x, y, dom, a3, prod.z.values, REPO / "docs" / "alteration")
+
+
+def _map(a, v, ext, x, y, el, ice, summit, **kw):
+    """One map panel: field, elevation contours, glacier outline and summit; returns the image."""
+    im = a.imshow(v, origin="lower", extent=ext, interpolation="nearest", **kw)
+    a.contour(x / 1e3, y / 1e3, el, levels=np.arange(1500, 4400, 500), colors="0.3", linewidths=0.4)
+    a.contour(x / 1e3, y / 1e3, (ice > 10).astype(float), levels=[0.5], colors="c", linewidths=0.6)
+    a.plot(*summit, "k^", ms=7)
+    a.xaxis.set_major_locator(matplotlib.ticker.MaxNLocator(2))
+    a.yaxis.set_major_locator(matplotlib.ticker.MaxNLocator(2))
+    return im
+
+
 def figures(ds, sel, x, y, dom, a3, zs, out):
     out.mkdir(parents=True, exist_ok=True)
     sx, sy = dom.summit_xy
+    summit = (sx / 1e3, sy / 1e3)
     ext = (x[0] / 1e3, x[-1] / 1e3, y[0] / 1e3, y[-1] / 1e3)
     el = sel["elevation"].values
     ice = sel["ice_thickness"].fillna(0).values
-    fig, ax = plt.subplots(2, 3, figsize=(16, 9), constrained_layout=True)
-    panels = [
-        (ds[f"alt_log10_rho_{f}"], f"log10 apparent resistivity, {f}", "turbo_r", None) for f in F.FREQS
-    ]
-    panels += [(ds["alt_a_surface"], "alteration intensity of the surface rock", "magma", (0, 1)),
-               (ds["apparent_magnetization"], "apparent magnetisation (A/m)", "RdBu_r", (-1, 5))]  # fmt: skip
-    for a, (v, t, cm, lim) in zip(ax.flat, panels, strict=True):
-        vv = v.values
-        lo, hi = lim or np.nanpercentile(vv, [2, 98])
-        im = a.imshow(vv, origin="lower", extent=ext, cmap=cm, vmin=lo, vmax=hi)
-        a.contour(x / 1e3, y / 1e3, el, levels=np.arange(1500, 4400, 500), colors="0.3", linewidths=0.4)
-        a.contour(x / 1e3, y / 1e3, (ice > 10).astype(float), levels=[0.5], colors="c", linewidths=0.8)
-        a.plot(sx / 1e3, sy / 1e3, "k^", ms=9)
-        a.set_title(t, fontsize=10)
-        a.set(xlabel="easting (km)", ylabel="northing (km)")
-        plt.colorbar(im, ax=a, shrink=0.8)
-    fig.savefig(out / "fig1_em_alteration_maps.png", dpi=130)
+    # 6.5 in wide (the paper text width), 11 pt text
+    hz = {"33k": "33 kHz"}
+    unit = "log$_{10}$ Ω m"
+    panels = [(ds[f"alt_log10_rho_{f}"], f"ρ$_a$ at {hz.get(f, f + ' Hz')}", "turbo_r", None, unit)
+              for f in F.FREQS]  # fmt: skip
+    panels += [(ds["alt_a_surface"], "alteration", "magma", (0, 1), "intensity"),
+               (ds["apparent_magnetization"], "magnetisation", "RdBu_r", (-1, 5), "A/m")]  # fmt: skip
+    with plt.rc_context({"font.size": 11}):
+        fig, ax = plt.subplots(3, 2, figsize=(6.5, 6.1), sharex=True, sharey=True, layout="compressed")
+        for k, (a, (v, t, cm, lim, unit)) in enumerate(zip(ax.flat, panels, strict=True)):
+            vv = v.values
+            lo, hi = lim or np.nanpercentile(vv, [2, 98])
+            im = _map(a, vv, ext, x, y, el, ice, summit, cmap=cm, vmin=lo, vmax=hi)
+            a.set_title(f"({'abcdef'[k]}) {t}")
+            cb = fig.colorbar(im, ax=a, shrink=0.9, pad=0.02, label=unit)
+            cb.locator = matplotlib.ticker.MaxNLocator(3)
+            cb.update_ticks()
+        for a in ax[:, 0]:
+            a.set_ylabel("northing (km)")
+        for a in ax[2]:
+            a.set_xlabel("easting (km)")
+        paper = REPO / "docs" / "paper" / "alteration" / "fig1_em_alteration_maps.png"
+        paper.parent.mkdir(parents=True, exist_ok=True)
+        style.save(fig, paper, dpi=254)  # 10000 px/m, exact in the PNG
+        shutil.copy(paper, out / paper.name)
+    plt.close(fig)
 
     # west-east section through the summit
     j = int(np.argmin(np.abs(y - sy)))

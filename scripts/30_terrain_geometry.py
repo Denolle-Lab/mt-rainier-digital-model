@@ -19,6 +19,7 @@ Parameters: configs/terrain.yaml. Operators: rainier3d.surface.terrain.
 
 Usage: pixi run s30
        pixi run s30 -- --model ~/.cache/rainier3d/model/extracted/model.zarr --mass-movements <dir>
+       pixi run s30 -- --figures-only   (redraw the figure from terrain_geometry.zarr, computing nothing)
 """
 
 from __future__ import annotations
@@ -36,7 +37,7 @@ import xarray as xr
 from scipy.ndimage import binary_dilation
 
 from rainier3d.config.domain import REPO, load_domain
-from rainier3d.io.store import read_tree, write
+from rainier3d.io.store import read, read_tree, write
 from rainier3d.surface import terrain as T
 from rainier3d.surface.dem import fetch_3dep
 from rainier3d.surface.mass_movements import EVENT_CLASSES, FLOW_CLASSES
@@ -52,8 +53,17 @@ def main():
     ap.add_argument("--mass-movements", default="", help="directory with S24 events.gpkg and flows.gpkg")
     ap.add_argument("--atlas", default=str(REPO / "web" / "viewer" / "site" / "public" / "atlas"))
     ap.add_argument("--no-figure", action="store_true")
+    ap.add_argument(
+        "--figures-only", action="store_true", help="redraw the figure from terrain_geometry.zarr"
+    )
     a = ap.parse_args()
     dom, cfg = load_domain(), T.load_config()
+    if a.figures_only:
+        from rainier3d.report.figures import fig_terrain_geometry
+
+        ds = read(dom.path("processed") / "terrain_geometry.zarr")
+        logging.info("figure %s", fig_terrain_geometry(ds, dom, cfg, FIG).relative_to(REPO))
+        return
     res = float(cfg["grid"]["res_m"])
 
     t0 = time.time()

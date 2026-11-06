@@ -168,6 +168,11 @@ The command line does the same without Python:
 - **Rock physics:** the unit parameters are author choices within published ranges (`m1_placeholder` in
   `configs/petrophysics.csv`), scaled by three global factors: zero-pressure Vp ×1.45, crack-closure pressure ×1.36
   and rock Vs ×0.958. V₀ and Vs are resolved by the travel times; the crack-closure pressure is not.
+- **Base of the edifice:** on the flanks the edifice base lies 0–300 m below the ground, and the slow Rainier
+  volcanics sit on faster basement with a sharp step there (ln Vs about 0.4 within 150 m of the ground, 0.1 at
+  150–300 m), because the fusion does not smooth the top 150 m and barely smooths the next few hundred metres.
+  The step is a geological contact, but its size comes from placeholder unit velocities and its shape from the
+  interpolated base.
 - **Top 150 m:** the critical zone is petrophysically consistent with the rock below (one water table, one pore
   pressure), but its parameters are not calibrated, because travel times barely constrain the top 50 m. Its
   depth-to-rock priors differ by a factor of 13.9 at the median.

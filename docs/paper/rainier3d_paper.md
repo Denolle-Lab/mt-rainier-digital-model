@@ -86,7 +86,7 @@ The workflow is a sequence of numbered scripts, S0 to S37, each run as a task of
 
 The domain and its sensors are mapped in [@fig:map].
 
-![Workflow. Inputs (left) are fetched from their original archives. The model chain (middle) builds the surface grid, the 3D geology, the rock physics and the fusion with the regional models. The calibration (blue) relocates every PNSN event in each trial model and updates the rock-physics multipliers (S4) and a static correction of the regional models (S5) from the P, S and S−P residuals. Checks and products read the finished model (right).](figures/fig0_workflow){#fig:workflow width=100%}
+![Workflow. Inputs (beige, top and right) are fetched from their original archives. The model chain (left) builds the surface grid, the 3D geology, the rock physics and the fusion with the regional models. The calibration (blue, right) relocates every PNSN event in each trial model and updates the rock-physics multipliers (S4) and a static correction of the regional models (S5) from the P, S and S−P residuals. Checks and products read the finished model (bottom).](figures/fig0_workflow){#fig:workflow width=100%}
 
 ![Model domain. The background shows the surface model units derived from the Washington 1:100,000 geologic map over a hillshade, with glacier outlines in blue. Symbols are operating sensors (FDSN and GNSS site metadata), and small circles the 2025 node array, which recorded in July and August 2025 (FDSN network Z5 [@fdsn_z5_2025]; the legend counts all 240 nodes, of which 191 lie inside the box). The seismometer count of the legend is of operating broadband and short-period sites drawn on the map; the 46 permanent stations of [@sec:cz] also include strong-motion sites. The white line is the Paradise–Nisqually Entrance distributed acoustic sensing (DAS) fibre, and dots are PNSN earthquakes since 2015 (M ≥ 0.5), coloured by depth. The dashed lines mark sections A–A′ and B–B′.](figures/fig1_map.png){#fig:map width=100%}
 
@@ -576,7 +576,7 @@ Over the 126 km² of surveyed edifice lava, 10.6 km² reaches an intensity of 0.
 
 The concentration east of and around the summit agrees with the exposed east–west belt of altered rock described by @finn_2001 and @john_2008. The EM field sees only the top ~150 m. It cannot see the altered rock buried beneath fresh cover on the upper west flank, which @finn_2001 inferred from magnetic modelling. The survey's terrain-correlated apparent magnetisation is published as a separate map.
 
-![Apparent resistivity at the four EM frequencies, alteration intensity of the surface rock and terrain-correlated apparent magnetisation (S22). Contours: elevation every 500 m; cyan: glaciers thicker than 10 m; triangle: summit.](alteration/fig1_em_alteration_maps.png){#fig:alteration width=100%}
+![(a–d) Apparent resistivity at the four EM frequencies (33 kHz, 4737, 4341 and 837 Hz), each on its own colour scale; (e) alteration intensity of the surface rock; (f) terrain-correlated apparent magnetisation (S22). Contours: elevation every 500 m; cyan: glaciers thicker than 10 m; triangle: summit.](alteration/fig1_em_alteration_maps.png){#fig:alteration width=100%}
 
 ### Fusion with the regional models {#sec:fusion}
 
@@ -824,7 +824,7 @@ The daily uniform strain of each region's stations is fitted to trajectory resid
 
 Neither swarm shows a transient above about 10 nanostrain in the WRSZ. On the edifice, winter excursions of the 30-day median of up to 2335 nanostrain (March 2023) [TODO: no script writes it; from `outputs/gnss/strain_edifice.csv`] come from the close-spaced high sites. With stations a few kilometres apart, a few millimetres of snow-related antenna error become about 1000 nanostrain of apparent strain. Resolving strain of the edifice or of a magma body needs other instruments: tiltmeters, borehole strainmeters or interferometric synthetic-aperture radar.
 
-![Daily areal strain of the stations around the WRSZ and the edifice, from trajectory residuals (grey), with 30-day medians (blue). Red lines mark the 2009 and 2025 summit swarms. [TODO: no script draws this figure, which predates the run of 27 October 2026; redraw from `outputs/gnss/strain_wrsz.csv` and `strain_edifice.csv`]](gnss/strain_series.png){#fig:strainseries width=100%}
+![Daily areal strain of the stations around the WRSZ (17 sites) and the edifice (6 quality-controlled sites, from September 2012), from trajectory residuals (grey), with centred 30-day medians (blue, broken at gaps longer than 30 days); the vertical range is clipped to the 0.5–99.5 percentiles. Red lines mark the 2009 and 2025 summit swarms (S18, `outputs/gnss/strain_*.csv`; `pixi run s18 -- --figures-only`).](gnss/strain_series.png){#fig:strainseries width=100%}
 
 ## Stress from the edifice load
 
@@ -894,7 +894,7 @@ as the pressurisation of the hydrothermal system.
 
 : Volumetric strain of the edifice load beneath the summit (S18, `outputs/gnss/strain_3d_summary.json`). Above 1539 m the stress is the confined overburden. {#tbl:edificestrain}
 
-![Static strain of the edifice load. (a) Volumetric strain at 1125 m above sea level, with the direction of the most compressive horizontal stress (SHmax, bars) and the summit earthquakes shallower than 4 km (dots). (b, c) West–east and south–north sections through the summit, with the in-plane axis of maximum compression; inside the cone, the confined overburden makes it vertical.](figures/fig17_strain_edifice.png){#fig:strainedifice width=82%}
+![Static strain of the edifice load. (a) Volumetric strain (compression negative) at 1125 m above sea level, with the direction of the most compressive horizontal stress (SHmax, bars) and the summit earthquakes shallower than 4 km (dots). (b, c) West–east and south–north sections through the summit, with the in-plane axis of maximum compression; inside the cone, the confined overburden makes it vertical.](figures/fig17_strain_edifice.png){#fig:strainedifice width=82%}
 
 SHmax of the load is tangential around the summit at and above sea level and radial from 5 km below sea level
 down ([@fig:strainorient]). The horizontal shear strain of the load is 1–14 microstrain within 20 km of the
@@ -1224,7 +1224,7 @@ In this period ComCat places no event above the ground. The problem of the 500 a
 
 ![The 2023–2025 PNSN catalogue (magnitude ≥ 1; the 344 events graded A or B in rainier3d) as located by ComCat, by NonLinLoc in the PNSN 1D model and by NonLinLoc in rainier3d. Top: epicentres over elevation contours. Bottom: west–east sections within 5 km of the summit, with the ground profile, and the number of events of that band above the ground (the four 1D events pinned at the topography mask of [@tbl:relocation] include three outside the band).](figures/fig19_relocated_catalogs.png){#fig:relocated width=100%}
 
-![(a) Depth change of each event between rainier3d and the 1D model (filled) and between rainier3d and ComCat (outline). (b) Epicentre shifts from the 1D to the 3D location.](figures/fig20_relocated_shifts.png){#fig:relshift width=100%}
+![(a) Depth change of each event between rainier3d and the 1D model (filled) and between rainier3d and ComCat (outline), positive deeper in rainier3d. (b) Epicentre shifts from the 1D to the 3D location (dots at the 3D location).](figures/fig20_relocated_shifts.png){#fig:relshift width=100%}
 
 ## The three-dimensional viewer
 
@@ -1243,6 +1243,7 @@ Below the ground it shows Vs, Vp, Vp/Vs, density, units, alteration and the stra
 - **Rock-physics parameters.** The unit parameters of [@tbl:units] are chosen within published ranges and scaled by three global multipliers, of which V₀ and the rock Vs are resolved by the travel times and P* is not ([@tbl:multipliers]). The alteration factors and the Q rule are likewise author choices. The planned replacement is a table of laboratory and field measurements on Cascade and analogue volcanic rocks [@watters2000; @heap2021], against which the calibrated V₀ can be tested. Per-lithology multipliers need more stations on plutonic and sedimentary units.
 - **Unsourced parameters.** Values chosen by the authors carry the registry key `m1_placeholder`: all 16 unit rows of `configs/petrophysics.csv`, the alteration, magma-body and Q factors of `configs/perturbations.yaml`, three alteration thresholds in `configs/units.yaml`, and the quality-control, strain, region, load and volume choices of `configs/gnss.yaml`. Replacing them from the literature is tracked work.
 - **Geometry by rules.** Contacts are vertical and unit bases are flat; the fusion smooths them below the critical zone with author-chosen cutoffs ([@sec:fusion]), but does not place them. Structural modelling from the map contacts and orientation measurements would replace the column rules.
+- **Base of the edifice.** The pre-volcanic surface is interpolated from the ground around the footprint, so the edifice thins to zero at its edge and its base lies 0–300 m below the flanks over about 60% of the footprint. There the slow Rainier volcanics (`m1_placeholder`) sit on faster basement and Tatoosh pluton with a step that the fusion leaves almost unsmoothed: the median ln Vs step between neighbouring 50 m cells across the base is 0.39 within 150 m of the ground and 0.12 at 150–300 m, against 0.01 or less below 600 m [TODO: no script writes these steps; computed by hand from `model.zarr` along `edifice_base`, run of 27 October 2026]. Users of the near-surface model on the flanks see this contact as a sharp jump; its size follows from the placeholder unit velocities and its shape from the rule.
 - **Hidden alteration and deep bodies.**
     - The alteration field covers only the top ~150 m. The buried alteration of the upper west flank [@finn_2001] is not represented.
     - The magma body is a prescribed sphere whose size and anomaly are author choices; the tomography of [@sec:let] has almost no resolution at its depths.

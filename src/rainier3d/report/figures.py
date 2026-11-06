@@ -22,6 +22,7 @@ from matplotlib.colors import BoundaryNorm, LightSource, ListedColormap  # noqa:
 from pyproj import Transformer  # noqa: E402
 
 from rainier3d.petro.table import unit_names  # noqa: E402
+from rainier3d.report import style  # noqa: E402
 from rainier3d.sensors.inventory import families, is_node_2025  # noqa: E402
 
 CAT = ["#2a78d6", "#eb6834", "#1baf7a", "#eda100", "#e87ba4", "#008300", "#4a3aa7", "#e34948"]
@@ -46,12 +47,20 @@ UNIT_COLORS = {
     21: "#b5179e",
 }
 
+# text sizes for figures drawn at their printed width (6.5 in for a full text width, rainier3d.report.style):
+# 11 pt is the smallest printed size, so every text keeps these defaults
 plt.rcParams.update(
     {
         "font.family": "sans-serif",
-        "font.size": 8.5,
-        "axes.labelsize": 8.5,
-        "axes.titlesize": 9,
+        "font.size": 11,
+        "axes.labelsize": 11,
+        "axes.titlesize": 11,
+        "xtick.labelsize": 11,
+        "ytick.labelsize": 11,
+        "legend.fontsize": 11,
+        "legend.title_fontsize": 11,
+        "figure.labelsize": 11,
+        "figure.titlesize": 11,
         "axes.edgecolor": MUTED,
         "axes.labelcolor": INK,
         "xtick.color": MUTED,
@@ -61,9 +70,38 @@ plt.rcParams.update(
         "legend.frameon": False,
         "savefig.dpi": 220,
         "savefig.bbox": "tight",
+        "savefig.pad_inches": 0.03,  # the default 0.1 in pad widens a full-width figure past 6.5 in
         "figure.dpi": 110,
     }
 )
+
+
+def _print_width(path, default=style.PAGE_WIDTH_IN):
+    """Printed width (in) of a paper figure (its Markdown width), to draw it at the size it prints."""
+    return style.print_widths().get(style.paper_key(path), default)
+
+
+def _hcolorbar(fig, im, ax, ticks=None, **kw):
+    """Horizontal colour bar under a small map panel: ticks at the ends and middle of a linear scale, or at
+    the decades of a logarithmic one, few enough for 11 pt labels."""
+    from matplotlib.colors import LogNorm
+
+    cb = fig.colorbar(im, ax=ax, orientation="horizontal", shrink=0.9, pad=0.02, aspect=20, **kw)
+    lo, hi = im.norm.vmin, im.norm.vmax
+    if ticks is None and isinstance(im.norm, LogNorm):
+        ticks = 10.0 ** np.arange(np.ceil(np.log10(lo)), np.floor(np.log10(hi)) + 1)
+    elif ticks is None:
+        ticks = np.linspace(lo, np.floor(hi * 10) / 10, 3)
+    cb.set_ticks(ticks, labels=[f"{t:g}".replace("-", "−") for t in ticks])
+    return cb
+
+
+def _map_ticks(ax, step=20):
+    """Ticks every ``step`` km on a map in km from the summit (shared axes take them all)."""
+    from matplotlib.ticker import MultipleLocator
+
+    ax.xaxis.set_major_locator(MultipleLocator(step))
+    ax.yaxis.set_major_locator(MultipleLocator(step))
 
 
 def _utm(dom):
@@ -139,6 +177,7 @@ def _section_axes(ax, tree, var, axis, at, cmap, norm, zmin, events=None, dom=No
                 lw=0.35,
                 zorder=4,
             )
+    ax.set_xlim(float(surf[axis].min()) / 1e3, float(surf[axis].max()) / 1e3)
     ax.set_ylim(zmin / 1e3, 4.6)
     ax.set_ylabel("Elevation (km)")
     return m
@@ -152,7 +191,7 @@ def fig_map(tree, dom, sites, events, das, path, sec_a, sec_b):
     cmap, norm, ids = _unit_cmap()
     rgba = cmap(norm(np.clip(s["surface_unit"].values, 1, 21)))
     rgb = rgba[..., :3] * (0.55 + 0.45 * hs[..., None])
-    fig, ax = plt.subplots(figsize=(7.2, 7.4))
+    fig, ax = plt.subplots(figsize=(6.5, 7.4), constrained_layout=True)
     ext = [x[0] - 0.05, x[-1] + 0.05, y[0] - 0.05, y[-1] + 0.05]
     ax.imshow(rgb, origin="lower", extent=ext, interpolation="bilinear")
     ice = s["ice_thickness"].values
@@ -228,8 +267,17 @@ def fig_map(tree, dom, sites, events, das, path, sec_a, sec_b):
         label=f"2025 nodes ({len(p)})",
     )
     dx, dy = tf.transform(das.lon.values, das.lat.values)
-    ax.plot(np.array(dx) / 1e3, np.array(dy) / 1e3, color=INK, lw=2.4, zorder=5)
-    ax.plot(np.array(dx) / 1e3, np.array(dy) / 1e3, color="white", lw=1.1, zorder=6, label="DAS fiber")
+    from matplotlib import patheffects as pe
+
+    ax.plot(
+        np.array(dx) / 1e3,
+        np.array(dy) / 1e3,
+        color="white",
+        lw=1.1,
+        zorder=6,
+        label="DAS fiber",
+        path_effects=[pe.Stroke(linewidth=2.4, foreground=INK), pe.Normal()],
+    )
     for (a, b), lab in ((sec_a, "A"), (sec_b, "B")):  # each section = (start xy, end xy) in m
         ax.plot(
             [a[0] / 1e3, b[0] / 1e3], [a[1] / 1e3, b[1] / 1e3], color=INK, lw=1.0, ls=(0, (5, 3)), zorder=6
@@ -249,32 +297,24 @@ def fig_map(tree, dom, sites, events, das, path, sec_a, sec_b):
     ax.set_xlabel("UTM 10N easting (km)")
     ax.set_ylabel("UTM 10N northing (km)")
     ax.set_aspect("equal")
-    ax.legend(
-        loc="lower left",
-        fontsize=7,
-        markerscale=1.1,
-        facecolor="white",
-        frameon=True,
-        framealpha=0.85,
-        edgecolor=GRID,
-    )
-    cb = fig.colorbar(sc, ax=ax, shrink=0.45, pad=0.015)
+    fig.legend(loc="outside lower center", ncol=3, markerscale=1.3, columnspacing=1.0, handletextpad=0.3)
+    cb = fig.colorbar(sc, ax=ax, shrink=0.5, pad=0.015, ticks=range(0, 21, 5))
     cb.set_label("PNSN event depth (km)")
-    fig.savefig(path)
+    style.save(fig, path)
     plt.close(fig)
     return path
 
 
 def fig_fusion(tree, dom, path, at_y, zmin=-12000):
-    fig, axs = plt.subplots(3, 1, figsize=(7.2, 6.4), sharex=True, constrained_layout=True)
+    fig, axs = plt.subplots(3, 1, figsize=(6.5, 6.4), sharex=True, constrained_layout=True)
     norm = plt.Normalize(500, 4000)
     for ax, var, title in zip(
         axs,
         ("vs_geology", "vs_regional", "vs"),
         (
             "a  Geology-driven model (rock physics on the 3D units)",
-            "b  Regional model (CVM v1.7, CRESCENT Gen0 below, blended 8-16 km)",
-            "c  Fused model: long wavelengths of b, short wavelengths of a",
+            "b  Regional model (CVM v1.7 over CRESCENT Gen0)",
+            "c  Fused model: long wavelengths of b, short of a",
         ),
         strict=True,
     ):
@@ -283,7 +323,7 @@ def fig_fusion(tree, dom, path, at_y, zmin=-12000):
     axs[-1].set_xlabel("UTM 10N easting (km), section A–A′")
     cb = fig.colorbar(m, ax=axs, shrink=0.6, pad=0.01)
     cb.set_label("Vs (m/s)")
-    fig.savefig(path)
+    style.save(fig, path)
     plt.close(fig)
     return path
 
@@ -298,14 +338,20 @@ def fig_sections(
         "vpvs": (cmc.vik, plt.Normalize(1.55, 2.2), "Vp/Vs"),
         "unit": (*_unit_cmap()[:2], "Model unit"),
     }
-    fig, axs = plt.subplots(
-        len(variables), 1, figsize=(7.2, 2.05 * len(variables)), sharex=True, constrained_layout=True
-    )
+    n = len(variables)
+    fig = plt.figure(figsize=(_print_width(path), 1.62 * n + 1.9), constrained_layout=True)
+    gs = fig.add_gridspec(n, 2, width_ratios=[1, 0.025])
+    axs = [fig.add_subplot(gs[i, 0]) for i in range(n)]
+    for ax in axs[1:]:
+        ax.sharex(axs[0])
     names = unit_names()
+    handles = []
     for i, (ax, var) in enumerate(zip(axs, variables, strict=True)):
         cmap, norm, lab = cfg[var]
         m = _section_axes(ax, tree, var, axis, at, cmap, norm, zmin, events=events, dom=dom)
-        ax.set_title(f"{'abcdef'[i]}  {lab}")
+        ax.set_title(f"{'abcdef'[i]}  {lab.split(' (')[0]}")  # units on the colour bar
+        if i < n - 1:
+            ax.tick_params(labelbottom=False)
         if var == "unit":
             from matplotlib.patches import Patch
 
@@ -319,28 +365,28 @@ def fig_sections(
             )
             handles = [
                 Patch(facecolor=UNIT_COLORS[u], edgecolor=GRID, label=names[u].replace("_", " "))
-                for u in present[::-1]
+                for u in present
             ]
-            ax.legend(
-                handles=handles,
-                loc="center left",
-                bbox_to_anchor=(1.01, 0.5),
-                fontsize=6.5,
-                handlelength=1.2,
-                handleheight=0.9,
-                borderaxespad=0,
-            )
         else:
-            cb = fig.colorbar(m, ax=ax, pad=0.01, aspect=12)
-            cb.set_label(lab)
+            fig.colorbar(m, cax=fig.add_subplot(gs[i, 1])).set_label(lab)
     axs[-1].set_xlabel(f"UTM 10N {'easting' if axis == 'x' else 'northing'} (km), section {label}")
-    fig.savefig(path)
+    if handles:
+        fig.legend(
+            handles=handles,
+            loc="outside lower center",
+            ncol=3,
+            handlelength=1.2,
+            handleheight=0.9,
+            columnspacing=0.8,
+            handletextpad=0.4,
+        )
+    style.save(fig, path)
     plt.close(fig)
     return path
 
 
 def fig_profiles(tree, dom, path, points, pnsn_1d):
-    fig, axs = plt.subplots(1, len(points), figsize=(7.2, 3.8), sharey=True, constrained_layout=True)
+    fig, axs = plt.subplots(1, len(points), figsize=(6.5, 4.4), sharey=True, constrained_layout=True)
     tf = _utm(dom)
     for ax, (name, lon, lat) in zip(axs, points, strict=True):
         x, y = tf.transform(lon, lat)
@@ -375,14 +421,19 @@ def fig_profiles(tree, dom, path, points, pnsn_1d):
                 label="PNSN 1D" if var == "vp" else None,
             )
         ax.set_title(name)
-        ax.set_xlabel("Velocity (km/s)")
         ax.set_xlim(0, 7.5)
+        ax.set_xticks([0, 2, 4, 6])
         ax.grid(color=GRID, lw=0.4)
+    axs[len(axs) // 2].set_xlabel("Velocity (km/s)")
     axs[0].set_ylabel("Elevation (km)")
     axs[0].set_ylim(-20, 4.6)
-    axs[0].legend(loc="lower left", fontsize=7)
-    fig.text(0.5, -0.02, "solid: Vp · dashed: Vs", ha="center", color=MUTED, fontsize=7.5)
-    fig.savefig(path)
+    handles, _ = axs[0].get_legend_handles_labels()
+    handles += [
+        plt.Line2D([], [], color=MUTED, ls="-", label="Vp"),
+        plt.Line2D([], [], color=MUTED, ls="--", label="Vs"),
+    ]
+    fig.legend(handles=handles, loc="outside lower center", ncol=3, columnspacing=1.2)
+    style.save(fig, path)
     plt.close(fig)
     return path
 
@@ -390,9 +441,9 @@ def fig_profiles(tree, dom, path, points, pnsn_1d):
 def fig_pnsn(res_csv, sta_csv, path):
     r = pd.read_csv(res_csv)
     st = pd.read_csv(sta_csv)
-    fig, axs = plt.subplots(1, 2, figsize=(7.2, 3.2), constrained_layout=True)
+    fig, axs = plt.subplots(1, 2, figsize=(6.5, 3.9), constrained_layout=True)
     ax = axs[0]
-    for m, col, lab in (("1d", CAT[0], "PNSN 1D"), ("3d", CAT[1], "rainier3d 3D")):
+    for m, col, lab in (("1d", CAT[0], "1D"), ("3d", CAT[1], "3D")):
         p = r[r.phase == "P"]
         res = p.tt_obs - p[f"tt_{m}"]
         dm = res - res.groupby(p.event).transform("mean")
@@ -402,12 +453,14 @@ def fig_pnsn(res_csv, sta_csv, path):
             histtype="step",
             lw=1.4,
             color=col,
-            label=f"{lab}  (RMS {np.sqrt((dm**2).mean()):.3f} s)",
+            label=f"{lab}, RMS {np.sqrt((dm**2).mean()):.3f} s",
         )
-    ax.set_xlabel("P residual, event mean removed (s)")
+    ax.set_xlabel("P residual (s)")
     ax.set_ylabel("Picks")
-    ax.set_title("a  P-pick residuals, 1828 picks")
-    ax.legend(fontsize=7)
+    ax.set_title(f"a  {(r.phase == 'P').sum()} P picks")
+    ax.set_xticks([-0.8, -0.4, 0, 0.4, 0.8])
+    ax.set_ylim(0, 1.4 * ax.get_ylim()[1])  # room for the legend above the peak
+    ax.legend(loc="upper left", handlelength=1.2, borderaxespad=0.2)
     ax = axs[1]
     for ph, col in (("P", CAT[0]), ("S", CAT[1])):
         g = st[(st.phase == ph) & (st.n >= 5)]
@@ -419,24 +472,28 @@ def fig_pnsn(res_csv, sta_csv, path):
             color=col,
             edgecolor="white",
             lw=0.4,
-            label=f"{ph}: r = {c:.2f} ({len(g)} stations)",
+            label=f"{ph}: r = {c:.2f} ({len(g)})",
         )
     g = st[st.n >= 5]
     ax.set_xlim(g.res_1d.min() - 0.1, g.res_1d.max() + 0.1)
-    ax.set_ylim(min(0, g.delay_3d_1d.min() - 0.05), g.delay_3d_1d.max() + 0.1)
-    ax.set_xlabel("Mean 1D residual per station (s)")
-    ax.set_ylabel("Mean 3D − 1D predicted delay (s)")
-    ax.set_title("b  Station terms explained by the 3D model")
-    ax.legend(fontsize=7, loc="upper left")
+    ax.set_ylim(min(0, g.delay_3d_1d.min() - 0.05), g.delay_3d_1d.max() + 0.2)
+    ax.set_xlabel("Mean 1D residual (s)")
+    ax.set_ylabel("Mean 3D − 1D delay (s)")
+    ax.set_title("b  Station terms")
+    ax.legend(loc="upper left", handletextpad=0.2, borderaxespad=0.2)
     ax.grid(color=GRID, lw=0.4)
-    fig.savefig(path)
+    style.save(fig, path)
     plt.close(fig)
     return path
 
 
+# label offsets (points) of the glacier names of fig_glaciers, where the default would overlap at print size
+GLACIER_LABEL_OFFSET = {"Wilson": (4, 2), "Russell": (4, -10), "Tahoma": (4, -10), "Winthrop": (-14, 6)}
+
+
 def fig_glaciers(check_csv, path):
     c = pd.read_csv(check_csv)
-    fig, ax = plt.subplots(figsize=(3.6, 3.4), constrained_layout=True)
+    fig, ax = plt.subplots(figsize=(_print_width(path), 3.6), constrained_layout=True)
     ax.scatter(
         c.glathida_mean_m, c.iceboost_mean_m, s=26, color=CAT[0], edgecolor="white", lw=0.5, label="mean"
     )
@@ -454,19 +511,20 @@ def fig_glaciers(check_csv, path):
         ax.annotate(
             r.glacier.split()[0].title(),
             (r.glathida_max_m, r.iceboost_max_m),
-            xytext=(3, -2),
+            xytext=GLACIER_LABEL_OFFSET.get(r.glacier.split()[0].title(), (4, -4)),
             textcoords="offset points",
-            fontsize=6.5,
             color=MUTED,
         )
     ax.plot([0, 300], [0, 300], color=MUTED, lw=0.6, ls="--")
     ax.set_xlim(0, 300)
     ax.set_ylim(0, 300)
-    ax.set_xlabel("GlaThiDa, 1981 radar (m)")
+    ax.set_xticks([0, 100, 200, 300])
+    ax.set_yticks([0, 100, 200, 300])
+    ax.set_xlabel("GlaThiDa 1981 (m)")
     ax.set_ylabel("IceBoost v2 (m)")
-    ax.legend(fontsize=7, loc="upper left")
+    ax.legend(loc="lower right", handletextpad=0.1, borderaxespad=0.2)
     ax.grid(color=GRID, lw=0.4)
-    fig.savefig(path)
+    style.save(fig, path)
     plt.close(fig)
     return path
 
@@ -482,15 +540,15 @@ def fig_surface_layers(tree, dom, path):
     ext = [(dom.x[0] - sx) / 1e3, (dom.x[-1] - sx) / 1e3, (dom.y[0] - sy) / 1e3, (dom.y[-1] - sy) / 1e3]
     hs = LightSource(315, 40).hillshade(s["elevation"].values, dx=dom.surface_res_m, dy=dom.surface_res_m)
     panels = [
-        ("soil_thickness", "(a) Soil thickness, SOLUS100 (m)", cmc.lajolla, (0, 2.01), False),
-        ("water_table_depth", "(b) Water table, Ma et al. 2026 (m)", cmc.devon, (1, 100), True),
-        ("water_table_depth_fan", "(c) Water table, Fan et al. 2017 (m)", cmc.devon, (1, 100), True),
-        ("canopy_height", "(d) Canopy height, ETH 2020 (m)", cmc.bamako_r, (0, 60), False),
-        ("land_cover", "(e) Land cover, NLCD 2021", None, None, False),
-        ("stream_order", "(f) Stream order, NHDPlus HR", cmc.oslo_r, (0, 8), False),
+        ("soil_thickness", "(a) Soil (m)\nSOLUS100", cmc.lajolla, (0, 2.01), False),
+        ("water_table_depth", "(b) Water table (m)\nMa et al. 2026", cmc.devon, (1, 100), True),
+        ("water_table_depth_fan", "(c) Water table (m)\nFan et al. 2017", cmc.devon, (1, 100), True),
+        ("canopy_height", "(d) Canopy (m)\nETH 2020", cmc.bamako_r, (0, 60), False),
+        ("land_cover", "(e) Land cover\nNLCD 2021", None, None, False),
+        ("stream_order", "(f) Stream order\nNHDPlus HR", cmc.oslo_r, (0, 8), False),
     ]
     panels = [p for p in panels if p[0] in s]
-    fig, axs = plt.subplots(2, 3, figsize=(7.2, 6.4), constrained_layout=True, sharex=True, sharey=True)
+    fig, axs = plt.subplots(2, 3, figsize=(6.5, 6.3), constrained_layout=True, sharex=True, sharey=True)
     for ax, (var, title, cmap, lim, log) in zip(axs.flat, panels, strict=False):
         a = s[var].values.astype(float)
         ax.imshow(hs, cmap="gray", origin="lower", extent=ext, vmin=0, vmax=1.2)
@@ -498,7 +556,7 @@ def fig_surface_layers(tree, dom, path):
             ids = sorted(NLCD)
             lut = ListedColormap([NLCD[i][1] for i in ids])
             norm = BoundaryNorm(np.r_[np.array(ids) - 0.5, ids[-1] + 0.5], lut.N)
-            ax.imshow(
+            im = ax.imshow(
                 np.where(a > 0, a, np.nan),
                 cmap=lut,
                 norm=norm,
@@ -520,15 +578,17 @@ def fig_surface_layers(tree, dom, path):
                 alpha=0.9,
                 interpolation="nearest",
             )
-            fig.colorbar(im, ax=ax, orientation="horizontal", shrink=0.8, pad=0.02, aspect=30)
-        ax.set_title(title, fontsize=7, loc="left")
+            _hcolorbar(fig, im, ax, ticks=[0, 4, 8] if var == "stream_order" else None)
+        if var == "land_cover":  # an empty colour bar keeps the row aligned
+            _hcolorbar(fig, im, ax).ax.set_visible(False)
+        ax.set_title(title, loc="left")
         ax.set_aspect("equal")
     for ax in axs.flat[len(panels) :]:
         ax.set_visible(False)
-    for ax in axs[:, 0]:
-        ax.set_ylabel("km north of summit")
-    fig.supxlabel("km east of summit", fontsize=8.5)
-    fig.savefig(path)
+    _map_ticks(axs.flat[0])
+    fig.supylabel("km north of summit")
+    fig.supxlabel("km east of summit")
+    style.save(fig, path)
     plt.close(fig)
     return path
 
@@ -543,16 +603,17 @@ def fig_depth_to_rock(tree, dom, path):
     ext = [(dom.x[0] - sx) / 1e3, (dom.x[-1] - sx) / 1e3, (dom.y[0] - sy) / 1e3, (dom.y[-1] - sy) / 1e3]
     hs = LightSource(315, 40).hillshade(s["elevation"].values, dx=dom.surface_res_m, dy=dom.surface_res_m)
     norm = LogNorm(0.3, 40)
-    fig = plt.figure(figsize=(7.2, 3.0), constrained_layout=True)
-    gs = fig.add_gridspec(1, 3, width_ratios=[1, 1, 1.15])
+    fig = plt.figure(figsize=(6.5, 7.8), constrained_layout=True)
+    gs = fig.add_gridspec(2, 2, height_ratios=[1.5, 1])
     maps = [
-        ("soil_thickness", "(a) Soil thickness, SOLUS100"),
-        ("depth_to_bedrock", "(b) Depth to bedrock, SoilGrids 2017"),
+        ("soil_thickness", "(a) Soil thickness\nSOLUS100"),
+        ("depth_to_bedrock", "(b) Depth to bedrock\nSoilGrids 2017"),
     ]
-    ax0 = None
+    ax0, axm = None, []
     for i, (var, title) in enumerate(maps):
         ax = fig.add_subplot(gs[0, i], sharex=ax0, sharey=ax0)
         ax0 = ax0 or ax
+        axm.append(ax)
         ax.imshow(hs, cmap="gray", origin="lower", extent=ext, vmin=0, vmax=1.2)
         im = ax.imshow(
             s[var].values,
@@ -563,21 +624,30 @@ def fig_depth_to_rock(tree, dom, path):
             alpha=0.9,
             interpolation="nearest",
         )
-        ax.set_title(title, fontsize=7)
+        ax.set_title(title, loc="left")
         ax.set_aspect("equal")
         ax.set_xlabel("km east of summit")
         if i:
             ax.tick_params(labelleft=False)
         else:
             ax.set_ylabel("km north of summit")
+    _map_ticks(ax0)
     fig.colorbar(
-        im, ax=fig.axes, orientation="horizontal", shrink=0.5, pad=0.02, aspect=30, label="m below ground"
+        im,
+        ax=axm,
+        orientation="horizontal",
+        shrink=0.6,
+        pad=0.02,
+        aspect=30,
+        label="m below ground",
+        ticks=[0.3, 1, 3, 10, 30],
+        format="%g",
     )
-    ax = fig.add_subplot(gs[0, 2])
+    ax = fig.add_subplot(gs[1, :])
     curves = [
-        ("soil_thickness", "soil thickness, SOLUS100 (≤ 2.01 m)", CAT[1]),
+        ("soil_thickness", "soil, SOLUS100 (≤ 2.01 m)", CAT[1]),
         ("water_table_depth", "water table, Ma et al. 2026", CAT[0]),
-        ("depth_to_bedrock", "depth to bedrock, SoilGrids 2017", CAT[2]),
+        ("depth_to_bedrock", "bedrock, SoilGrids 2017", CAT[2]),
     ]
     for var, label, col in curves:
         if var not in s:
@@ -588,13 +658,14 @@ def fig_depth_to_rock(tree, dom, path):
         ax.axvline(np.median(a), color=col, lw=0.6, ls=":")
     ax.set_xscale("log")
     ax.set_xlim(0.3, 100)
+    ax.set_xticks([0.3, 1, 3, 10, 30, 100], labels=["0.3", "1", "3", "10", "30", "100"])
     ax.set_ylim(0, 1)
-    ax.set_xlabel("depth below ground (m)")
-    ax.set_ylabel("fraction of cells shallower")
-    ax.set_title("(c) Distributions over the box (medians dotted)", fontsize=7)
-    ax.legend(fontsize=6, loc="upper center", bbox_to_anchor=(0.45, -0.3), ncol=1)
+    ax.set_xlabel("Depth below ground (m)")
+    ax.set_ylabel("Fraction shallower")
+    ax.set_title("(c) Distributions over the box (medians dotted)", loc="left")
+    fig.legend(loc="outside lower center", ncol=2, columnspacing=1.0)
     ax.grid(color=GRID, lw=0.5)
-    fig.savefig(path)
+    style.save(fig, path)
     plt.close(fig)
     return path
 
@@ -611,7 +682,7 @@ def fig_cz_section(tree, dom, path, at_y, half_km=35.0, zmax=80.0):
     z = cz["cz_depth"].values
     surf = tree["surface"].to_dataset().sel(y=at_y, method="nearest").interp(x=cz.x.values)
     fig, axs = plt.subplots(
-        4, 1, figsize=(7.2, 7.4), sharex=True, constrained_layout=True, height_ratios=[0.55, 1, 1, 1]
+        4, 1, figsize=(6.5, 8.0), sharex=True, constrained_layout=True, height_ratios=[0.55, 1, 1, 1]
     )
     ax = axs[0]
     elev = surf["elevation"].values / 1e3
@@ -630,17 +701,16 @@ def fig_cz_section(tree, dom, path, at_y, half_km=35.0, zmax=80.0):
         label="ice-covered columns",
     )
     ax.plot(d, elev, color=INK, lw=0.8)
-    ax.set_ylabel("elevation (km)")
-    ax.set_title("(a) Ground surface along A–A′", fontsize=7, loc="left")
-    ax.legend(fontsize=6, loc="upper left", frameon=False)
+    ax.set_ylabel("Elev. (km)")
+    ax.set_title("(a) Ground surface along A–A′", loc="left")
     lines = [
         ("z_cover", "cover base", "#eda100", "-"),
         ("z_weathered", "weathered base", "#e34948", "-"),
         ("z_fractured", "fractured base (W = 0)", INK, "--"),
-        ("water_table", "water table (Fan et al. 2017)", "#2a78d6", ":"),
+        ("water_table", "water table", "#2a78d6", ":"),
     ]
     panels = [
-        ("vs", "(b) Vs (m s⁻¹)", cmc.roma, LogNorm(150, 3500)),
+        ("vs", "(b) Vs (m/s)", cmc.roma, LogNorm(150, 3500)),
         ("saturation", "(c) Water saturation", cmc.devon_r, None),
         ("weathering_index", "(d) Weathering index W", cmc.lajolla, None),
     ]
@@ -652,12 +722,16 @@ def fig_cz_section(tree, dom, path, at_y, half_km=35.0, zmax=80.0):
             if name in cz:
                 ax.plot(d, cz[name].values, color=col, lw=0.9, ls=ls, label=lab)
         ax.set_ylim(zmax, 0)
-        ax.set_ylabel("depth below ground\nor glacier bed (m)")
-        ax.set_title(title, fontsize=7, loc="left")
-        fig.colorbar(m, ax=ax, pad=0.01, aspect=12)
-    axs[1].legend(fontsize=6, loc="lower left", ncol=4, frameon=True, framealpha=0.85)
+        ax.set_ylabel("Depth (m)")
+        ax.set_title(title, loc="left")
+        cb = fig.colorbar(m, ax=ax, pad=0.01, aspect=12)
+        if norm is not None:
+            cb.set_ticks([200, 500, 1000, 2000], labels=["200", "500", "1000", "2000"])
+            cb.ax.minorticks_off()
+    handles = axs[0].get_legend_handles_labels()[0] + axs[1].get_legend_handles_labels()[0]
+    fig.legend(handles=handles, loc="outside lower center", ncol=2)
     axs[-1].set_xlabel("km east of summit, section A–A′")
-    fig.savefig(path)
+    style.save(fig, path)
     plt.close(fig)
     return path
 
@@ -712,16 +786,16 @@ def fig_strain(grid_nc, vel_csv, load_tree, tree, dom, gnss_cfg, path):
     sx, sy = dom.summit_xy
     tf = Transformer.from_crs(4326, dom.crs, always_xy=True)
     fig, (a, b) = plt.subplots(
-        1, 2, figsize=(7.2, 3.6), constrained_layout=True, gridspec_kw={"width_ratios": [1, 1.25]}
+        1, 2, figsize=(6.5, 4.2), constrained_layout=True, gridspec_kw={"width_ratios": [1, 1.1]}
     )
     X, Y = (g.x.values - sx) / 1e3, (g.y.values - sy) / 1e3
     dil = g["dilatation"].values * 1e9
     im = a.pcolormesh(
         X, Y, dil, cmap=cmc.vik, norm=TwoSlopeNorm(0, -60, 60), shading="nearest", rasterized=True
     )
-    fig.colorbar(im, ax=a, orientation="horizontal", shrink=0.85, pad=0.02, aspect=30).set_label(
-        "Dilatation rate (nanostrain/yr)", fontsize=7.5
-    )
+    fig.colorbar(
+        im, ax=a, orientation="horizontal", shrink=0.9, pad=0.02, aspect=25, ticks=[-60, -30, 0, 30, 60]
+    ).set_label("Dilatation (nanostrain/yr)")
     x0, y0, x1, y1 = dom.bounds
     a.plot(
         np.array([x0, x1, x1, x0, x0]) / 1e3 - sx / 1e3,
@@ -739,16 +813,18 @@ def fig_strain(grid_nc, vel_csv, load_tree, tree, dom, gnss_cfg, path):
     q = a.quiver(
         rel[ok, 0], rel[ok, 1], ve[ok] - ve0, vn[ok] - vn0, scale=40, width=0.004, color=INK, zorder=3
     )
-    a.quiverkey(q, 0.8, 0.06, 2, "2 mm/yr", labelpos="N", fontproperties={"size": 7})
+    a.quiverkey(q, 0.78, 0.06, 2, "2 mm/yr", labelpos="N")
     a.scatter(rel[~ok, 0], rel[~ok, 1], marker="x", s=12, lw=0.8, color="#e34948", zorder=3)
     _topo(a, dom, step_m=1000)
     a.plot(0, 0, marker="^", ms=6, color=INK, mec="white", zorder=4)
     a.set_xlim(-70, 70)
     a.set_ylim(-70, 70)
+    a.set_xticks([-50, 0, 50])
+    a.set_yticks([-50, 0, 50])
     a.set_aspect("equal")
     a.set_xlabel("km east of summit")
     a.set_ylabel("km north of summit")
-    a.set_title("(a) Secular dilatation rate, GNSS", fontsize=8, loc="left")
+    a.set_title("(a) GNSS dilatation rate", loc="left")
 
     at = sy
     zmin = -20000
@@ -764,10 +840,13 @@ def fig_strain(grid_nc, vel_csv, load_tree, tree, dom, gnss_cfg, path):
             shading="nearest",
             rasterized=True,
         )
-    for d, z, val in section_arrays(load_tree, "stress_max_shear", "x", at):
+    for lev, (d, z, val) in zip(
+        ("L1", "L2", "L3"), section_arrays(load_tree, "stress_max_shear", "x", at), strict=True
+    ):
         D, Z = np.meshgrid((d - sx) / 1e3, z / 1e3)
         cs = b.contour(D, Z, val / 1e6, levels=[1, 2, 5, 10], colors=INK, linewidths=0.5)
-        b.clabel(cs, fontsize=6, fmt="%g")
+        if lev == "L2":  # one label per contour, where they are apart (km from the summit, elevation km)
+            b.clabel(cs, fmt="%g", manual=[(-16, -4), (-9, -3), (-4, -3), (0, -3.5), (4, -6), (9, -3)])
     surf = tree["surface"].to_dataset()["elevation"].sel(y=at, method="nearest")
     b.plot((surf.x - sx) / 1e3, surf / 1e3, color=INK, lw=0.8)
     b.axhline(0, color=MUTED, lw=0.5, ls=(0, (3, 3)))
@@ -775,11 +854,11 @@ def fig_strain(grid_nc, vel_csv, load_tree, tree, dom, gnss_cfg, path):
     b.set_ylim(zmin / 1e3, 4.6)
     b.set_xlabel("km east of summit")
     b.set_ylabel("Elevation (km)")
-    b.set_title("(b) Edifice load: mean stress, max shear contours (MPa)", fontsize=8, loc="left")
-    fig.colorbar(m, ax=b, orientation="horizontal", shrink=0.85, pad=0.02, aspect=30).set_label(
-        "Compressive mean stress (MPa)", fontsize=7.5
-    )
-    fig.savefig(path)
+    b.set_title("(b) Edifice-load stress (MPa)", loc="left")
+    fig.colorbar(
+        m, ax=b, orientation="horizontal", shrink=0.9, pad=0.02, aspect=25, ticks=[1, 3, 10, 30], format="%g"
+    ).set_label("Compressive mean stress (MPa)")
+    style.save(fig, path)
     plt.close(fig)
     return path
 
@@ -793,18 +872,18 @@ def fig_canopy(canopy, tree, dom, path):
     ext = [(dom.x[0] - sx) / 1e3, (dom.x[-1] - sx) / 1e3, (dom.y[0] - sy) / 1e3, (dom.y[-1] - sy) / 1e3]
     hs = LightSource(315, 40).hillshade(s["elevation"].values, dx=dom.surface_res_m, dy=dom.surface_res_m)
     panels = [
-        ("canopy_height_lidar", "(a) Canopy height, airborne lidar (m)", cmc.bamako_r, (0, 60)),
-        ("vegetation_cover_lidar", "(b) Vegetation cover, lidar", cmc.bamako_r, (0, 1)),
-        ("lai_sentinel2", "(c) Leaf area index, Sentinel-2", cmc.bamako_r, (0, 6)),
-        ("gedi_pai", "(d) Plant area index, GEDI L2B", cmc.bamako_r, (0, 6)),
-        ("gedi_canopy_height", "(e) Canopy height, GEDI L3 (m)", cmc.bamako_r, (0, 60)),
-        ("gedi_biomass", "(f) Aboveground biomass, GEDI L4B (Mg/ha)", cmc.bamako_r, (0, 600)),
+        ("canopy_height_lidar", "(a) Canopy (m)\nlidar", cmc.bamako_r, (0, 60)),
+        ("vegetation_cover_lidar", "(b) Cover\nlidar", cmc.bamako_r, (0, 1)),
+        ("lai_sentinel2", "(c) LAI\nSentinel-2", cmc.bamako_r, (0, 6)),
+        ("gedi_pai", "(d) PAI\nGEDI L2B", cmc.bamako_r, (0, 6)),
+        ("gedi_canopy_height", "(e) Canopy (m)\nGEDI L3", cmc.bamako_r, (0, 60)),
+        ("gedi_biomass", "(f) Biomass (Mg/ha)\nGEDI L4B", cmc.bamako_r, (0, 600)),
     ]
     missing = [v for v, *_ in panels if v not in canopy]
     if missing:  # machine-local inputs of S19 (configs/canopy_products.yaml); the committed figure is kept
         logging.warning("canopy figure not remade, layers missing from S19: %s", ", ".join(missing))
         return path
-    fig, axs = plt.subplots(2, 3, figsize=(7.2, 6.4), constrained_layout=True, sharex=True, sharey=True)
+    fig, axs = plt.subplots(2, 3, figsize=(6.5, 6.3), constrained_layout=True, sharex=True, sharey=True)
     for ax, (var, title, cmap, lim) in zip(axs.flat, panels, strict=True):
         ax.imshow(hs, cmap="gray", origin="lower", extent=ext, vmin=0, vmax=1.2)
         im = ax.imshow(
@@ -816,13 +895,38 @@ def fig_canopy(canopy, tree, dom, path):
             alpha=0.9,
             interpolation="nearest",
         )
-        fig.colorbar(im, ax=ax, orientation="horizontal", shrink=0.8, pad=0.02, aspect=30)
-        ax.set_title(title, fontsize=7, loc="left")
+        _hcolorbar(fig, im, ax)
+        ax.set_title(title, loc="left")
         ax.set_aspect("equal")
-    for ax in axs[:, 0]:
-        ax.set_ylabel("km north of summit")
-    fig.supxlabel("km east of summit", fontsize=8.5)
-    fig.savefig(path)
+    _map_ticks(axs.flat[0])
+    fig.supylabel("km north of summit")
+    fig.supxlabel("km east of summit")
+    style.save(fig, path)
+    plt.close(fig)
+    return path
+
+
+def fig_strain_series(series, events, path, window="30D"):
+    """Daily transient areal strain (trajectory residuals, S18 ``dilatation_transient``) of the station
+    groups of ``series`` = [(title, csv)], grey, with centred ``window`` medians (blue) and the ``events``
+    swarm dates (configs/gnss.yaml) as red lines; one panel per group, y clipped to 0.5-99.5 percentiles. The
+    median is broken where the series has a gap longer than ``window``."""
+    fig, axs = plt.subplots(
+        len(series), 1, figsize=(6.5, 2.6 * len(series) + 0.4), sharex=True, constrained_layout=True
+    )
+    for ax, (title, csv) in zip(np.atleast_1d(axs), series, strict=True):
+        d = pd.read_csv(csv, parse_dates=["date"]).set_index("date")["dilatation_transient"] * 1e9
+        ax.plot(d.index, d.values, ".", ms=1.5, color="#a9a8a3", mew=0, rasterized=True)
+        med = d.rolling(window, center=True).median()
+        med[d.index.to_series().diff() > pd.Timedelta(window)] = np.nan  # no line across data gaps
+        ax.plot(med.index, med.values, color=CAT[0], lw=1.2)
+        for e in events:
+            ax.axvline(pd.Timestamp(e["date"]), color="#e34948", lw=1.0)
+        ax.set_ylim(*np.nanpercentile(d.values, [0.5, 99.5]))
+        ax.set_title(title, loc="left")
+        ax.set_ylabel("Areal strain\n(nanostrain)")
+        ax.grid(color=GRID, lw=0.4)
+    style.save(fig, path)
     plt.close(fig)
     return path
 
@@ -875,16 +979,10 @@ def fig_strain_wrsz(ds, dom, wrsz_xy, polygon_xy, path, spacing_m=5000):
     bx, by = _km(dom, *np.meshgrid(sub.x.values, sub.y.values))
     ms = sub.tect_max_shear_rate.values * 1e9
     strike = float(ds.attrs["wrsz_strike_deg"])
-    fig, axs = plt.subplots(1, 2, figsize=(7.2, 4.4), constrained_layout=True, sharey=True)
+    fig, axs = plt.subplots(1, 2, figsize=(6.5, 4.6), constrained_layout=True, sharey=True)
     panels = [
-        ("tect_max_shear_rate", "(a) Max shear rate, shortening axes", cmc.lajolla, None, (0, 25)),
-        (
-            "wrsz_shear_rate",
-            f"(b) Right-lateral shear rate on N{strike:.0f}°E planes",
-            cmc.vik,
-            TwoSlopeNorm(0, -20, 20),
-            None,
-        ),
+        ("tect_max_shear_rate", "(a) Max shear rate", cmc.lajolla, None, (0, 25)),
+        ("wrsz_shear_rate", f"(b) Right-lateral, N{strike:.0f}°E", cmc.vik, TwoSlopeNorm(0, -20, 20), None),
     ]
     px, py = _km(dom, *np.asarray(polygon_xy).T)
     wx, wy = _km(dom, wrsz_xy[:, 0], wrsz_xy[:, 1])
@@ -915,14 +1013,15 @@ def fig_strain_wrsz(ds, dom, wrsz_xy, polygon_xy, path, spacing_m=5000):
             zorder=3,
         )
         ax.plot(0, 0, marker="^", ms=6, color=INK, mec="white", zorder=5)
-        ax.set_title(title, fontsize=8, loc="left")
+        ax.set_title(title, loc="left")
         ax.set_aspect("equal")
         ax.set_xlabel("km east of summit")
-        fig.colorbar(im, ax=ax, orientation="horizontal", shrink=0.85, pad=0.02, aspect=30).set_label(
-            "nanostrain/yr", fontsize=7.5
+        _hcolorbar(fig, im, ax, ticks=[-20, -10, 0, 10, 20] if norm else [0, 10, 20]).set_label(
+            "nanostrain/yr"
         )
+    _map_ticks(axs[0])
     axs[0].set_ylabel("km north of summit")
-    fig.savefig(path)
+    style.save(fig, path)
     plt.close(fig)
     return path
 
@@ -944,8 +1043,8 @@ def fig_strain_edifice(ds, dom, tree, events, sel, path, z_slice=1000.0, half_km
     ex, ey = Transformer.from_crs(4326, dom.crs, always_xy=True).transform(ev[:, 0], ev[:, 1])
     ekx, eky = _km(dom, ex, ey)
     near = (np.hypot(ekx, eky) <= sel["radius_km"]) & (ev[:, 2] <= sel["max_depth_km"])
-    fig = plt.figure(figsize=(7.2, 7.4), constrained_layout=True)
-    gs = fig.add_gridspec(2, 2, height_ratios=[1.05, 1])
+    fig = plt.figure(figsize=(_print_width(path), 6.9), constrained_layout=True)
+    gs = fig.add_gridspec(2, 2, height_ratios=[1.0, 1.05])
     a = fig.add_subplot(gs[0, :])
     lev = ds.sel(z=z_slice, method="nearest")
     X, Y = _km(dom, *np.meshgrid(lev.x.values, lev.y.values))
@@ -974,12 +1073,9 @@ def fig_strain_edifice(ds, dom, tree, events, sel, path, z_slice=1000.0, half_km
     a.set_aspect("equal")
     a.set_xlabel("km east of summit")
     a.set_ylabel("km north of summit")
-    a.set_title(
-        f"(a) Load volumetric strain at {lev.z.values:.0f} m a.s.l., SHmax axes, summit events "
-        f"(depth < {sel['max_depth_km']} km)",
-        fontsize=8,
-        loc="left",
-    )
+    a.set_xticks([-10, -5, 0, 5, 10])
+    a.set_yticks([-5, 0, 5])
+    a.set_title(f"(a) At {lev.z.values:.0f} m above sea level", loc="left")
     for k, (axis, other, at, lab) in enumerate((("x", "y", sy, "(b) W–E"), ("y", "x", sx, "(c) S–N"))):
         b = fig.add_subplot(gs[1, k])
         sec = ds.sel({other: at}, method="nearest")
@@ -1033,14 +1129,20 @@ def fig_strain_edifice(ds, dom, tree, events, sel, path, z_slice=1000.0, half_km
         b.axhline(0, color=MUTED, lw=0.5, ls=(0, (3, 3)))
         b.set_xlim(-half_km, half_km)
         b.set_ylim(-12, 4.6)
+        b.set_xticks([-10, 0, 10])
+        b.set_yticks([-10, -5, 0])
         b.set_xlabel(f"km {'east' if axis == 'x' else 'north'} of summit")
-        b.set_title(f"{lab}: volumetric strain, in-plane compression axes", fontsize=8, loc="left")
+        b.set_title(f"{lab} section", loc="left")
         if k == 0:
             b.set_ylabel("Elevation (km)")
-    fig.colorbar(im, ax=fig.axes, orientation="horizontal", shrink=0.6, pad=0.02, aspect=40).set_label(
-        "Volumetric strain from the edifice load (microstrain; compression negative)", fontsize=7.5
-    )
-    fig.savefig(path)
+        else:
+            b.tick_params(labelleft=False)
+    ticks = [-1000, -100, -10, 0, 10, 100, 1000]
+    cb = fig.colorbar(im, ax=fig.axes, orientation="horizontal", shrink=0.95, pad=0.02, aspect=35)
+    cb.set_ticks(ticks, labels=[f"{t:g}".replace("-", "−") for t in ticks])
+    cb.ax.minorticks_off()
+    cb.set_label("Load volumetric strain (microstrain)")
+    style.save(fig, path)
     plt.close(fig)
     return path
 
@@ -1050,7 +1152,7 @@ def fig_strain_bars_depth(ds, dom, path, elevations=(1000, 0, -2000, -5000, -100
     grey, the same at every depth) and SHmax of the edifice load (coloured by its horizontal shear strain)."""
     from matplotlib.colors import LogNorm
 
-    fig, axs = plt.subplots(2, 3, figsize=(7.2, 5.6), constrained_layout=True, sharex=True, sharey=True)
+    fig, axs = plt.subplots(2, 3, figsize=(6.5, 5.5), constrained_layout=True, sharex=True, sharey=True)
     norm = LogNorm(0.1, 30)
     lc = None
     for ax, zm in zip(axs.flat, elevations, strict=True):
@@ -1090,15 +1192,14 @@ def fig_strain_bars_depth(ds, dom, path, elevations=(1000, 0, -2000, -5000, -100
         ax.set_xlim(-half_km, half_km)
         ax.set_ylim(-half_km, half_km)
         ax.set_aspect("equal")
-        ax.set_title(f"{float(lev.z) / 1e3:+.1f} km elevation", fontsize=8, loc="left")
-    for ax in axs[:, 0]:
-        ax.set_ylabel("km north of summit")
-    for ax in axs[1]:
-        ax.set_xlabel("km east of summit")
-    fig.colorbar(lc, ax=axs, orientation="horizontal", shrink=0.6, pad=0.02, aspect=40).set_label(
-        "Edifice-load horizontal shear strain (microstrain); grey: GNSS shortening axis", fontsize=7.5
-    )
-    fig.savefig(path)
+        ax.set_title(f"{float(lev.z) / 1e3:+.1f} km".replace("-", "−"), loc="left")
+    _map_ticks(axs[0, 0])
+    fig.supylabel("km north of summit")
+    axs[1, 1].set_xlabel("km east of summit")
+    fig.colorbar(
+        lc, ax=axs, orientation="horizontal", shrink=0.7, pad=0.02, aspect=35, ticks=[0.1, 1, 10], format="%g"
+    ).set_label("Load horizontal shear strain (microstrain)")
+    style.save(fig, path)
     plt.close(fig)
     return path
 
@@ -1111,6 +1212,10 @@ def open_tree(path):
     return xr.open_datatree(path, engine="zarr", consolidated=False).load()
 
 
+# shorter legend labels of the S24 event classes, to fit half the page width at 11 pt
+EVENT_PRINT_LABELS = {"rock_avalanche": "Rock fall, rock avalanche", "complex": "Complex or unknown"}
+
+
 def fig_mass_movements(tree, flows, events, faults, zones, path):
     """(a) lahar deposits, mapped debris flows, lahar inundation zones and faults; (b) the event points."""
     from rainier3d.surface.mass_movements import EVENT_CLASSES, FLOW_CLASSES
@@ -1120,13 +1225,22 @@ def fig_mass_movements(tree, flows, events, faults, zones, path):
     hs = LightSource(azdeg=315, altdeg=40).hillshade(s["elevation"].values, vert_exag=1.5, dx=100, dy=100)
     ext = [x[0] - 0.05, x[-1] + 0.05, y[0] - 0.05, y[-1] + 0.05]
     km = lambda g: g.affine_transform([1e-3, 0, 0, 1e-3, 0, 0])  # noqa: E731
-    fig, axs = plt.subplots(1, 2, figsize=(7.2, 4.3), sharey=True, constrained_layout=True)
+    fig = plt.figure(figsize=(6.5, 5.9), constrained_layout=True)
+    gs = fig.add_gridspec(2, 2, height_ratios=[1, 0.42])
+    axs = [fig.add_subplot(gs[0, 0])]
+    axs.append(fig.add_subplot(gs[0, 1], sharey=axs[0]))
+    axs[1].tick_params(labelleft=False)
+    leg = [fig.add_subplot(gs[1, i]) for i in (0, 1)]
+    for ax in leg:
+        ax.axis("off")
     for ax in axs:
         ax.imshow(0.6 + 0.4 * hs, origin="lower", extent=ext, cmap="gray", vmin=0, vmax=1)
         ax.set_xlim(ext[:2])
         ax.set_ylim(ext[2:])
         ax.set_aspect("equal")
+        ax.set_xticks([560, 580, 600, 620])
         ax.set_xlabel("UTM 10N easting (km)")
+    legend = {"loc": "upper left", "borderaxespad": 0, "handlelength": 1.4, "handletextpad": 0.5}
     ax = axs[0]
     handles = []
     for k, label, c in FLOW_CLASSES:
@@ -1136,16 +1250,14 @@ def fig_mass_movements(tree, flows, events, faults, zones, path):
             handles.append(plt.Rectangle((0, 0), 1, 1, color=c, alpha=0.75, label=label))
     c1 = zones[zones.zone == "case1"]
     km(c1.boundary).plot(ax=ax, color="#1f5fa8", lw=0.6, ls="--")
-    handles.append(plt.Line2D([], [], color="#1f5fa8", lw=0.8, ls="--", label="Case 1 lahar zone (1998)"))
+    handles.append(plt.Line2D([], [], color="#1f5fa8", lw=0.8, ls="--", label="Case 1 lahar zone"))
     for key, lw in (("gems", 0.5), ("quaternary", 1.2)):
         km(faults[key].geometry).plot(ax=ax, color="k", lw=lw)
     handles.append(plt.Line2D([], [], color="k", lw=0.5, label="Faults (1:100k)"))
-    handles.append(plt.Line2D([], [], color="k", lw=1.2, label="Quaternary faults, zones"))
-    ax.legend(
-        handles=handles, loc="lower left", fontsize=6, frameon=True, framealpha=0.92, edgecolor=GRID
-    ).set_zorder(10)
+    handles.append(plt.Line2D([], [], color="k", lw=1.2, label="Quaternary faults"))
+    leg[0].legend(handles=handles, **legend)
     ax.set_ylabel("UTM 10N northing (km)")
-    ax.set_title("(a) Flow deposits, hazard zones, faults", fontsize=8, loc="left")
+    ax.set_title("(a) Flows, lahar zone, faults", loc="left")
     ax = axs[1]
     handles = []
     # the viewer's marker: a downward chevron (material moving downslope), not used by any other layer
@@ -1169,7 +1281,8 @@ def fig_mass_movements(tree, flows, events, faults, zones, path):
                     zorder=4 if seismic else 3,
                 )
         if n:
-            handles.append(plt.Line2D([], [], ls="", marker=chev, ms=5, color=c, label=f"{label} ({n})"))
+            label = EVENT_PRINT_LABELS.get(key, label)
+            handles.append(plt.Line2D([], [], ls="", marker=chev, ms=7, color=c, label=f"{label} ({n})"))
     handles.append(
         plt.Line2D(
             [],
@@ -1180,14 +1293,12 @@ def fig_mass_movements(tree, flows, events, faults, zones, path):
             mfc="none",
             mec=INK,
             mew=0.8,
-            label=f"Seismically recorded, larger ({int((events.located == 'seismic').sum())})",
+            label=f"Seismically recorded ({int((events.located == 'seismic').sum())})",
         )
     )
-    ax.legend(
-        handles=handles, loc="lower left", fontsize=6, frameon=True, framealpha=0.92, edgecolor=GRID
-    ).set_zorder(10)
-    ax.set_title("(b) Landslides and recorded events", fontsize=8, loc="left")
-    fig.savefig(path, dpi=200)
+    leg[1].legend(handles=handles, **legend)
+    ax.set_title("(b) Landslides and events", loc="left")
+    style.save(fig, path, dpi=200)
     plt.close(fig)
     return path
 
@@ -1326,7 +1437,7 @@ def fig_terrain_geometry(ds, dom, cfg, path):
         ("local_relief", f"(c) Local relief, r = {rr:g} m (m)", "Purples", f["local_relief_m"]),
         ("valley_depth", f"(d) Valley depth, r = {rv:g} m (m)", "Blues", f["valley_depth_m"]),
     ]
-    fig, axs = plt.subplots(2, 2, figsize=(7.2, 7.6), constrained_layout=True, sharex=True, sharey=True)
+    fig, axs = plt.subplots(2, 2, figsize=(6.5, 7.4), constrained_layout=True, sharex=True, sharey=True)
     for ax, (var, title, cmap, lim) in zip(axs.flat, panels, strict=True):
         ax.imshow(hs, cmap="gray", origin="lower", extent=ext, vmin=0, vmax=1.2)
         im = ax.imshow(
@@ -1347,14 +1458,14 @@ def fig_terrain_geometry(ds, dom, cfg, path):
             linewidths=0.5,
         )
         ax.plot(0, 0, marker="^", color="k", ms=5, mec="w", mew=0.6)
-        fig.colorbar(im, ax=ax, orientation="horizontal", shrink=0.8, pad=0.02, aspect=30, extend="max")
-        ax.set_title(title, fontsize=8, loc="left")
+        _hcolorbar(fig, im, ax, extend="max")
+        ax.set_title(title, loc="left")
         ax.set_aspect("equal")
         ax.set_xlim(-f["half_width_km"], f["half_width_km"])
         ax.set_ylim(-f["half_width_km"], f["half_width_km"])
-    for ax in axs[:, 0]:
-        ax.set_ylabel("km north of summit")
-    fig.supxlabel("km east of summit", fontsize=8.5)
-    fig.savefig(path)
+    _map_ticks(axs[0, 0], step=10)
+    fig.supylabel("km north of summit")
+    fig.supxlabel("km east of summit")
+    style.save(fig, path)
     plt.close(fig)
     return path

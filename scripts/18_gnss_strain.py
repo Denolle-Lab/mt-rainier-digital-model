@@ -15,7 +15,8 @@ needs the local model.zarr and does not change with the GNSS data (the weekly re
 
 Strain in the model volume (formerly S25; run at the end unless --no-load or --no-volume, after S5) ->
 data/processed/strain_3d.zarr, outputs/gnss/strain_orientation.csv, outputs/gnss/strain_3d_summary.json
-and the paper figures fig16 (WRSZ), fig17 (edifice), fig18 (orientation).
+and the paper figures fig16 (WRSZ), fig17 (edifice), fig18 (orientation), with the daily strain series
+(docs/paper/gnss/strain_series.png).
 
 Two fields on the grid of the 3D viewer volume (500 m x 250 m, surface to 20 km below sea level), rock only:
 
@@ -31,6 +32,7 @@ The orientation table gives both shortening directions on regular grids at fixed
 with shear-wave splitting fast directions.
 
 Usage: pixi run s18 [-- --no-load | --no-volume]
+       pixi run s18 -- --figures-only   (redraw the paper figures from the outputs above, computing nothing)
 """
 
 from __future__ import annotations
@@ -179,9 +181,13 @@ def main():
         "--no-load", action="store_true", help="skip the edifice load and the volume (need model.zarr)"
     )
     ap.add_argument("--no-volume", action="store_true", help="skip the strain in the model volume")
+    ap.add_argument("--figures-only", action="store_true", help="redraw the paper figures from the outputs")
     a = ap.parse_args()
     dom = load_domain()
     cfg = yaml.safe_load((REPO / "configs" / "gnss.yaml").read_text())
+    if a.figures_only:
+        paper_figures(dom, cfg)
+        return
     gdir, odir = dom.path("processed") / "gnss", dom.path("outputs") / "gnss"
     fetched = json.loads((gdir / "fetch.json").read_text()) if (gdir / "fetch.json").exists() else {}
     as_of = fetched.get("as_of", cfg["as_of"])
@@ -623,16 +629,45 @@ def strain_volume():
         "wrote %s (%d rows), %s", odir / "strain_orientation.csv", len(bars), odir / "strain_3d_summary.json"
     )
 
-    # paper figures
+    paper_figures(dom, cfg, ds, tree)
+
+
+def paper_figures(dom, cfg, ds=None, tree=None):
+    """The paper figures of S18 from its outputs: the daily strain series (outputs/gnss/strain_*.csv) and
+    fig16-fig18 (data/processed/strain_3d.zarr, read when ``ds`` is not given)."""
     from rainier3d.report import figures as F
 
+    odir = dom.path("outputs") / "gnss"
+    sites = {
+        k: len(r["sites"]) for k, r in json.loads((odir / "summary.json").read_text())["regions"].items()
+    }
+    gdoc = REPO / "docs" / "paper" / "gnss"
+    gdoc.mkdir(parents=True, exist_ok=True)
+    made = [
+        F.fig_strain_series(
+            [
+                (f"WRSZ ({sites['wrsz']} sites)", odir / "strain_wrsz.csv"),
+                (f"Edifice ({sites['edifice']} quality-controlled sites)", odir / "strain_edifice.csv"),
+            ],
+            cfg["events"],
+            gdoc / "strain_series.png",
+        )
+    ]
+    if ds is None:
+        ds = store.read(dom.path("processed") / "strain_3d.zarr")
+        tree = read_tree(dom.path("processed") / "model.zarr")
+    tf = Transformer.from_crs(4326, dom.crs, always_xy=True)
+    events = json.loads((REPO / "web" / "atlas" / "data" / "events.geojson").read_text())
+    ev = wrsz_events(events, cfg["regions"]["wrsz"]["polygon"], tf)
+    vc = cfg["volume"]
     fig = REPO / "docs" / "paper" / "figures"
     poly = np.column_stack(tf.transform(*np.array(cfg["regions"]["wrsz"]["polygon"]).T))
-    for p in (
+    made += [
         F.fig_strain_wrsz(ds, dom, ev, poly, fig / "fig16_strain_wrsz.png", vc["bars"]["tectonic_spacing_m"]),
         F.fig_strain_edifice(ds, dom, tree, events, vc["summit_events"], fig / "fig17_strain_edifice.png"),
         F.fig_strain_bars_depth(ds, dom, fig / "fig18_strain_orientation.png"),
-    ):
+    ]
+    for p in made:
         logv.info("figure %s", p.relative_to(REPO))
 
 
