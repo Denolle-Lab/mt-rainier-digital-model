@@ -16,6 +16,7 @@ Writes:
   bundle exists (S11 also appends them when it rebuilds the bundle)
 
 Usage: pixi run s24 [-- --atlas web/viewer/site/public/atlas]
+       pixi run s24 -- --figures-only   (redraw the figure from outputs/mass_movements/, fetching nothing)
 """
 
 from __future__ import annotations
@@ -24,6 +25,7 @@ import argparse
 import logging
 from pathlib import Path
 
+import geopandas as gpd
 import pandas as pd
 
 from rainier3d.config.domain import REPO, load_domain
@@ -63,20 +65,38 @@ def summary(flows, events, faults, zones) -> pd.DataFrame:
     return pd.DataFrame(rows, columns=["part", "class", "source", "count", "km2_or_km"])
 
 
+def figure(dom, flows, events, faults, zones):
+    from rainier3d.report.figures import fig_mass_movements
+
+    tree = read_tree(dom.path("processed") / "model.zarr")
+    logging.info("figure %s", fig_mass_movements(tree, flows, events, faults, zones, FIG).relative_to(REPO))
+
+
 def main():
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
     ap = argparse.ArgumentParser()
     ap.add_argument("--atlas", default=str(REPO / "web" / "viewer" / "site" / "public" / "atlas"))
     ap.add_argument("--no-figure", action="store_true")
+    ap.add_argument("--figures-only", action="store_true", help="redraw the figure from the outputs")
     a = ap.parse_args()
     dom = load_domain()
+    out = dom.path("outputs") / "mass_movements"
+    if a.figures_only:
+        faults = gpd.read_file(out / "faults.gpkg")
+        figure(
+            dom,
+            gpd.read_file(out / "flows.gpkg"),
+            gpd.read_file(out / "events.gpkg"),
+            {k: g.drop(columns="kind") for k, g in faults.groupby("kind")},
+            gpd.read_file(out / "lahar_zones.gpkg"),
+        )
+        return
     flows, events = M.build_catalogue(
         dom, fetch_map_units(dom), dom.path("raw") / "dem" / "3dep_30m_rainier-v0.tif"
     )
     faults = {k: g.clip(dom.bounds) for k, g in M.fetch_faults(dom).items()}
     zones = M.fetch_lahar_zones(dom).clip(dom.bounds)
 
-    out = dom.path("outputs") / "mass_movements"
     out.mkdir(parents=True, exist_ok=True)
     flows.to_file(out / "flows.gpkg")
     events.to_file(out / "events.gpkg")
@@ -91,12 +111,7 @@ def main():
     logging.info("mass movements:\n%s", tab.to_string(index=False))
 
     if not a.no_figure:
-        from rainier3d.report.figures import fig_mass_movements
-
-        tree = read_tree(dom.path("processed") / "model.zarr")
-        logging.info(
-            "figure %s", fig_mass_movements(tree, flows, events, faults, zones, FIG).relative_to(REPO)
-        )
+        figure(dom, flows, events, faults, zones)
 
     atlas = Path(a.atlas).expanduser()
     if (atlas / "model" / "layers.json").exists():

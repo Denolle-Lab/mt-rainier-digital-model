@@ -11,8 +11,10 @@ Colours: dln V on a diverging blue (fast) to red (slow) scale with a grey midpoi
 ramp; start / final and fitting / held-out on the first two categorical slots (blue, orange). Nodes whose
 derivative weight sum is below ``tomography.dws_min_m`` are greyed out.
 
-With ``--site DIR`` (docs/tomography for the GitHub Pages report) the figures are also copied to DIR and the
-3D data written there with at most 30 vertices per ray, to keep the committed file small.
+Every figure is drawn at its printed width in Supplement S1 (docs/paper/tomography/, through
+``rainier3d.report.style.save``, all text at least 11 pt) and copied to report/. With ``--site DIR``
+(docs/tomography for the GitHub Pages report) the figures are also copied to DIR and the 3D data written there
+with at most 30 vertices per ray, to keep the committed file small.
 
 Usage: pixi run python scripts/37_tomography.py --figures-only [--site docs/tomography]
 """
@@ -20,6 +22,8 @@ Usage: pixi run python scripts/37_tomography.py --figures-only [--site docs/tomo
 from __future__ import annotations
 
 import json
+import shutil
+from pathlib import Path
 
 import matplotlib
 
@@ -33,6 +37,7 @@ from pyproj import Transformer
 
 from rainier3d.config.domain import load_domain
 from rainier3d.io.store import read_tree
+from rainier3d.report import style
 
 BLUE, ORANGE, INK, MUTED, GRID = "#2a78d6", "#eb6834", "#1f2328", "#5b6068", "#d9dbde"
 DIV = LinearSegmentedColormap.from_list(
@@ -40,13 +45,18 @@ DIV = LinearSegmentedColormap.from_list(
 )  # negative (slow) red, positive (fast) blue
 SEQ = ListedColormap(["#f6f8fb", "#cde2fb", "#9ec5f4", "#6da7ec", "#3987e5", "#256abf", "#184f95", "#0d366b"])
 MASK = ListedColormap(["#ffffff"])
+PAPER = style.PAPER / "tomography"  # the figures of Supplement S1
+W_FULL, W_80 = style.PAGE_WIDTH_IN, 0.8 * style.PAGE_WIDTH_IN  # printed widths (in) of the figures
 
 plt.rcParams.update(
     {
         "font.family": "DejaVu Sans",
-        "font.size": 8,
-        "axes.titlesize": 8.5,
-        "axes.labelsize": 8,
+        "font.size": 11,
+        "axes.titlesize": 11,
+        "axes.labelsize": 11,
+        "xtick.labelsize": 11,
+        "ytick.labelsize": 11,
+        "legend.fontsize": 11,
         "axes.edgecolor": MUTED,
         "axes.labelcolor": INK,
         "xtick.color": MUTED,
@@ -54,7 +64,9 @@ plt.rcParams.update(
         "axes.spines.top": False,
         "axes.spines.right": False,
         "figure.dpi": 150,
+        "savefig.dpi": 300,
         "savefig.bbox": "tight",
+        "savefig.pad_inches": 0.01,  # the tight box stays within the printed width
         "legend.frameon": False,
     }
 )
@@ -98,9 +110,6 @@ def make_all(site=None):
         fig_rays_3d(out, rays, st, dom)
         export_3d(out, rays, st, dom)
     if site:
-        import shutil
-        from pathlib import Path
-
         site = Path(site)
         site.mkdir(parents=True, exist_ok=True)
         for f in sorted(out.glob("fig*.png")):
@@ -112,6 +121,14 @@ def make_all(site=None):
 
 
 # ---------------------------------------------------------------- helpers
+def save(fig, out, name):
+    """Write the figure of the supplement (docs/paper/tomography/) and copy it to the report folder."""
+    PAPER.mkdir(exist_ok=True)
+    style.save(fig, PAPER / name)
+    shutil.copy2(PAPER / name, out / name)
+    plt.close(fig)
+
+
 def km(a):
     return np.asarray(a) / 1e3
 
@@ -139,10 +156,22 @@ def stations(ax, st, size=10):
     ax.scatter(km(st.x), km(st.y), s=size, marker="v", c="none", edgecolors=INK, linewidths=0.6, zorder=5)
 
 
+def slice_grid(nrows, ncols, height):
+    """Map panels (rows x depth columns) at the full printed width, tightly packed, without tick labels."""
+    fig, ax = plt.subplots(nrows, ncols, figsize=(W_FULL, height), squeeze=False, layout="constrained")
+    fig.get_layout_engine().set(w_pad=0.02, h_pad=0.02, wspace=0.02, hspace=0.02)
+    return fig, ax
+
+
+def depth_title(ax, d):
+    ax.set_title(f"{d / 1e3:.0f} km", pad=3)
+
+
 # ---------------------------------------------------------------- figures
 def fig_data(out, cat, st, ctx, S):
-    fig = plt.figure(figsize=(7.2, 3.6))
-    gs = fig.add_gridspec(1, 3, width_ratios=[1.15, 1.15, 0.8], wspace=0.35)
+    fig = plt.figure(figsize=(W_FULL, 3.5), layout="constrained")
+    fig.get_layout_engine().set(wspace=0.03)
+    gs = fig.add_gridspec(1, 3, width_ratios=[1, 1, 0.62])
     ax = fig.add_subplot(gs[0])
     for flag, col, lab in ((True, BLUE, "fitting"), (False, ORANGE, "held out")):
         c = cat[cat.fitting == flag]
@@ -155,64 +184,71 @@ def fig_data(out, cat, st, ctx, S):
         ax.axhline(km(g), color=GRID, lw=0.4, zorder=0)
     stations(ax, st)
     frame(ax, ctx)
-    ax.set_xlabel("UTM 10N easting (km)")
+    ax.set_xticks([560, 590, 620])
+    ax.set_xlabel("easting (km)")
     ax.set_ylabel("northing (km)")
-    ax.set_title("(a) relocated epicentres\nand stations (▽)", loc="left")
-    ax.legend(loc="upper left", bbox_to_anchor=(0, -0.16), ncol=2, markerscale=4, fontsize=7)
-    ax = fig.add_subplot(gs[1])
+    ax.set_title("(a) epicentres\nby set", loc="left")
+    fig.legend(*ax.get_legend_handles_labels(), loc="outside lower left", ncol=2, markerscale=5,
+               handletextpad=0.1)  # fmt: skip
+    a1 = fig.add_subplot(gs[1], sharey=ax)
     sz = 4 + 40 * st.n_picks / st.n_picks.max()
-    ax.scatter(km(st.x), km(st.y), s=sz, marker="v", c=BLUE, edgecolors="white", linewidths=0.4)
-    frame(ax, ctx)
-    ax.set_xlabel("UTM 10N easting (km)")
-    ax.set_title(f"(b) {len(st)} stations, size\nby picks (max {st.n_picks.max():,})", loc="left")
-    ax = fig.add_subplot(gs[2])
+    a1.scatter(km(st.x), km(st.y), s=sz, marker="v", c=BLUE, edgecolors="white", linewidths=0.4)
+    frame(a1, ctx)
+    a1.tick_params(labelleft=False)
+    a1.set_xticks([560, 590, 620])
+    a1.set_xlabel("easting (km)")
+    a1.set_title(f"(b) {len(st)} stations\nmax {st.n_picks.max():,} picks", loc="left")
+    a2 = fig.add_subplot(gs[2])
     bins = np.arange(-4, 31, 1)
     for flag, col in ((True, BLUE), (False, ORANGE)):
-        ax.hist(
+        a2.hist(
             km(cat.d[cat.fitting == flag]), bins=bins, orientation="horizontal", color=col, alpha=0.6, lw=0
         )
-    ax.invert_yaxis()
-    ax.set_ylabel("depth below sea level (km)")
-    ax.set_xlabel("events per km")
-    ax.set_title("(c) hypocentre depth", loc="left")
-    fig.savefig(out / "fig01_data.png")
-    plt.close(fig)
+    a2.invert_yaxis()
+    a2.set_ylabel("depth bsl (km)")
+    a2.set_xlabel("events per km")
+    a2.set_title("(c) hypocentre\ndepth", loc="left")
+    a2.set_box_aspect(75 / 70 / 0.62)  # as tall as the maps
+    save(fig, out, "fig01_data.png")
 
 
 def fig_checks(out, fd, S, H):
-    fig, ax = plt.subplots(1, 3, figsize=(7.2, 2.5), gridspec_kw={"wspace": 0.45})
+    fig, ax = plt.subplots(1, 3, figsize=(W_FULL, 3.0), layout="constrained")
+    fig.get_layout_engine().set(wspace=0.06)
     a = ax[0]
     lim = [min(fd.finite_difference.min(), fd.ray.min()), max(fd.finite_difference.max(), fd.ray.max())]
     a.plot(lim, lim, color=MUTED, lw=0.8, ls="--")
     a.scatter(fd.finite_difference, fd.ray, s=2, c=BLUE, lw=0, alpha=0.4)
+    a.xaxis.set_major_locator(plt.MaxNLocator(3))
     f = S["fd_check"]
-    a.set_title(f"(a) S kernel, one node\nslope {f['slope_ray_on_fd']:.2f}, r = {f['corr']:.3f}", loc="left")
-    a.set_xlabel("finite difference dT/dm (s)")
+    a.set_title(f"(a) S kernel\nslope {f['slope_ray_on_fd']:.2f}, r = {f['corr']:.3f}", loc="left")
+    a.set_xlabel("finite difference (s)")
     a.set_ylabel("ray integral dT/dm (s)")
     a = ax[1]
     sc = pd.DataFrame(S["lam_scan"])
     a.semilogx(sc.lam_s, sc.held_out_linear_nrms, "-o", color=BLUE, ms=4, lw=1.5)
     a.axhline(S["held_out_linear_nrms_no_change"], color=MUTED, lw=0.8, ls="--")
-    a.text(sc.lam_s.min(), S["held_out_linear_nrms_no_change"], " no model change", va="bottom", color=MUTED,
-           fontsize=7)  # fmt: skip
     k = sc.held_out_linear_nrms.idxmin()
     a.plot(sc.lam_s[k], sc.held_out_linear_nrms[k], "o", ms=8, mfc="none", mec=ORANGE, mew=1.5)
-    a.set_xlabel("smoothing weight λs (relative)")
+    a.set_xlabel("smoothing weight λs")
     a.set_ylabel("held-out nRMS (linearised)")
-    a.set_title(f"(b) smoothing on held-out events\nchosen λs = {S['lam_s']:g}", loc="left")
+    a.set_title(f"(b) smoothing\nchosen λs = {S['lam_s']:g}", loc="left")
     a = ax[2]
     H = [h for h in H if "held_out_misfit" in h]  # failed trials have no misfit
-    lab = [h["model"].replace("step x", "×") for h in H]
+    lab = [
+        h["model"].replace("start", "0").replace("it ", "").replace(" step x1", "").replace(" step x0.5", "½")
+        for h in H
+    ]
     y = [h["held_out_misfit"] for h in H]
     col = [BLUE if h["accepted"] else ORANGE for h in H]
     a.plot(range(len(y)), y, color=GRID, lw=1, zorder=0)
     a.scatter(range(len(y)), y, c=col, s=28, zorder=2)
     a.set_xticks(range(len(y)))
-    a.set_xticklabels(lab, rotation=30, ha="right")
-    a.set_ylabel("held-out misfit, mean (r/σ)²")
-    a.set_title("(c) steps kept (blue)\nand rejected (orange)", loc="left")
-    fig.savefig(out / "fig02_checks.png")
-    plt.close(fig)
+    a.set_xticklabels(lab)
+    a.set_xlabel("iteration (½ step)")
+    a.set_ylabel("held-out mean (r/σ)²")
+    a.set_title("(c) trial models", loc="left")
+    save(fig, out, "fig02_checks.png")
 
 
 def depth_columns(nodes):
@@ -222,37 +258,29 @@ def depth_columns(nodes):
 def fig_checkerboard(out, cb, cell, ctx):
     n = ctx["nodes"]
     ds = depth_columns(n)
-    fig, ax = plt.subplots(4, len(ds), figsize=(1.45 * len(ds) + 0.8, 6.6), squeeze=False)
+    fig, ax = slice_grid(4, len(ds), 4.9)
     rows = (
-        (f"true_p_{cell}", "dws_p", "input, P"),
-        (f"recovered_p_{cell}", "dws_p", "recovered, P"),
-        (f"true_s_{cell}", "dws_s", "input, S"),
-        (f"recovered_s_{cell}", "dws_s", "recovered, S"),
+        (f"true_p_{cell}", "dws_p", "input P"),
+        (f"recovered_p_{cell}", "dws_p", "recovered P"),
+        (f"true_s_{cell}", "dws_s", "input S"),
+        (f"recovered_s_{cell}", "dws_s", "recovered S"),
     )
     for r, (v, w, lab) in enumerate(rows):
+        vmax = 0.05 if r % 2 == 0 else 0.02
         for c, d in enumerate(ds):
             a = ax[r, c]
-            vmax = 0.05 if r % 2 == 0 else 0.02
             im = node_map(a, cb[v].sel(d=d).values, n[w].sel(d=d).values, ctx, vmax)
             frame(a, ctx, ticks=False)
             if r == 0:
-                a.set_title(f"{d / 1e3:.0f} km bsl")
+                depth_title(a, d)
             if c == 0:
-                a.set_ylabel(lab)
-        cbar = fig.colorbar(im, ax=ax[r, :].tolist(), shrink=0.8, pad=0.01, aspect=12)
-        cbar.set_label("dln V", fontsize=7)
-    fig.suptitle(
-        f"Checkerboard, {cell / 1e3:.0f} km cells, ±5% (input scale ±0.05, recovered ±0.02); white: DWS < "
-        f"{ctx['dws_min'] / 1e3:.0f} km",
-        fontsize=8.5,
-        y=0.995,
-    )
-    fig.savefig(out / f"fig03_checkerboard_{cell // 1000}km.png")
-    plt.close(fig)
+                a.set_ylabel(lab, labelpad=2)
+        fig.colorbar(im, ax=ax[r, :].tolist(), pad=0.01, aspect=10, ticks=[-vmax, 0, vmax])
+    save(fig, out, f"fig03_checkerboard_{cell // 1000}km.png")
 
 
 def fig_recovery(out, S):
-    fig, ax = plt.subplots(1, 2, figsize=(6.0, 2.8), sharey=True, gridspec_kw={"wspace": 0.15})
+    fig, ax = plt.subplots(1, 2, figsize=(0.75 * W_FULL, 3.4), sharey=True, layout="constrained")
     for cell, ls in (("12000", "-"), ("6000", ":")):
         for ph, col in (("P", BLUE), ("S", ORANGE)):
             rows = [r for r in S["checkerboard"][cell][ph] if "corr" in r]
@@ -260,22 +288,23 @@ def fig_recovery(out, S):
             ax[0].plot([r["corr"] for r in rows], d, ls, color=col, marker="o", ms=3, lw=1.5,
                        label=f"{ph}, {int(cell) // 1000} km")  # fmt: skip
             ax[1].plot([r["amp_ratio"] for r in rows], d, ls, color=col, marker="o", ms=3, lw=1.5)
-    for a, lab in zip(ax, ("correlation input / recovered", "recovered / input amplitude"), strict=True):
+    for a, lab in zip(ax, ("correlation", "amplitude ratio"), strict=True):
         a.axvline(0, color=GRID, lw=0.8)
         a.set_xlabel(lab)
+        a.xaxis.set_major_locator(plt.MaxNLocator(3))
     ax[0].invert_yaxis()
-    ax[0].set_ylabel("node depth below sea level (km)")
-    ax[0].legend(fontsize=7, loc="lower right")
-    ax[0].set_title("(a) pattern recovery")
-    ax[1].set_title("(b) amplitude recovery")
-    fig.savefig(out / "fig04_recovery_by_depth.png")
-    plt.close(fig)
+    ax[0].set_ylabel("node depth bsl (km)")
+    fig.legend(*ax[0].get_legend_handles_labels(), loc="outside lower center", ncol=4, handlelength=1.6,
+               columnspacing=0.8, handletextpad=0.3)  # fmt: skip
+    ax[0].set_title("(a) pattern", loc="left")
+    ax[1].set_title("(b) amplitude", loc="left")
+    save(fig, out, "fig04_recovery_by_depth.png")
 
 
 def fig_model(out, ctx, cat):
     n = ctx["nodes"]
     ds = depth_columns(n)
-    fig, ax = plt.subplots(3, len(ds), figsize=(1.45 * len(ds) + 0.8, 5.0), squeeze=False)
+    fig, ax = slice_grid(3, len(ds), 3.8)
     for c, d in enumerate(ds):
         near = cat[np.abs(cat.d - d) < 1500]
         for r, (v, w, lab) in enumerate((("dlnvp", "dws_p", "dln Vp"), ("dlnvs", "dws_s", "dln Vs"))):
@@ -284,9 +313,9 @@ def fig_model(out, ctx, cat):
             a.scatter(km(near.x), km(near.y), s=0.6, c=INK, lw=0, alpha=0.5)
             frame(a, ctx, ticks=False)
             if r == 0:
-                a.set_title(f"{d / 1e3:.0f} km bsl")
+                depth_title(a, d)
             if c == 0:
-                a.set_ylabel(lab)
+                a.set_ylabel(lab, labelpad=2)
         a = ax[2, c]
         dws = n["dws_s"].sel(d=d).values
         im2 = a.pcolormesh(km(n.x), km(n.y), np.log10(np.maximum(dws, 1)).T, cmap=SEQ, vmin=3, vmax=7,
@@ -294,12 +323,11 @@ def fig_model(out, ctx, cat):
         stations(a, ctx["st"], 5)
         frame(a, ctx, ticks=False)
         if c == 0:
-            a.set_ylabel("log10 DWS, S (m)")
-    fig.colorbar(im, ax=ax[:2, :].ravel().tolist(), shrink=0.7, pad=0.01, aspect=20, label="dln V")
-    fig.colorbar(im2, ax=ax[2, :].tolist(), shrink=0.8, pad=0.01, aspect=12, label="log10 m")
-    fig.suptitle("Perturbation of the starting model; dots: hypocentres within 1.5 km of the slice", y=0.995)
-    fig.savefig(out / "fig05_model_slices.png")
-    plt.close(fig)
+            a.set_ylabel("DWS, S", labelpad=2)
+    v = ax[:2, :].ravel().tolist()
+    fig.colorbar(im, ax=v, pad=0.01, aspect=16, label="dln V", ticks=[-0.08, 0, 0.08])
+    fig.colorbar(im2, ax=ax[2, :].tolist(), pad=0.01, aspect=8, label="log₁₀ m", ticks=[3, 5, 7])
+    save(fig, out, "fig05_model_slices.png")
 
 
 def section(tree, var, along, at, s_axis, zs):
@@ -323,12 +351,11 @@ def fig_sections(out, dom, ctx, cat):
     sx, sy = ctx["summit"]
     x0, y0, x1, y1 = dom.bounds
     zs = np.arange(4400, -20001, -100.0)
-    fig, ax = plt.subplots(
-        4, 2, figsize=(7.2, 7.4), sharey=True, gridspec_kw={"hspace": 0.35, "wspace": 0.08}
-    )
+    fig, ax = plt.subplots(4, 2, figsize=(W_FULL, 8.3), sharey=True, layout="constrained")
+    fig.get_layout_engine().set(wspace=0.03, hspace=0.04)
     for c, (along, at, s_axis, lab) in enumerate(
-        (("x", sy, np.arange(x0, x1, 250.0), "W-E through the summit"),
-         ("y", sx, np.arange(y0, y1, 250.0), "S-N through the summit"))
+        (("x", sy, np.arange(x0, x1, 250.0), "W–E"),
+         ("y", sx, np.arange(y0, y1, 250.0), "S–N"))
     ):  # fmt: skip
         vs0 = section(t0, "vs", along, at, s_axis, zs)
         vs1 = section(t1, "vs", along, at, s_axis, zs)
@@ -336,10 +363,10 @@ def fig_sections(out, dom, ctx, cat):
         near = cat[np.abs((cat.y if along == "x" else cat.x) - at) < 3000]
         hs = near.x if along == "x" else near.y
         panels = (
-            (vs0, "Vs, starting model (m/s)", "viridis_r", (1500, 4000)),
-            (vs1, "Vs, after tomography (m/s)", "viridis_r", (1500, 4000)),
+            (vs0, "Vs, starting (m/s)", "viridis_r", (1500, 4000)),
+            (vs1, "Vs, updated (m/s)", "viridis_r", (1500, 4000)),
             (np.log(vs1 / vs0), "dln Vs", DIV, (-0.08, 0.08)),
-            (vp1 / vs1, "Vp/Vs, after tomography", "cividis", (1.6, 1.95)),
+            (vp1 / vs1, "Vp/Vs, updated", "cividis", (1.6, 1.95)),
         )
         for r, (f, ttl, cm, (lo, hi)) in enumerate(panels):
             a = ax[r, c]
@@ -348,20 +375,21 @@ def fig_sections(out, dom, ctx, cat):
             )
             a.scatter(km(hs), -km(near.d), s=0.8, c="white" if r < 2 else INK, lw=0, alpha=0.6)
             a.set_ylim(-20, 4.5)
-            a.set_title(f"{lab}\n{ttl}" if r == 0 else ttl, loc="left")
+            a.set_title(f"{lab}: {ttl}", loc="left")
+            if r < 3:
+                a.tick_params(labelbottom=False)
             if c == 1:
-                fig.colorbar(im, ax=ax[r, :].tolist(), shrink=0.9, pad=0.01, aspect=12)
+                cbar = fig.colorbar(im, ax=ax[r, :].tolist(), pad=0.01, aspect=12)
+                cbar.ax.yaxis.set_major_locator(plt.MaxNLocator(3))
         ax[3, c].set_xlabel("easting (km)" if along == "x" else "northing (km)")
     for r in range(4):
         ax[r, 0].set_ylabel("elevation (km)")
-    fig.suptitle("Vertical sections; dots: hypocentres within 3 km of the section",
-                 y=0.995)  # fmt: skip
-    fig.savefig(out / "fig06_sections.png")
-    plt.close(fig)
+    save(fig, out, "fig06_sections.png")
 
 
 def fig_residuals(out, p0, p1):
-    fig, ax = plt.subplots(2, 2, figsize=(6.4, 4.4), gridspec_kw={"hspace": 0.45, "wspace": 0.25})
+    fig, ax = plt.subplots(2, 2, figsize=(W_FULL, 5.4), layout="constrained")
+    fig.get_layout_engine().set(wspace=0.04, hspace=0.06)
     for r, ph in enumerate(("P", "S")):
         for c, (fit, lab) in enumerate(((True, "fitting events"), (False, "held-out events"))):
             a = ax[r, c]
@@ -370,58 +398,64 @@ def fig_residuals(out, p0, p1):
             for p, col, tag in ((p0, BLUE, "start"), (p1, ORANGE, "final")):
                 g = p[(p.phase == ph) & (p.fitting == fit) & (p.w > 0)]
                 rms = np.sqrt(np.mean(g.res**2))
-                a.hist(g.res, bins=bins, histtype="step", color=col, lw=1.5, label=f"{tag}: RMS {rms:.3f} s")
+                a.hist(g.res, bins=bins, histtype="step", color=col, lw=1.5, label=f"{tag}, RMS {rms:.3f} s")
             a.set_title(f"{ph}, {lab}")
-            a.set_xlabel("residual after relocation (s)")
-            a.legend(fontsize=7, loc="upper left")
+            a.legend(loc="upper left", handlelength=1.2, borderaxespad=0.2)
+            a.set_ylim(top=a.get_ylim()[1] * 1.35)  # room for the legend
+            a.yaxis.set_major_locator(plt.MaxNLocator(4))
+            if r == 1:
+                a.set_xlabel("residual after relocation (s)")
     ax[0, 0].set_ylabel("picks per bin")
     ax[1, 0].set_ylabel("picks per bin")
-    fig.savefig(out / "fig07_residuals.png")
-    plt.close(fig)
+    save(fig, out, "fig07_residuals.png")
 
 
 def fig_station_terms(out, p0, p1, ctx):
     st = ctx["st"]
-    fig, ax = plt.subplots(2, 2, figsize=(6.4, 6.4), gridspec_kw={"hspace": 0.2, "wspace": 0.05})
+    fig, ax = plt.subplots(2, 2, figsize=(W_FULL, 6.6), sharex=True, sharey=True, layout="constrained")
+    fig.get_layout_engine().set(wspace=0.02, hspace=0.04)
     for r, ph in enumerate(("P", "S")):
         lim = 0.15 if ph == "P" else 0.3
         for c, (p, tag) in enumerate(((p0, "start"), (p1, "final"))):
             g = p[(p.phase == ph) & (p.w > 0) & ~p.fitting].groupby("si").res.agg(["mean", "size"])
             g = g[g["size"] >= 20].join(st)
             a = ax[r, c]
-            im = a.scatter(km(g.x), km(g.y), c=g["mean"], cmap=DIV.reversed(), vmin=-lim, vmax=lim, s=34,
+            im = a.scatter(km(g.x), km(g.y), c=g["mean"], cmap=DIV.reversed(), vmin=-lim, vmax=lim, s=40,
                            marker="v", edgecolors=INK, linewidths=0.4)  # fmt: skip
-            frame(a, ctx, ticks=(c == 0 and r == 1))
+            frame(a, ctx)
+            a.set_xticks([560, 590, 620])
             rms = np.sqrt(np.mean(g["mean"] ** 2))
-            a.set_title(
-                f"{ph}, {tag} model\nstation means: RMS {rms:.3f} s, {len(g)} st.", loc="left", fontsize=7.5
-            )
-        fig.colorbar(
-            im, ax=ax[r, :].tolist(), shrink=0.8, pad=0.01, label="mean held-out residual (s), red: late"
-        )
-    fig.savefig(out / "fig08_station_means.png")
-    plt.close(fig)
+            a.set_title(f"{ph}, {tag} model\nRMS {rms:.3f} s, {len(g)} stations", loc="left")
+            if r == 1:
+                a.set_xlabel("easting (km)")
+            if c == 0:
+                a.set_ylabel("northing (km)")
+        fig.colorbar(im, ax=ax[r, :].tolist(), pad=0.01, aspect=14, label="mean residual (s)",
+                     ticks=[-lim, 0, lim])  # fmt: skip
+    save(fig, out, "fig08_station_means.png")
 
 
 def fig_relocation(out, c0, c1):
     j = c0.join(c1, lsuffix="_0", rsuffix="_1")
     dh = np.hypot(j.x_1 - j.x_0, j.y_1 - j.y_0)
     dd = j.d_1 - j.d_0
-    fig, ax = plt.subplots(1, 3, figsize=(7.2, 2.4), gridspec_kw={"wspace": 0.35})
-    ax[0].hist(dh, bins=np.arange(0, 3001, 100), color=BLUE, lw=0)
-    ax[0].set_xlabel("epicentre shift (m)")
+    fig = plt.figure(figsize=(W_80, 5.0), layout="constrained")
+    fig.get_layout_engine().set(wspace=0.04, hspace=0.06)
+    gs = fig.add_gridspec(2, 2)
+    ax = [fig.add_subplot(gs[0, 0]), fig.add_subplot(gs[0, 1]), fig.add_subplot(gs[1, :])]
+    ax[0].hist(km(dh), bins=np.arange(0, 3.001, 0.1), color=BLUE, lw=0)
+    ax[0].set_xlabel("epicentre shift (km)")
     ax[0].set_ylabel("events")
-    ax[0].set_title(f"(a) median {np.median(dh):.0f} m")
-    ax[1].hist(dd, bins=np.arange(-3000, 3001, 100), color=BLUE, lw=0)
-    ax[1].set_xlabel("depth change (m), + deeper")
-    ax[1].set_title(f"(b) median {np.median(dd):+.0f} m")
-    ax[2].scatter(km(j.d_0), km(dd) * 1e3, s=2, c=BLUE, lw=0, alpha=0.4)
+    ax[0].set_title(f"(a) median {np.median(dh):.0f} m", loc="left")
+    ax[1].hist(km(dd), bins=np.arange(-3, 3.001, 0.1), color=BLUE, lw=0)
+    ax[1].set_xlabel("depth change (km)")
+    ax[1].set_title(f"(b) median {np.median(dd):+.0f} m".replace("-", "−"), loc="left")
+    ax[2].scatter(km(j.d_0), km(dd), s=2, c=BLUE, lw=0, alpha=0.4)
     ax[2].axhline(0, color=GRID, lw=0.8)
-    ax[2].set_xlabel("starting depth (km bsl)")
-    ax[2].set_ylabel("depth change (m)")
-    ax[2].set_title("(c) depth change with depth")
-    fig.savefig(out / "fig09_relocation.png")
-    plt.close(fig)
+    ax[2].set_xlabel("starting depth below sea level (km)")
+    ax[2].set_ylabel("depth change (km)\n+ deeper")
+    ax[2].set_title("(c) depth change with depth", loc="left")
+    save(fig, out, "fig09_relocation.png")
 
 
 def fig_ray_density(out, dens, ctx):
@@ -431,7 +465,7 @@ def fig_ray_density(out, dens, ctx):
     k = max(int(round(1000 / dx)), 1)
     agg = {ph: dens[f"length_{ph}"].coarsen(x=k, y=k, z=k, boundary="trim").sum() / 1e3 for ph in ("p", "s")}
     ds = [0, 2000, 4000, 6000, 9000, 13000]
-    fig, ax = plt.subplots(2, len(ds), figsize=(1.45 * len(ds) + 0.8, 3.6), squeeze=False)
+    fig, ax = slice_grid(2, len(ds), 2.75)
     for r, ph in enumerate(("p", "s")):
         for c, d in enumerate(ds):
             a = ax[r, c]
@@ -443,19 +477,18 @@ def fig_ray_density(out, dens, ctx):
             stations(a, ctx["st"], 4)
             frame(a, ctx, ticks=False)
             if r == 0:
-                a.set_title(f"{d / 1e3:.0f} km bsl")
+                depth_title(a, d)
             if c == 0:
-                a.set_ylabel(f"{ph.upper()} rays")
-    fig.colorbar(im, ax=ax.ravel().tolist(), shrink=0.8, pad=0.01, label="log10 km of ray per km³")
-    fig.suptitle(f"Ray length density in 1 km cubes (rays traced on the {dx:.0f} m grid), final model", y=1.0)
-    fig.savefig(out / "fig10_ray_density_slices.png")
-    plt.close(fig)
+                a.set_ylabel(f"{ph.upper()} rays", labelpad=2)
+    fig.colorbar(im, ax=ax.ravel().tolist(), pad=0.01, aspect=12, label="log₁₀ km/km³", ticks=[0, 2, 4])
+    save(fig, out, "fig10_ray_density_slices.png")
 
     sx, sy = ctx["summit"]
     tot = agg["p"] + agg["s"]
-    fig, ax = plt.subplots(2, 1, figsize=(7.2, 4.6), gridspec_kw={"hspace": 0.4})
-    for a, (sec, lab, axis) in zip(ax, ((tot.sel(y=sy, method="nearest"), "W-E through the summit", "x"),
-                                       (tot.sel(x=sx, method="nearest"), "S-N through the summit", "y")),
+    fig, ax = plt.subplots(2, 1, figsize=(W_80, 4.6), layout="constrained")
+    fig.get_layout_engine().set(hspace=0.06)
+    for a, (sec, lab, axis) in zip(ax, ((tot.sel(y=sy, method="nearest"), "W–E through the summit", "x"),
+                                       (tot.sel(x=sx, method="nearest"), "S–N through the summit", "y")),
                                    strict=True):  # fmt: skip
         h = sec.transpose("z", axis)
         lg = np.log10(np.maximum(h.values, 0.1))
@@ -465,17 +498,18 @@ def fig_ray_density(out, dens, ctx):
         a.set_ylim(-25, 4.5)
         a.set_ylabel("elevation (km)")
         a.set_xlabel("easting (km)" if axis == "x" else "northing (km)")
-        a.set_title(f"P + S ray length density in 1 km cubes, {lab}", loc="left")
-        fig.colorbar(im, ax=a, shrink=0.9, pad=0.01, label="log10 km/km³")
-    fig.savefig(out / "fig10b_ray_density_sections.png")
-    plt.close(fig)
+        a.set_title(lab, loc="left")
+    fig.colorbar(
+        im, ax=ax.tolist(), pad=0.01, aspect=20, label="log₁₀ km of ray per km³", ticks=[0, 1, 2, 3, 4]
+    )
+    save(fig, out, "fig10b_ray_density_sections.png")
 
 
 def fig_rays_3d(out, rays, st, dom):
     """Static 3D view of the sampled rays (P blue, S orange), stations and hypocentres."""
     from mpl_toolkits.mplot3d import Axes3D  # noqa: F401
 
-    fig = plt.figure(figsize=(7.2, 5.6))
+    fig = plt.figure(figsize=(W_80, 4.4))
     a = fig.add_subplot(111, projection="3d")
     n = {"P": 0, "S": 0}
     for r in rays:
@@ -491,16 +525,16 @@ def fig_rays_3d(out, rays, st, dom):
     a.set_xlim(km(x0), km(x1))
     a.set_ylim(km(y0), km(y1))
     a.set_zlim(-25, 5)
+    a.set_xticks([560, 590, 620])
+    a.set_yticks([5160, 5190, 5220])
+    a.set_zticks([-20, -10, 0])
     a.set_box_aspect((70, 75, 30))
     a.view_init(elev=22, azim=-60)
-    a.set_xlabel("easting (km)")
-    a.set_ylabel("northing (km)")
-    a.set_zlabel("elevation (km)")
-    a.set_title(
-        f"Sampled rays in the final model: {n['P']} P (blue), {n['S']} S (orange); dots: sources", loc="left"
-    )
-    fig.savefig(out / "fig11_rays_3d.png")
-    plt.close(fig)
+    a.set_xlabel("easting (km)", labelpad=6)
+    a.set_ylabel("northing (km)", labelpad=10)
+    a.set_zlabel("elevation (km)", labelpad=4)
+    a.set_title(f"{n['P']} P (blue) and {n['S']} S (orange) rays", y=0.93)
+    save(fig, out, "fig11_rays_3d.png")
 
 
 def export_3d(out, rays, st, dom, max_vertices=None):

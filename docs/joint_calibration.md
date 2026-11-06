@@ -186,7 +186,7 @@ Between 0.3 and 4 km, the two models now agree to within 3.5%. Below 4 km, the f
 |---|---|---|---|---|---|
 | PNSN 1D | 0.132 | 0.268 | 1157 | +511 | 642 |
 | 3D, uncalibrated | 0.122 | 0.316 | 1285 | +257 | 647 |
-| 3D, Vs only (S12)¹ | 0.102 | 0.190 | 847 | +306 | 451 |
+| 3D, Vs only (S12)¹ | 0.102 | 0.189 | 847 | +306 | 451 |
 | 3D, depth factors (S13 v1)¹ | 0.094 | 0.190 | 835 | +727 | 432 |
 | 3D, geology + bias (S13 v2)¹ | 0.095 | 0.190 | 856 | +852 | 427 |
 
@@ -196,11 +196,11 @@ The v1 and v2 models fit equally well. They differ in where the correction sits:
 
 With the catalogue hypocentres fixed (S6, `outputs/pnsn_report.txt`), the v2 model gives event-demeaned RMS of 0.132 s for P and 0.227 s for S. The PNSN 1D model gives 0.159 and 0.287 s. The station correlation between the 3D − 1D delay and the mean 1D residual is 0.67 for both phases. S6 scores a model with hypocentres located in another model, so Table 5 is the fair comparison.
 
-![Figure 2. Residuals after relocation (S14) for the models of the current run: PNSN 1D, uncalibrated and published. The runs of the retired models of Table 5 exist only on the machine where they were made, and are left out.](joint_calibration/fig2_residuals.png)
+![Figure 2. Residuals after relocation (S14) for PNSN 1D, the uncalibrated and published models of the current run, and the two retired models of Table 5 (S12 and S13 v1), whose snapshots were copied to cascadia on 6 November 2026. The S13 v2 run is not kept.](joint_calibration/fig2_residuals.png)
 
 ### 4.5 Hypocentres and topography
 
-**Table 6.** Relocation quality control, runs of 24 September 2026. "Above ground" counts events above the DEM interpolated at the epicentre; the location tolerates 50 m. S10 remakes `docs/joint_calibration/relocation_qc.csv` from the current runs: on 27 October 2026, above ground / depth change > 5 km were 10 / 6 (PNSN 1D), 2 / 2 (uncalibrated) and 1 / 2 (published), none at the grid top.
+**Table 6.** Relocation quality control, runs of 24 September 2026. "Above ground" counts events above the DEM interpolated at the epicentre; the location tolerates 50 m. S10 remakes `docs/joint_calibration/relocation_qc.csv` from the current runs: on 27 October 2026, above ground / depth change > 5 km were 10 / 6 (PNSN 1D), 2 / 2 (uncalibrated) and 1 / 2 (published), none at the grid top. From the copied snapshots of the S12 and S13 v1 runs, S10 counts 3 / 3 and 2 / 1: the above-ground counts match the rows below, the depth-change counts (0 below) do not [TODO: find out why; S10 counts relocated minus ComCat depth].
 
 | Model | Events above ground | At grid top | Depth change > 5 km |
 |---|---|---|---|
