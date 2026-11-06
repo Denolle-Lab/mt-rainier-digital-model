@@ -615,7 +615,8 @@ def uncalibrated():
 
 def retired():
     """Vp/Vs of the two retired calibrations of 24 September 2026 (S12 Vs only, S13 v1 depth factors), from
-    their snapshots, which exist only where they were made or were copied: skipped when they are missing."""
+    their snapshots, which exist only where they were made or were copied. A missing one raises
+    FileNotFoundError, which make_all records under "skipped" (S10 goes on without this group)."""
     from rainier3d.geomodel.rules import AIR, ICE
 
     stores = {"fused_vscal": "model_vscal_20260924.zarr", "fused_v1": "model_joint_s13.zarr"}

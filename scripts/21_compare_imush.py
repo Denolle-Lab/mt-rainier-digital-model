@@ -133,16 +133,7 @@ def _figure(tab: pd.DataFrame, path):
         "fused_v2": ("#2a78d6", "rainier3d"),
     }
     mid = {f"{a}-{b}": (a + b) / 2e3 for a, b in zip(BINS[:-1], BINS[1:], strict=True)}
-    # printed at the text width (6.5 in) with every text at 11 pt
-    rc = {
-        "font.size": 11,
-        "axes.titlesize": 11,
-        "axes.titleweight": "bold",
-        "axes.titlelocation": "left",
-        "savefig.bbox": "standard",
-    }
-    with plt.rc_context(rc):
-        fig, ax = plt.subplots(1, 3, figsize=(style.PAGE_WIDTH_IN, 6.2), sharey=True, layout="constrained")
+    fig, ax = plt.subplots(1, 3, figsize=(style.PAGE_WIDTH_IN, 6.2), sharey=True, layout="constrained")
     for j, v in enumerate(("vp", "vs")):
         ax[j].axvline(0, color="0.6", lw=0.8)
         for reg, ls in (("all", "-"), ("north", ":")):
