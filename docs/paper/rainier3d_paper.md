@@ -307,7 +307,7 @@ Script S19 adds the vegetation products of the canopy-storage project (M. Köpfl
 | Canopy height | GEDI L3 version 2, mean relative height 100, 18 April 2019 – 9 July 2025 [@gedi_l3]; bilinear resampling | 1 km | 25.5 m (13.3–39.9 m) |
 | Aboveground biomass | GEDI L4B version 2.1, with standard error (median 21.4 Mg ha⁻¹) [@gedi_l4b]; bilinear resampling | 1 km | 198 Mg ha⁻¹ (58–436) |
 
-: Vegetation layers (S19). The lidar is the 2022–2023 "Wali" acquisition of the Washington Department of Natural Resources Lidar Portal, whose terms of reuse are not yet confirmed; the provenance of a soil-map image delivered with these products is undocumented. Both are displayed in the 3D viewer and excluded from the downloadable products [TODO: the viewer data release `viewer-data-2026-10-27` has only the GEDI canopy height; rebuild it with `pixi run platform` now that S19 has every layer]. {#tbl:canopy}
+: Vegetation layers (S19). The lidar is the 2022–2023 "Wali" acquisition of the Washington Department of Natural Resources Lidar Portal, whose terms of reuse are not yet confirmed; the provenance of a soil-map image delivered with these products is undocumented. Both are displayed in the 3D viewer and excluded from the downloadable products (viewer data release `viewer-data-2026-11-06`). {#tbl:canopy}
 
 ![Vegetation layers on the model grid, over a hillshade: (a) lidar canopy height and (b) vegetation cover, (c) Sentinel-2 leaf area index, (d) GEDI plant area index, (e) GEDI canopy height, (f) GEDI aboveground biomass. Straight edges in (a) and (b) are lidar tile boundaries.](figures/fig14_canopy.png){#fig:canopy width=100%}
 
