@@ -38,6 +38,96 @@ returns the same folder.
 | `mass_movements` | 2 MB | Landslides, lahars, debris flows, seismic mass movements, faults, lahar zones (GeoPackage, CSV) | S24 |
 | `gnss` | 4 MB | GNSS velocities with QC flags, strain-rate grid, daily regional strain, download manifest | S17, S18 |
 
+## Provenance and uncertainty
+
+For each product: what it is built from (keys of `configs/sources.yaml`, which give the reference, version and
+licence of each input), how, what uncertainty the files carry and what is not quantified. The paper's uncertainty
+table (Sect. 9) gives the sizes; `REBUILD.md` and `inputs.csv` in each release give the commit, the stages and the
+checksum of every input file. Most gridded fields have **no per-cell uncertainty**: their parameters are author
+choices within published ranges (`m1_placeholder`) or come from rule-based geometry.
+
+**`model`** (S1–S5, S13, S22; paper Sects. 4–5, `docs/model_construction.md`, `docs/joint_calibration.md`)
+- **Built from:**
+  - surface and geometry: `usgs_3dep`, `dnr_gems_100k` (through `configs/units.yaml`), `iceboost_v2`, `rgi60`,
+    `glathida`, `solus100`, `polaris`, `sentinel2_l2a`;
+  - rock physics: the parameters of `configs/petrophysics.csv`, most of them `m1_placeholder`;
+  - alteration: `rystrom_2000`, `finn_2001`;
+  - long wavelengths: `cvm17` and `crescent_gen0` (Vp from `brocher_2005`), fused in the wavenumber domain;
+  - calibration: PNSN picks of `comcat_uw`, relocated in 3D in every trial model.
+- **Uncertainty carried:**
+  - the travel-time fit of the 44 held-out events, RMS 0.093 s (P) and 0.188 s (S);
+  - the posterior s.d. of the three calibration multipliers (`configs/velocity_calibration.yaml`);
+  - the CRESCENT Vs uncertainty `vs_unc_regional`: not in the release, and S5 rebuilds it.
+- **Not quantified:**
+  - the uncertainty of each cell;
+  - the unit parameters, geometry rules and alteration factors;
+  - the size and anomaly of the magma body;
+  - the critical-zone parameters, which are not calibrated;
+  - the uncertainty of the soil and vegetation source products, which is not propagated.
+- `docs/velocity_model.md` §6 describes what the model resolves.
+
+**`model_let`** (S37; paper Supplement S1)
+- **Built from:**
+  - `model`;
+  - 99,716 PNSN analyst picks (`comcat_uw`) of 3770 earthquakes;
+  - travel times on a 250 m eikonal grid (`white_2020`), inverted with LSQR (`paige_saunders_1982`).
+- **Uncertainty carried:**
+  - the ray coverage of each node, `dws_p` and `dws_s` in `/let`. Treat nodes below 5 km of derivative weight sum
+    as unresolved;
+  - held-out RMS 0.072 s (P) and 0.121 s (S), on events withheld by 10 km squares.
+- **Not quantified:**
+  - no posterior uncertainty at each node;
+  - checkerboards recover 12 km structure at 0–6 km depth with correlations of 0.66–0.74 and about half the
+    amplitude. They are linear tests, so read them as an upper bound;
+  - below 12 km, and beneath the summit below 5 km, the update is set by the smoothing.
+
+**`grids`** (S9)
+- **Built from:** `model`, resampled linearly onto 500 m cells; air cells take the rock value below them.
+- **Uncertainty:** that of `model`.
+- **Not quantified:** the 500 m cells average the 250 m × 50 m structure of L1, near the surface and in the edifice.
+
+**`strain_3d`** (S17, S18; paper Sect. 6)
+- **Built from:**
+  - the horizontal `gnss` strain-rate tensor, carried down unchanged with depth, with the vertical component
+    from plane stress;
+  - the edifice-load strain of `edifice_load`, with the stiffness of `model`.
+- **Uncertainty carried:** none.
+- **Not quantified:**
+  - how strain rate varies with depth (an assumption);
+  - the heterogeneity of the elastic structure (no Green's functions of the model);
+  - any rheology beyond linear elasticity.
+
+**`edifice_load`** (S18; `johnson_1985`)
+- **Built from:** Boussinesq point loads of the edifice above the pre-volcanic surface of `model`, on a homogeneous
+  elastic half-space.
+- **Uncertainty carried:** none.
+- **Not quantified:** the density (2500 kg m⁻³) and Poisson's ratio (0.25), both `m1_placeholder`; the flat
+  reference plane at 1789 m.
+
+**`alteration`** (S22; `rystrom_2000`, `finn_2001`; `docs/alteration.md`)
+- **Built from:** the resistivity of the 1996 helicopter EM survey, with thresholds stored in the file's
+  `thresholds` attribute.
+- **Uncertainty carried:** none. The `depth_of_investigation_*` fields show how deep each frequency sees.
+- **Not quantified:** the intensity thresholds (`m1_placeholder`); depth beyond about 150 m.
+
+**`mass_movements`** (S24; `docs/mass_movements.md`)
+- **Built from:** `wgs_landslide_inventory`, `usgs_landslide_inventory_v3`, `allstadt_2017_esec`, `esec_v3`, the
+  lahar and debris-flow literature (each event names its `source`), and `usgs_3dep` to place the crowns.
+  Volumes are the published ones.
+- **Uncertainty carried:** `confidence` on every event: the class of the source inventory, or the location
+  uncertainty of a seismically located event.
+- **Not quantified:** completeness by class and date; volume uncertainties, which the sources do not give.
+
+**`gnss`** (S17, S18; `panga_gnss`, `unr_ngl_gnss`, `blewitt_2016_midas`, `shen_2015_strain`;
+`docs/gnss_strain.md`)
+- **Built from:** PANGA and UNR daily positions, frozen at the data cut (`fetch.json`, `manifest.csv`).
+- **Uncertainty carried:**
+  - the MIDAS velocity uncertainties `se`, `sn` and `su` (m/yr, floored at 0.2 mm/yr), with a QC `flag` on each
+    site;
+  - `dilatation_sigma` in `strain_grid.nc` and `strain_wrsz.csv`.
+- **Not quantified:** the uncertainty of the shear rate and its azimuth; strain on the edifice, which the network
+  does not resolve.
+
 ### `model`: the fused velocity model
 
 What the model contains, which version to use and what it resolves: `docs/velocity_model.md`. The tomography

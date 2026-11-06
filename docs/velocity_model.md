@@ -166,15 +166,15 @@ The command line does the same without Python:
   pre-volcanic surface, and plutons to 10 km below sea level. Contacts and the walls of extruded units are smoothed
   over about 1–2 km below the critical zone, so the model has no sharp interfaces there.
 - **Rock physics:** the unit parameters are author choices within published ranges (`m1_placeholder` in
-  `configs/petrophysics.csv`), scaled by three global factors: zero-pressure Vp ×1.44, crack-closure pressure ×1.42
-  and rock Vs ×0.951. V₀ and Vs are resolved by the travel times; the crack-closure pressure is not.
+  `configs/petrophysics.csv`), scaled by three global factors: zero-pressure Vp ×1.45, crack-closure pressure ×1.36
+  and rock Vs ×0.958. V₀ and Vs are resolved by the travel times; the crack-closure pressure is not.
 - **Top 150 m:** the critical zone is petrophysically consistent with the rock below (one water table, one pore
   pressure), but its parameters are not calibrated, because travel times barely constrain the top 50 m. Its
   depth-to-rock priors differ by a factor of 13.9 at the median.
 - **Magma body:** prescribed as a sphere 6.5 km in radius centred 11.5 km below sea level under the summit, 15%
   slower in Vs in its core. Its size and anomaly are author choices; the tomography has almost no rays below 12 km.
 - **Tomography (`model_let`):** checkerboard tests recover 12 km structure between sea level and 6 km depth
-  (correlation 0.63–0.75, about half the amplitude), and almost nothing below 12 km or under the summit below
+  (correlation 0.66–0.74, about half the amplitude), and almost nothing below 12 km or under the summit below
   5 km. Where ray coverage is low, the update is set by the smoothing. `/let` holds the ray coverage (`dws_p`,
   `dws_s`).
 - **Attenuation:** Q follows a rule on Vs. In the 18,544 of 2.24 million cells with Vp/Vs below √(8/3), the rule
