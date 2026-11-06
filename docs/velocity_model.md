@@ -177,7 +177,7 @@ The command line does the same without Python:
   (correlation 0.66–0.74, about half the amplitude), and almost nothing below 12 km or under the summit below
   5 km. Where ray coverage is low, the update is set by the smoothing. `/let` holds the ray coverage (`dws_p`,
   `dws_s`).
-- **Attenuation:** Q follows a rule on Vs. In the 18,544 of 2.24 million cells with Vp/Vs below √(8/3), the rule
+- **Attenuation:** Q follows a rule on Vs. In the 19,476 of 2.24 million cells with Vp/Vs below √(8/3), the rule
   implies a negative bulk quality factor.
 - **No per-cell uncertainty:** the model has no uncertainty at each cell. The paper's uncertainty table
   (Sect. 9) says, product by product, what is quantified and what is not.

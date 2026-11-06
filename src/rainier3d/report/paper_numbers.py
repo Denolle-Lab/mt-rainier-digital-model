@@ -613,6 +613,40 @@ def uncalibrated():
     )
 
 
+def retired():
+    """Vp/Vs of the two retired calibrations of 24 September 2026 (S12 Vs only, S13 v1 depth factors), from
+    their snapshots, which exist only where they were made or were copied: skipped when they are missing."""
+    from rainier3d.geomodel.rules import AIR, ICE
+
+    stores = {"fused_vscal": "model_vscal_20260924.zarr", "fused_v1": "model_joint_s13.zarr"}
+    out = {}
+    for name, store in stores.items():
+        p = load_domain().path("processed") / store
+        if not p.exists():
+            raise FileNotFoundError(2, "retired snapshot missing", str(p))
+        lv, _ = _levels(store)
+        n_low, r24 = 0, []
+        for ds in lv.values():
+            u, d = ds.unit.values, ds.depth.values
+            ok = (u != AIR) & (u != ICE)
+            r = ds.vp.values / ds.vs.values
+            n_low += int((ok & (r < math.sqrt(8 / 3))).sum())
+            r24.append(r[ok & (d >= 2000) & (d < 4000)])
+        r24 = np.concatenate(r24)
+        out[name] = {
+            "vpvs_below_sqrt83": n_low,
+            "vpvs_2_4km_median": float(np.median(r24)),
+            "vpvs_2_4km_p5": float(np.percentile(r24, 5)),
+        }
+    put(
+        "retired.vpvs",
+        out,
+        "retired calibrations: fused non-air non-ice cells with Vp/Vs < sqrt(8/3), and the median and 5th "
+        "percentile of Vp/Vs at 2-4 km below ground",
+        "data/processed/model_vscal_20260924.zarr, model_joint_s13.zarr (snapshots of 2026-09-24)",
+    )
+
+
 # ----------------------------------------------------------------------------------------------------- S26
 def catalog():
     s = json.loads((REPO / "outputs/catalog/summary.json").read_text())
@@ -806,6 +840,7 @@ GROUPS = {
     "imush": imush,
     "model": model,
     "uncalibrated": uncalibrated,
+    "retired": retired,
     "catalog": catalog,
     "tomography": tomography,
     "applications": applications,
